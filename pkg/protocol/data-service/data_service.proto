@@ -319,8 +319,13 @@ service Data {
   rpc ListProcess(ListProcessReq) returns (ListProcessResp) {}
   // 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
   rpc ListProcessInnerIPs(ListProcessInnerIPsReq) returns (ListProcessInnerIPsResp) {}
-  // 进程操作
+  // 进程操作（start、stop、register、unregister、restart、reload、kill）
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {}
+  // 更新托管信息操作（update_register）
+  rpc OperateUpdateRegisterProcess(OperateUpdateRegisterProcessReq) returns (OperateProcessResp) {}
+  // 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
+  // 进程数量与实例数量一致时无缩容，无需清除）
+  rpc OperateDeleteProcess(OperateDeleteProcessReq) returns (OperateProcessResp) {}
   // 进程过滤条件
   rpc ProcessFilterOptions(ProcessFilterOptionsReq) returns (ProcessFilterOptionsResp) {}
   // 同步cc和gse状态
@@ -2672,10 +2677,21 @@ message ListProcessInnerIPsResp {
 message OperateProcessReq {
   uint32 biz_id = 1;
   repeated uint32 process_ids = 2;
-  repeated uint32 process_instance_ids = 3;
+  reserved 3;  // 原 process_instance_ids
   string operate_type = 4;
-  bool enable_process_restart = 5;
+  reserved 5;  // 原 enable_process_restart，已拆分至 OperateUpdateRegisterProcessReq
   pbproc.OperateRange operate_range = 6;
+}
+
+message OperateUpdateRegisterProcessReq {
+  uint32 biz_id = 1;
+  uint32 process_id = 2;
+  bool enable_process_restart = 3;
+}
+
+message OperateDeleteProcessReq {
+  uint32 biz_id = 1;
+  uint32 process_id = 2;
 }
 
 message OperateProcessResp {

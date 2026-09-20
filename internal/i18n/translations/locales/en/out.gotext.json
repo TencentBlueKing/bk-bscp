@@ -3799,33 +3799,43 @@
             "fuzzy": true
         },
         {
-            "id": "when ProcessInstanceId is specified, only one ProcessId is allowed",
-            "message": "when ProcessInstanceId is specified, only one ProcessId is allowed",
-            "translation": "when ProcessInstanceId is specified, only one ProcessId is allowed",
-            "translatorComment": "Copied from source.",
-            "fuzzy": true
-        },
-        {
-            "id": "operate type is not supported: {Err}",
-            "message": "operate type is not supported: {Err}",
-            "translation": "operate type is not supported: {Err}",
+            "id": "operate type is not supported: {OperateType}",
+            "message": "operate type is not supported: {OperateType}",
+            "translation": "operate type is not supported: {OperateType}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
+                    "id": "OperateType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "err"
+                    "expr": "operateType"
                 }
             ],
             "fuzzy": true
         },
         {
-            "id": "query_status operation is not supported",
-            "message": "query_status operation is not supported",
-            "translation": "query_status operation is not supported",
+            "id": "process not found in processMap, processID={ProcessID}",
+            "message": "process not found in processMap, processID={ProcessID}",
+            "translation": "process not found in processMap, processID={ProcessID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.Attachment.ProcessID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "no process instances need to operate",
+            "message": "no process instances need to operate",
+            "translation": "no process instances need to operate",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -3973,18 +3983,126 @@
             "fuzzy": true
         },
         {
-            "id": "process not found in processMap, processID={ProcessID}",
-            "message": "process not found in processMap, processID={ProcessID}",
-            "translation": "process not found in processMap, processID={ProcessID}",
+            "id": "process cc sync status is {CcSyncStatus}, no need to update register",
+            "message": "process cc sync status is {CcSyncStatus}, no need to update register",
+            "translation": "process cc sync status is {CcSyncStatus}, no need to update register",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "ProcessID",
+                    "id": "CcSyncStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.CCSyncStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "proc.Spec.CcSyncStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "update process cc sync status failed, err: {Err}",
+            "message": "update process cc sync status failed, err: {Err}",
+            "translation": "update process cc sync status failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "process configs equal to cmdb latest config, no need to update register",
+            "message": "process configs equal to cmdb latest config, no need to update register",
+            "translation": "process configs equal to cmdb latest config, no need to update register",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "no scaled down process instances to delete, processID: {ID}",
+            "message": "no scaled down process instances to delete, processID: {ID}",
+            "translation": "no scaled down process instances to delete, processID: {ID}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ID",
                     "string": "%[1]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
                     "argNum": 1,
-                    "expr": "inst.Attachment.ProcessID"
+                    "expr": "processes[0].ID"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported managed status for delete: {ManagedStatus}",
+            "message": "unsupported managed status for delete: {ManagedStatus}",
+            "translation": "unsupported managed status for delete: {ManagedStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "managedStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "message": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "translation": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Status",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "status"
+                },
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[2]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "managedStatus"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "delete process instance {ID} failed, err: {Err}",
+            "message": "delete process instance {ID} failed, err: {Err}",
+            "translation": "delete process instance {ID} failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "ID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.ID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
                 }
             ],
             "fuzzy": true
@@ -3993,6 +4111,74 @@
             "id": "build process operate task failed, err: {Err}",
             "message": "build process operate task failed, err: {Err}",
             "translation": "build process operate task failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "get task common payload failed, err: {Err}",
+            "message": "get task common payload failed, err: {Err}",
+            "translation": "get task common payload failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "set task common payload failed, err: {Err}",
+            "message": "set task common payload failed, err: {Err}",
+            "translation": "set task common payload failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "dispatch process operate task group failed, err: {Err}",
+            "message": "dispatch process operate task group failed, err: {Err}",
+            "translation": "dispatch process operate task group failed, err: {Err}",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "set task group payload failed, err: {Err}",
+            "message": "set task group payload failed, err: {Err}",
+            "translation": "set task group payload failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
@@ -4120,73 +4306,6 @@
                     "type": "error",
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
-                    "expr": "err"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "unsupported managed status for delete: {ManagedStatus}",
-            "message": "unsupported managed status for delete: {ManagedStatus}",
-            "translation": "unsupported managed status for delete: {ManagedStatus}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "ManagedStatus",
-                    "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "managedStatus"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
-            "message": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
-            "translation": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Status",
-                    "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessStatus",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "status"
-                },
-                {
-                    "id": "ManagedStatus",
-                    "string": "%[2]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "managedStatus"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "delete process instance {ID} failed, err: {Err}",
-            "message": "delete process instance {ID} failed, err: {Err}",
-            "translation": "delete process instance {ID} failed, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "ID",
-                    "string": "%[1]d",
-                    "type": "uint32",
-                    "underlyingType": "uint32",
-                    "argNum": 1,
-                    "expr": "inst.ID"
-                },
-                {
-                    "id": "Err",
-                    "string": "%[2]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 2,
                     "expr": "err"
                 }
             ],
@@ -4653,23 +4772,6 @@
             "fuzzy": true
         },
         {
-            "id": "get business data failed, err: {Err}",
-            "message": "get business data failed, err: {Err}",
-            "translation": "get business data failed, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
             "id": "list task batch failed, err: {Err}",
             "message": "list task batch failed, err: {Err}",
             "translation": "list task batch failed, err: {Err}",
@@ -4736,18 +4838,18 @@
             "fuzzy": true
         },
         {
-            "id": "list tasks from task storage failed, err: {Err}",
-            "message": "list tasks from task storage failed, err: {Err}",
-            "translation": "list tasks from task storage failed, err: {Err}",
+            "id": "list tasks from task storage failed, err: {ListErr}",
+            "message": "list tasks from task storage failed, err: {ListErr}",
+            "translation": "list tasks from task storage failed, err: {ListErr}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "Err",
+                    "id": "ListErr",
                     "string": "%[1]v",
                     "type": "error",
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
-                    "expr": "err"
+                    "expr": "listErr"
                 }
             ],
             "fuzzy": true
@@ -4859,35 +4961,18 @@
             "fuzzy": true
         },
         {
-            "id": "operate process step not found for taskID: {TaskID}",
-            "message": "operate process step not found for taskID: {TaskID}",
-            "translation": "operate process step not found for taskID: {TaskID}",
+            "id": "retry task group {GroupID} failed, err: {Err}",
+            "message": "retry task group {GroupID} failed, err: {Err}",
+            "translation": "retry task group {GroupID} failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "TaskID",
+                    "id": "GroupID",
                     "string": "%[1]s",
                     "type": "string",
                     "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "failedTask.TaskID"
-                }
-            ],
-            "fuzzy": true
-        },
-        {
-            "id": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
-            "message": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
-            "translation": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
-            "translatorComment": "Copied from source.",
-            "placeholders": [
-                {
-                    "id": "TaskID",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "failedTask.TaskID"
+                    "expr": "groupID"
                 },
                 {
                     "id": "Err",
@@ -4901,18 +4986,18 @@
             "fuzzy": true
         },
         {
-            "id": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
-            "message": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
-            "translation": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
+            "id": "refresh retry task {TaskID} payload failed, err: {Err}",
+            "message": "refresh retry task {TaskID} payload failed, err: {Err}",
+            "translation": "refresh retry task {TaskID} payload failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "ProcessInstanceID",
-                    "string": "%[1]d",
-                    "type": "uint32",
-                    "underlyingType": "uint32",
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "processPayload.ProcessInstanceID"
+                    "expr": "task.TaskID"
                 },
                 {
                     "id": "Err",
@@ -4926,18 +5011,26 @@
             "fuzzy": true
         },
         {
-            "id": "process instance with ID {ProcessInstanceID} does not exist",
-            "message": "process instance with ID {ProcessInstanceID} does not exist",
-            "translation": "process instance with ID {ProcessInstanceID} does not exist",
+            "id": "update retry task {TaskID} payload failed, err: {Err}",
+            "message": "update retry task {TaskID} payload failed, err: {Err}",
+            "translation": "update retry task {TaskID} payload failed, err: {Err}",
             "translatorComment": "Copied from source.",
             "placeholders": [
                 {
-                    "id": "ProcessInstanceID",
-                    "string": "%[1]d",
-                    "type": "uint32",
-                    "underlyingType": "uint32",
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "processPayload.ProcessInstanceID"
+                    "expr": "task.TaskID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
                 }
             ],
             "fuzzy": true
@@ -6658,6 +6751,20 @@
             "id": "ConfigCheck",
             "message": "ConfigCheck",
             "translation": "ConfigCheck",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "UpdateRegister",
+            "message": "UpdateRegister",
+            "translation": "UpdateRegister",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Delete",
+            "message": "Delete",
+            "translation": "Delete",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },

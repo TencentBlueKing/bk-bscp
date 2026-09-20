@@ -19,168 +19,140 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
-	commonExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	processExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/process"
 	processStep "github.com/TencentBlueKing/bk-bscp/internal/task/step/process"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
-// UpdateRegisterTask 更新托管任务
-type UpdateRegisterTask struct {
+// DeleteTask 清除进程实例任务
+// 清除语义在下发前已按实例状态拆解为停止 / 取消托管（已停止且未托管的实例直接删库，不建任务），
+// 任务内以拆解后的实际操作类型执行，批次动作保持 delete 以区分任务类型。
+type DeleteTask struct {
 	*common.Builder
 	tenantID                  string
 	bizID                     uint32
 	batchID                   uint32
 	processID                 uint32
 	processInstanceID         uint32
-	operateType               table.ProcessOperateType
+	operateType               table.ProcessOperateType // 拆解后的实际操作（停止 / 取消托管）
 	operatorUser              string
 	originalProcManagedStatus table.ProcessManagedStatus // 原进程托管状态，用于后续状态回滚
 	originalProcStatus        table.ProcessStatus        // 原进程状态，用于后续状态回滚
 	ccSyncStatus              table.CCSyncStatus         // 进程 CC 同步状态（下发时刻快照），供状态类校验使用
-	enableProcessRestart      bool                       // 是否启停进程
+	taskType                  string                     // 任务批次的操作类型（delete）
 }
 
-// NewUpdateRegisterTask 创建一个更新托管任务
-func NewUpdateRegisterTask(
+// NewDeleteTask 创建一个清除进程实例任务
+func NewDeleteTask(
 	dao dao.Set,
 	tenantID string,
 	bizID uint32,
 	batchID uint32,
 	processID uint32,
 	processInstanceID uint32,
+	operateType table.ProcessOperateType,
 	operatorUser string,
 	originalProcManagedStatus table.ProcessManagedStatus,
 	originalProcStatus table.ProcessStatus,
 	ccSyncStatus table.CCSyncStatus,
-	enableProcessRestart bool,
+	taskType string,
 ) types.TaskBuilder {
-	return &UpdateRegisterTask{
+	return &DeleteTask{
 		Builder:                   common.NewBuilder(dao),
 		tenantID:                  tenantID,
 		bizID:                     bizID,
 		batchID:                   batchID,
 		processID:                 processID,
 		processInstanceID:         processInstanceID,
+		operateType:               operateType,
 		operatorUser:              operatorUser,
-		operateType:               table.UpdateRegisterProcessOperate, // 直接定义成更新托管信息
 		originalProcManagedStatus: originalProcManagedStatus,
 		originalProcStatus:        originalProcStatus,
 		ccSyncStatus:              ccSyncStatus,
-		enableProcessRestart:      enableProcessRestart,
+		taskType:                  taskType,
 	}
 }
 
 // FinalizeTask implements types.TaskBuilder.
-func (t *UpdateRegisterTask) FinalizeTask(task *types.Task) error {
+func (t *DeleteTask) FinalizeTask(task *types.Task) error {
 	// 设置通用进程信息（包括原始状态）
-	process, err := t.CommonProcessFinalize(task, t.tenantID, t.bizID, t.processID, t.processInstanceID)
-	if err != nil {
-		return err
-	}
-
-	// 更新托管语义：cc_sync_status == updated 时，DB source_data 是 CMDB 同步后的新配置
-	// （尚未注册到 GSE），机器上正在托管的是 prev_data。执行侧以 ConfigData 为「机器上的
-	// 旧配置」基准（停旧进程 / 判断是否需要重新注册），这里改写为 prev_data
-	commonPayload := &commonExecutor.TaskPayload{}
-	if err := task.GetCommonPayload(commonPayload); err != nil {
-		return err
-	}
-	commonPayload.ProcessPayload.ConfigData = process.Spec.PrevData
-	if err := task.SetCommonPayload(commonPayload); err != nil {
+	if _, err := t.CommonProcessFinalize(task, t.tenantID, t.bizID, t.processID, t.processInstanceID); err != nil {
 		return err
 	}
 
 	// 设置回调用于失败回滚
-	task.SetCallback(string(processExecutor.UpdateRegisterCallbackName))
+	task.SetCallback(string(processExecutor.DeleteCallbackName))
 
 	return nil
 }
 
 // Steps implements types.TaskBuilder.
-func (t *UpdateRegisterTask) Steps() ([]*types.Step, error) {
-	steps := make([]*types.Step, 0, 5)
-	// 1. 校验操作（必选）：对比 DB 配置与下发时刻 CMDB 最新快照，一致则后续 GSE 步骤自判断跳过
-	steps = append(steps,
-		processStep.ValidateOperateStep(
+func (t *DeleteTask) Steps() ([]*types.Step, error) {
+	// 构建任务的步骤（清除链路独立步骤集，不复用通用进程操作步骤）
+	return []*types.Step{
+		// 对比 DB 配置与 CMDB 最新配置（清除专属：缺失/不一致均放行，以 DB 配置清除）
+		processStep.DeleteCompareWithCMDBStep(
 			t.tenantID,
 			t.bizID,
 			t.batchID,
 			t.processID,
 			t.processInstanceID,
-			t.originalProcManagedStatus,
-			t.originalProcStatus,
 			t.operateType,
 			t.operatorUser,
-			t.enableProcessRestart,
+			t.originalProcManagedStatus,
+			t.originalProcStatus,
 			t.ccSyncStatus,
 		),
-	)
 
-	// 2. 是否需要重启进程：先停止旧进程（用旧配置的停止命令）
-	if t.enableProcessRestart {
-		steps = append(steps,
-			processStep.StopProcessStep(
-				t.tenantID,
-				t.bizID,
-				t.batchID,
-				t.processID,
-				t.processInstanceID,
-				t.originalProcManagedStatus,
-				t.originalProcStatus,
-			),
-		)
-	}
-
-	// 3. 更新托管信息（必选）：用 CMDB 最新配置重新托管
-	steps = append(steps,
-		processStep.RegisterProcessStep(
+		// 校验操作是否合法（属性矩阵 + 状态类校验）
+		processStep.DeleteValidateOperateStep(
 			t.tenantID,
 			t.bizID,
 			t.batchID,
 			t.processID,
 			t.processInstanceID,
+			t.operateType,
+			t.operatorUser,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
-	)
 
-	// 4. 是否需要重启进程：用新配置的启动命令拉起新进程
-	if t.enableProcessRestart {
-		steps = append(steps,
-			processStep.StartProcessStep(
-				t.tenantID,
-				t.bizID,
-				t.batchID,
-				t.processID,
-				t.processInstanceID,
-				t.originalProcManagedStatus,
-				t.originalProcStatus,
-			),
-		)
-	}
-
-	// 5. 进程操作完成（必选）：收敛进程实例状态
-	steps = append(steps,
-		processStep.OperationCompletedStep(
+		// 执行清除操作（停止 / 取消托管，用 DB 配置）
+		processStep.DeleteOperateStep(
 			t.tenantID,
 			t.bizID,
 			t.batchID,
 			t.processID,
 			t.processInstanceID,
+			t.operateType,
+			t.operatorUser,
 			t.originalProcManagedStatus,
 			t.originalProcStatus,
+			t.ccSyncStatus,
 		),
-	)
 
-	return steps, nil
+		// 清除操作完成，更新进程实例状态
+		processStep.DeleteFinalizeOperateStep(
+			t.tenantID,
+			t.bizID,
+			t.batchID,
+			t.processID,
+			t.processInstanceID,
+			t.operateType,
+			t.operatorUser,
+			t.originalProcManagedStatus,
+			t.originalProcStatus,
+			t.ccSyncStatus,
+		),
+	}, nil
 }
 
 // TaskInfo implements types.TaskBuilder.
-func (t *UpdateRegisterTask) TaskInfo() types.TaskInfo {
+func (t *DeleteTask) TaskInfo() types.TaskInfo {
 	return types.TaskInfo{
-		TaskName:      fmt.Sprintf("process_operate_%s_%d", t.operateType, t.processInstanceID),
-		TaskType:      string(t.operateType),        // 更新托管操作
+		TaskName:      fmt.Sprintf("process_operate_%s_%d", t.taskType, t.processInstanceID),
+		TaskType:      t.taskType,                   // 存具体的操作类型，防止任务详情拿到其他的任务
 		TaskIndexType: common.TaskIndexType,         // 任务一个索引类型，比如key，uuid等，
 		TaskIndex:     fmt.Sprintf("%d", t.batchID), // 任务索引，代表一批任务
 		Creator:       t.operatorUser,

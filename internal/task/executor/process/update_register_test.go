@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
@@ -89,6 +90,36 @@ func TestProcessInfoChanged(t *testing.T) {
 	}
 	if !processInfoChanged(base, diff) {
 		t.Fatalf("processInfoChanged(base, diff) = false, want true")
+	}
+}
+
+// TestNeedStopProcess 停止判定：GSE 实例任一 PID 大于 0 即视为运行中需要停止
+func TestNeedStopProcess(t *testing.T) {
+	cases := []struct {
+		name   string
+		status *gse.ProcessStatusContent
+		want   bool
+	}{
+		{"状态为空 -> 无需停止", nil, false},
+		{"无进程信息 -> 无需停止", &gse.ProcessStatusContent{}, false},
+		{"进程未运行 -> 无需停止", &gse.ProcessStatusContent{
+			Process: []gse.ProcessDetail{
+				{Instance: []gse.ProcessInstance{{PID: 0}}},
+			},
+		}, false},
+		{"进程运行中 -> 需要停止", &gse.ProcessStatusContent{
+			Process: []gse.ProcessDetail{
+				{Instance: []gse.ProcessInstance{{PID: 1234}}},
+			},
+		}, true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := needStopProcess(c.status); got != c.want {
+				t.Fatalf("needStopProcess() = %v, want %v", got, c.want)
+			}
+		})
 	}
 }
 

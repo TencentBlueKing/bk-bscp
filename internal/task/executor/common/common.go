@@ -160,7 +160,9 @@ type ProcessPayload struct {
 	CcProcessID   uint32 // CC 进程ID
 	HostInstSeq   uint32 // HostInstSeq：主机级别的自增ID
 	ModuleInstSeq uint32 // ModuleInstSeq：模块级别的自增ID
-	// ConfigData 进程启动相关配置（DB source_data），比如启动脚本，优先级等
+	// ConfigData 进程操作基准配置：普通进程操作为 DB source_data（机器当前配置）；
+	// 更新托管任务下发时改写为 DB prev_data（机器上正在托管的旧配置，
+	// 此时 source_data 是 CMDB 同步后尚未注册到 GSE 的新配置）
 	ConfigData string
 	// LatestConfigData CMDB 最新进程配置快照（下发 / 重试时批量拉取）。
 	// 空值表示进程已在 CMDB 删除或快照刷新降级；执行侧 ValidateOperate 对比本字段与 ConfigData
@@ -475,13 +477,15 @@ var taskActionTextMap = map[taskActionKey]string{
 	{table.TaskObjectConfigFile, table.TaskActionConfigCheck}:    "配置检查",
 
 	// 进程类
-	{table.TaskObjectProcess, table.TaskActionStart}:      "进程启动",
-	{table.TaskObjectProcess, table.TaskActionStop}:       "进程停止",
-	{table.TaskObjectProcess, table.TaskActionKill}:       "进程强制停止",
-	{table.TaskObjectProcess, table.TaskActionRestart}:    "进程重启",
-	{table.TaskObjectProcess, table.TaskActionReload}:     "进程重载",
-	{table.TaskObjectProcess, table.TaskActionRegister}:   "进程托管",
-	{table.TaskObjectProcess, table.TaskActionUnregister}: "进程取消托管",
+	{table.TaskObjectProcess, table.TaskActionStart}:          "进程启动",
+	{table.TaskObjectProcess, table.TaskActionStop}:           "进程停止",
+	{table.TaskObjectProcess, table.TaskActionKill}:           "进程强制停止",
+	{table.TaskObjectProcess, table.TaskActionRestart}:        "进程重启",
+	{table.TaskObjectProcess, table.TaskActionReload}:         "进程重载",
+	{table.TaskObjectProcess, table.TaskActionRegister}:       "进程托管",
+	{table.TaskObjectProcess, table.TaskActionUnregister}:     "进程取消托管",
+	{table.TaskObjectProcess, table.TaskActionUpdateRegister}: "进程更新托管信息",
+	{table.TaskObjectProcess, table.TaskActionDelete}:         "进程实例清除",
 }
 
 type taskActionKey struct {

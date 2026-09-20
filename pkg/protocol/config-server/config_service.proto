@@ -2146,13 +2146,32 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/inner_ips" body: "*" }
     };
   }
-  // 进程操作
+  // 进程操作（start、stop、register、unregister、restart、reload、kill）
   rpc OperateProcess(OperateProcessReq) returns (OperateProcessResp) {
     option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz_id/{biz_id}/process/operate"
       body: "*"
       additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/operate" body: "*" }
+    };
+  }
+  // 更新托管信息操作（update_register）
+  rpc OperateUpdateRegisterProcess(OperateUpdateRegisterProcessReq) returns (OperateProcessResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/process/update_register"
+      body: "*"
+      additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/update_register" body: "*" }
+    };
+  }
+  // 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
+  // 进程数量与实例数量一致时无缩容，无需清除）
+  rpc OperateDeleteProcess(OperateDeleteProcessReq) returns (OperateProcessResp) {
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
+    option (google.api.http) = {
+      post: "/api/v1/config/biz_id/{biz_id}/process/delete"
+      body: "*"
+      additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/delete" body: "*" }
     };
   }
   // 进程过滤条件
@@ -5803,15 +5822,24 @@ message OperateProcessReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   repeated uint32 process_ids = 2
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
-  repeated uint32 process_instance_ids = 3
-      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程实例ID" }];
+  reserved 3;  // 原 process_instance_ids
   string operate_type = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete"
+    description: "操作类型：start、stop、register、unregister、restart、reload、kill"
   }];
-  bool enable_process_restart = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "是否启停进程：默认为false，只有操作类型是update_register才有效"
-  }];
+  reserved 5;  // 原 enable_process_restart，已拆分至 OperateUpdateRegisterProcessReq
   pbproc.OperateRange operate_range = 6;
+}
+
+message OperateUpdateRegisterProcessReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 process_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
+  bool enable_process_restart = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否启停进程：默认为false" }];
+}
+
+message OperateDeleteProcessReq {
+  uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  uint32 process_id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
 }
 
 message OperateProcessResp {

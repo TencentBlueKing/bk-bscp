@@ -50,26 +50,6 @@ const (
 	DeleteProcessOperate ProcessOperateType = "delete"
 )
 
-// ValidateOperateType 验证操作类型是否有效
-func ValidateOperateType(operateType ProcessOperateType) error {
-	switch operateType {
-	case StartProcessOperate:
-	case StopProcessOperate:
-	case QueryStatusProcessOperate:
-	case RegisterProcessOperate:
-	case UnregisterProcessOperate:
-	case RestartProcessOperate:
-	case ReloadProcessOperate:
-	case KillProcessOperate:
-	case UpdateRegisterProcessOperate:
-	case DeleteProcessOperate:
-		return nil
-	default:
-		return fmt.Errorf("unsupported operation type: %s", operateType)
-	}
-	return nil
-}
-
 // ProcessOperatePriorityOrder 返回操作类型对应的优先级排序方向，与 gsekit 保持一致：
 // 启动 / 重载 / 强制停止按优先级升序（小的先执行），停止 / 重启按降序（大的先执行）。
 // 第二个返回值为 false 表示该操作不参与优先级分批，全部实例归为同一批并行下发；

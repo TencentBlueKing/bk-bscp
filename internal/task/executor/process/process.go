@@ -377,6 +377,19 @@ func getPendingInstanceSnapshot(t *taskTypes.Task) (*pendingInstanceSnapshot, er
 		}, nil
 	}
 
+	if step, ok := t.GetStep(DeleteValidateOperateStepName.String()); ok {
+		payload := &DeletePayload{}
+		if err := step.GetPayload(payload); err != nil {
+			return nil, fmt.Errorf("get payload of task %s failed: %w", t.TaskID, err)
+		}
+		return &pendingInstanceSnapshot{
+			bizID:           payload.BizID,
+			instanceID:      payload.ProcessInstanceID,
+			originalStatus:  payload.OriginalProcStatus,
+			originalManaged: payload.OriginalProcManagedStatus,
+		}, nil
+	}
+
 	return nil, fmt.Errorf("task %s has no validate step", t.TaskID)
 }
 

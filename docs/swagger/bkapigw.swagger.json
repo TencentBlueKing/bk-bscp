@@ -5864,7 +5864,7 @@
     },
     "/api/v1/config/biz_id/{bizId}/process/operate": {
       "post": {
-        "summary": "进程操作",
+        "summary": "进程操作（start、stop、register、unregister、restart、reload、kill）",
         "operationId": "Config_OperateProcess",
         "responses": {
           "200": {
@@ -5905,7 +5905,7 @@
     },
     "/api/v1/inner/config/biz_id/{bizId}/process/operate": {
       "post": {
-        "summary": "进程操作",
+        "summary": "进程操作（start、stop、register、unregister、restart、reload、kill）",
         "operationId": "Config_OperateProcess2",
         "responses": {
           "200": {
@@ -5936,6 +5936,170 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/ConfigOperateProcessBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process/update_register": {
+      "post": {
+        "summary": "更新托管信息操作（update_register）",
+        "operationId": "Config_OperateUpdateRegisterProcess",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateUpdateRegisterProcessBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz_id/{bizId}/process/update_register": {
+      "post": {
+        "summary": "更新托管信息操作（update_register）",
+        "operationId": "Config_OperateUpdateRegisterProcess2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateUpdateRegisterProcessBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process/delete": {
+      "post": {
+        "summary": "一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；\r\n进程数量与实例数量一致时无缩容，无需清除）",
+        "operationId": "Config_OperateDeleteProcess",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateDeleteProcessBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/inner/config/biz_id/{bizId}/process/delete": {
+      "post": {
+        "summary": "一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；\r\n进程数量与实例数量一致时无缩容，无需清除）",
+        "operationId": "Config_OperateDeleteProcess2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateDeleteProcessBody"
             }
           }
         ],
@@ -8697,6 +8861,16 @@
         }
       }
     },
+    "ConfigOperateDeleteProcessBody": {
+      "type": "object",
+      "properties": {
+        "processId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "进程ID"
+        }
+      }
+    },
     "ConfigOperateProcessBody": {
       "type": "object",
       "properties": {
@@ -8708,24 +8882,26 @@
           },
           "description": "进程ID"
         },
-        "processInstanceIds": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "description": "进程实例ID"
-        },
         "operateType": {
           "type": "string",
-          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete"
-        },
-        "enableProcessRestart": {
-          "type": "boolean",
-          "description": "是否启停进程：默认为false，只有操作类型是update_register才有效"
+          "description": "操作类型：start、stop、register、unregister、restart、reload、kill"
         },
         "operateRange": {
           "$ref": "#/definitions/pbprocOperateRange"
+        }
+      }
+    },
+    "ConfigOperateUpdateRegisterProcessBody": {
+      "type": "object",
+      "properties": {
+        "processId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "进程ID"
+        },
+        "enableProcessRestart": {
+          "type": "boolean",
+          "description": "是否启停进程：默认为false"
         }
       }
     },

@@ -226,6 +226,8 @@ const (
 	Data_ListProcess_FullMethodName                       = "/pbds.Data/ListProcess"
 	Data_ListProcessInnerIPs_FullMethodName               = "/pbds.Data/ListProcessInnerIPs"
 	Data_OperateProcess_FullMethodName                    = "/pbds.Data/OperateProcess"
+	Data_OperateUpdateRegisterProcess_FullMethodName      = "/pbds.Data/OperateUpdateRegisterProcess"
+	Data_OperateDeleteProcess_FullMethodName              = "/pbds.Data/OperateDeleteProcess"
 	Data_ProcessFilterOptions_FullMethodName              = "/pbds.Data/ProcessFilterOptions"
 	Data_SyncCmdbGseStatus_FullMethodName                 = "/pbds.Data/SyncCmdbGseStatus"
 	Data_ListTaskBatch_FullMethodName                     = "/pbds.Data/ListTaskBatch"
@@ -508,8 +510,13 @@ type DataClient interface {
 	ListProcess(ctx context.Context, in *ListProcessReq, opts ...grpc.CallOption) (*ListProcessResp, error)
 	// 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
 	ListProcessInnerIPs(ctx context.Context, in *ListProcessInnerIPsReq, opts ...grpc.CallOption) (*ListProcessInnerIPsResp, error)
-	// 进程操作
+	// 进程操作（start、stop、register、unregister、restart、reload、kill）
 	OperateProcess(ctx context.Context, in *OperateProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
+	// 更新托管信息操作（update_register）
+	OperateUpdateRegisterProcess(ctx context.Context, in *OperateUpdateRegisterProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
+	// 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
+	// 进程数量与实例数量一致时无缩容，无需清除）
+	OperateDeleteProcess(ctx context.Context, in *OperateDeleteProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
 	// 进程过滤条件
 	ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error)
 	// 同步cc和gse状态
@@ -2346,6 +2353,24 @@ func (c *dataClient) OperateProcess(ctx context.Context, in *OperateProcessReq, 
 	return out, nil
 }
 
+func (c *dataClient) OperateUpdateRegisterProcess(ctx context.Context, in *OperateUpdateRegisterProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error) {
+	out := new(OperateProcessResp)
+	err := c.cc.Invoke(ctx, Data_OperateUpdateRegisterProcess_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataClient) OperateDeleteProcess(ctx context.Context, in *OperateDeleteProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error) {
+	out := new(OperateProcessResp)
+	err := c.cc.Invoke(ctx, Data_OperateDeleteProcess_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dataClient) ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error) {
 	out := new(ProcessFilterOptionsResp)
 	err := c.cc.Invoke(ctx, Data_ProcessFilterOptions_FullMethodName, in, out, opts...)
@@ -3002,8 +3027,13 @@ type DataServer interface {
 	ListProcess(context.Context, *ListProcessReq) (*ListProcessResp, error)
 	// 进程 IP 查询：按 expression_scope 过滤命中进程，返回去重后的内网 IP 列表
 	ListProcessInnerIPs(context.Context, *ListProcessInnerIPsReq) (*ListProcessInnerIPsResp, error)
-	// 进程操作
+	// 进程操作（start、stop、register、unregister、restart、reload、kill）
 	OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error)
+	// 更新托管信息操作（update_register）
+	OperateUpdateRegisterProcess(context.Context, *OperateUpdateRegisterProcessReq) (*OperateProcessResp, error)
+	// 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
+	// 进程数量与实例数量一致时无缩容，无需清除）
+	OperateDeleteProcess(context.Context, *OperateDeleteProcessReq) (*OperateProcessResp, error)
 	// 进程过滤条件
 	ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error)
 	// 同步cc和gse状态
@@ -3671,6 +3701,12 @@ func (UnimplementedDataServer) ListProcessInnerIPs(context.Context, *ListProcess
 }
 func (UnimplementedDataServer) OperateProcess(context.Context, *OperateProcessReq) (*OperateProcessResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperateProcess not implemented")
+}
+func (UnimplementedDataServer) OperateUpdateRegisterProcess(context.Context, *OperateUpdateRegisterProcessReq) (*OperateProcessResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OperateUpdateRegisterProcess not implemented")
+}
+func (UnimplementedDataServer) OperateDeleteProcess(context.Context, *OperateDeleteProcessReq) (*OperateProcessResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method OperateDeleteProcess not implemented")
 }
 func (UnimplementedDataServer) ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProcessFilterOptions not implemented")
@@ -7317,6 +7353,42 @@ func _Data_OperateProcess_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Data_OperateUpdateRegisterProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OperateUpdateRegisterProcessReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).OperateUpdateRegisterProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_OperateUpdateRegisterProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).OperateUpdateRegisterProcess(ctx, req.(*OperateUpdateRegisterProcessReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Data_OperateDeleteProcess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OperateDeleteProcessReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataServer).OperateDeleteProcess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Data_OperateDeleteProcess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataServer).OperateDeleteProcess(ctx, req.(*OperateDeleteProcessReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Data_ProcessFilterOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ProcessFilterOptionsReq)
 	if err := dec(in); err != nil {
@@ -8945,6 +9017,14 @@ var Data_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OperateProcess",
 			Handler:    _Data_OperateProcess_Handler,
+		},
+		{
+			MethodName: "OperateUpdateRegisterProcess",
+			Handler:    _Data_OperateUpdateRegisterProcess_Handler,
+		},
+		{
+			MethodName: "OperateDeleteProcess",
+			Handler:    _Data_OperateDeleteProcess_Handler,
 		},
 		{
 			MethodName: "ProcessFilterOptions",

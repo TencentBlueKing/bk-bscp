@@ -99,7 +99,9 @@ type UpdateRegisterPayload struct {
 }
 
 // ValidateOperateStep 校验操作是否合法（快照对比 + 校验合一，任务内零 CMDB 查询）
-// 对比随任务下发的 DB 配置（ConfigData，即 DB source_data）与下发时刻 CMDB 最新快照（LatestConfigData）：
+// 对比随任务下发的机器旧配置（ConfigData，即下发时 DB prev_data，机器上正在托管的
+// 配置；此时 DB source_data 是 CMDB 同步后的新配置）与下发时刻 CMDB 最新快照
+// （LatestConfigData）：
 //   - 快照缺失（进程已在 CMDB 删除或下发时刷新降级）：无法比对直接报错，
 //     进程删除的落库标记由 CMDB 同步主路径兜底
 //   - 两者一致：无需执行任何 GSE 操作，后续 Stop / Register / Start 步骤自判断跳过，
@@ -155,7 +157,8 @@ func (u *UpdateRegisterExecutor) ValidateOperateStep(c *istep.Context) error {
 	return nil
 }
 
-// parseProcessConfigs 解析随任务下发的 DB 配置（ConfigData）与下发时刻 CMDB 最新快照（LatestConfigData）。
+// parseProcessConfigs 解析随任务下发的机器旧配置（ConfigData，即下发时 DB prev_data，
+// 机器上正在托管的配置）与下发时刻 CMDB 最新快照（LatestConfigData）。
 // LatestConfigData 为空表示进程已在 CMDB 删除或下发时快照刷新降级：更新托管无法与最新配置比对，
 // 直接报错（对齐普通进程操作「除停止外快照缺失即报错」的语义）
 func parseProcessConfigs(commonPayload *common.TaskPayload) (dbInfo, latestInfo table.ProcessInfo, err error) {
@@ -172,7 +175,8 @@ func parseProcessConfigs(commonPayload *common.TaskPayload) (dbInfo, latestInfo 
 	return dbInfo, latestInfo, nil
 }
 
-// processInfoChanged 对比 DB 配置与 CMDB 最新快照是否不一致（不一致才需要执行托管更新）
+// processInfoChanged 对比机器旧配置（下发时 DB prev_data）与 CMDB 最新快照是否不一致
+// （不一致才需要执行托管更新）
 func processInfoChanged(dbInfo, latestInfo table.ProcessInfo) bool {
 	return !reflect.DeepEqual(dbInfo, latestInfo)
 }
@@ -498,8 +502,8 @@ func (u *UpdateRegisterExecutor) Callback(c *istep.Context, cbErr error) error {
 			// 是否更新进程配置：仅由数量一致性决定
 			allRegisterSucceeded := snapshot.RegisterProcessSuccessCount == snapshot.TotalCount
 			if allRegisterSucceeded {
-				// prev_data 保留操作前 DB 配置；source_data 收敛为 CMDB 最新快照
-				// （配置一致时两者本就相同，等价于刷新同步状态）
+				// prev_data 保持为机器旧配置（ConfigData 即下发时的 prev_data，回写等值）；
+				// source_data 收敛为 CMDB 最新快照（配置一致时两者本就相同，等价于刷新同步状态）
 				sourceData := commonPayload.ProcessPayload.LatestConfigData
 				if sourceData == "" {
 					sourceData = commonPayload.ProcessPayload.ConfigData

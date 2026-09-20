@@ -130,8 +130,14 @@
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/{templateId}/template_revisions/list | [Config_ListTemplateRevisions2](#config-list-template-revisions2) | 获取模板版本列表 |
 | POST | /api/v1/config/biz/{bizId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound](#config-list-templates-not-bound) | 获取未绑定的模板列表 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/template_spaces/{templateSpaceId}/templates/list_not_bound | [Config_ListTemplatesNotBound2](#config-list-templates-not-bound2) | 获取未绑定的模板列表 |
-| POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作 |
-| POST | /api/v1/inner/config/biz_id/{bizId}/process/operate | [Config_OperateProcess2](#config-operate-process2) | 进程操作 |
+| POST | /api/v1/config/biz_id/{bizId}/process/delete | [Config_OperateDeleteProcess](#config-operate-delete-process) | 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
+进程数量与实例数量一致时无缩容，无需清除） |
+| POST | /api/v1/inner/config/biz_id/{bizId}/process/delete | [Config_OperateDeleteProcess2](#config-operate-delete-process2) | 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
+进程数量与实例数量一致时无缩容，无需清除） |
+| POST | /api/v1/config/biz_id/{bizId}/process/operate | [Config_OperateProcess](#config-operate-process) | 进程操作（start、stop、register、unregister、restart、reload、kill） |
+| POST | /api/v1/inner/config/biz_id/{bizId}/process/operate | [Config_OperateProcess2](#config-operate-process2) | 进程操作（start、stop、register、unregister、restart、reload、kill） |
+| POST | /api/v1/config/biz_id/{bizId}/process/update_register | [Config_OperateUpdateRegisterProcess](#config-operate-update-register-process) | 更新托管信息操作（update_register） |
+| POST | /api/v1/inner/config/biz_id/{bizId}/process/update_register | [Config_OperateUpdateRegisterProcess2](#config-operate-update-register-process2) | 更新托管信息操作（update_register） |
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance/{serviceInstanceId} | [Config_ProcessInstance](#config-process-instance) | 根据服务实例查询实例进程列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 根据服务模板查询模板进程列表 |
@@ -5457,7 +5463,77 @@ Content-Type: application/json
 {}
 ```
 
-### <span id="config-operate-process"></span> 进程操作 (*Config_OperateProcess*)
+### <span id="config-operate-delete-process"></span> 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；</br>进程数量与实例数量一致时无缩容，无需清除） (*Config_OperateDeleteProcess*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/process/delete
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| processId | int64 (formatted integer) |  | 进程ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/process/delete HTTP/1.1
+Content-Type: application/json
+
+{
+  "processId": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-operate-delete-process2"></span> 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；</br>进程数量与实例数量一致时无缩容，无需清除） (*Config_OperateDeleteProcess2*)
+
+```
+POST /api/v1/inner/config/biz_id/{bizId}/process/delete
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| processId | int64 (formatted integer) |  | 进程ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz_id/{bizId}/process/delete HTTP/1.1
+Content-Type: application/json
+
+{
+  "processId": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-operate-process"></span> 进程操作（start、stop、register、unregister、restart、reload、kill） (*Config_OperateProcess*)
 
 ```
 POST /api/v1/config/biz_id/{bizId}/process/operate
@@ -5468,11 +5544,9 @@ POST /api/v1/config/biz_id/{bizId}/process/operate
 | 参数名称 | 类型 | 是否必填 | 描述 |
 |------|--------|------|---------|
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
-| enableProcessRestart | boolean |  | 是否启停进程：默认为false，只有操作类型是update_register才有效 |
 | operateRange | [PbprocOperateRange](#pbproc-operate-range) |  |  |
-| operateType | string |  | 操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete |
+| operateType | string |  | 操作类型：start、stop、register、unregister、restart、reload、kill |
 | processIds | []int64 (formatted integer) |  | 进程ID |
-| processInstanceIds | []int64 (formatted integer) |  | 进程实例ID |
 
 #### 输出参数
 
@@ -5486,7 +5560,6 @@ POST /api/v1/config/biz_id/{bizId}/process/operate HTTP/1.1
 Content-Type: application/json
 
 {
-  "enableProcessRestart": false,
   "operateRange": {
     "configTemplateIds": [
       {}
@@ -5503,9 +5576,6 @@ Content-Type: application/json
   "operateType": "",
   "processIds": [
     {}
-  ],
-  "processInstanceIds": [
-    {}
   ]
 }
 ```
@@ -5516,7 +5586,7 @@ Content-Type: application/json
 {}
 ```
 
-### <span id="config-operate-process2"></span> 进程操作 (*Config_OperateProcess2*)
+### <span id="config-operate-process2"></span> 进程操作（start、stop、register、unregister、restart、reload、kill） (*Config_OperateProcess2*)
 
 ```
 POST /api/v1/inner/config/biz_id/{bizId}/process/operate
@@ -5527,11 +5597,9 @@ POST /api/v1/inner/config/biz_id/{bizId}/process/operate
 | 参数名称 | 类型 | 是否必填 | 描述 |
 |------|--------|------|---------|
 | bizId | int64 (formatted integer) | ✓ | 业务ID |
-| enableProcessRestart | boolean |  | 是否启停进程：默认为false，只有操作类型是update_register才有效 |
 | operateRange | [PbprocOperateRange](#pbproc-operate-range) |  |  |
-| operateType | string |  | 操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete |
+| operateType | string |  | 操作类型：start、stop、register、unregister、restart、reload、kill |
 | processIds | []int64 (formatted integer) |  | 进程ID |
-| processInstanceIds | []int64 (formatted integer) |  | 进程实例ID |
 
 #### 输出参数
 
@@ -5545,7 +5613,6 @@ POST /api/v1/inner/config/biz_id/{bizId}/process/operate HTTP/1.1
 Content-Type: application/json
 
 {
-  "enableProcessRestart": false,
   "operateRange": {
     "configTemplateIds": [
       {}
@@ -5562,10 +5629,81 @@ Content-Type: application/json
   "operateType": "",
   "processIds": [
     {}
-  ],
-  "processInstanceIds": [
-    {}
   ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-operate-update-register-process"></span> 更新托管信息操作（update_register） (*Config_OperateUpdateRegisterProcess*)
+
+```
+POST /api/v1/config/biz_id/{bizId}/process/update_register
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| enableProcessRestart | boolean |  | 是否启停进程：默认为false |
+| processId | int64 (formatted integer) |  | 进程ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz_id/{bizId}/process/update_register HTTP/1.1
+Content-Type: application/json
+
+{
+  "enableProcessRestart": false,
+  "processId": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-operate-update-register-process2"></span> 更新托管信息操作（update_register） (*Config_OperateUpdateRegisterProcess2*)
+
+```
+POST /api/v1/inner/config/biz_id/{bizId}/process/update_register
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| enableProcessRestart | boolean |  | 是否启停进程：默认为false |
+| processId | int64 (formatted integer) |  | 进程ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz_id/{bizId}/process/update_register HTTP/1.1
+Content-Type: application/json
+
+{
+  "enableProcessRestart": false,
+  "processId": 0
 }
 ```
 
@@ -7481,6 +7619,21 @@ Content-Type: application/json
 
 
 
+### <span id="config-operate-delete-process-body"></span> ConfigOperateDeleteProcessBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| processId | int64 (formatted integer)| `int64` |  | | 进程ID |  |
+
+
+
 ### <span id="config-operate-process-body"></span> ConfigOperateProcessBody
 
 
@@ -7492,11 +7645,25 @@ Content-Type: application/json
 
 | Name | Type | Go type | Required | Default | Description | Example |
 |------|------|---------|:--------:| ------- |-------------|---------|
-| enableProcessRestart | boolean| `bool` |  | | 是否启停进程：默认为false，只有操作类型是update_register才有效 |  |
 | operateRange | [PbprocOperateRange](#pbproc-operate-range)| `PbprocOperateRange` |  | |  |  |
-| operateType | string| `string` |  | | 操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete |  |
+| operateType | string| `string` |  | | 操作类型：start、stop、register、unregister、restart、reload、kill |  |
 | processIds | []int64 (formatted integer)| `[]int64` |  | | 进程ID |  |
-| processInstanceIds | []int64 (formatted integer)| `[]int64` |  | | 进程实例ID |  |
+
+
+
+### <span id="config-operate-update-register-process-body"></span> ConfigOperateUpdateRegisterProcessBody
+
+
+  
+
+
+
+**Properties**
+
+| Name | Type | Go type | Required | Default | Description | Example |
+|------|------|---------|:--------:| ------- |-------------|---------|
+| enableProcessRestart | boolean| `bool` |  | | 是否启停进程：默认为false |  |
+| processId | int64 (formatted integer)| `int64` |  | | 进程ID |  |
 
 
 
@@ -10309,7 +10476,7 @@ Content-Type: application/json
 | creator | string| `string` |  | | 创建者 |  |
 | executionTime | float (formatted number)| `float32` |  | | 执行时间(s) |  |
 | message | string| `string` |  | | 任务消息 |  |
-| status | string| `string` |  | | 任务状态 |  |
+| status | string| `string` |  | | 任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE。IGNORED 为任务框架原生终态，步骤发现目标态已满足（GSE 幂等错误码 828 重复启动 / 829 无需停止）时收敛，表示操作被幂等忽略 |  |
 | taskId | string| `string` |  | | 任务详情ID |  |
 | taskPayload | [PbtbTaskPayload](#pbtb-task-payload)| `PbtbTaskPayload` |  | | 进程配置快照 |  |
 
@@ -10375,7 +10542,7 @@ Content-Type: application/json
 |------|------|---------|:--------:| ------- |-------------|---------|
 | count | int64 (formatted integer)| `int64` |  | | 数量 |  |
 | message | string| `string` |  | | 状态描述 |  |
-| status | string| `string` |  | | 任务状态 |  |
+| status | string| `string` |  | | 任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE（五类，IGNORED 为任务框架原生终态） |  |
 
 
 

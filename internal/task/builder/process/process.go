@@ -74,7 +74,7 @@ func NewOperateTask(
 // FinalizeTask implements types.TaskBuilder.
 func (t *OperateTask) FinalizeTask(task *types.Task) error {
 	// 设置通用进程信息（包括原始状态）
-	if err := t.CommonProcessFinalize(task, t.tenantID, t.bizID, t.processID, t.processInstanceID); err != nil {
+	if _, err := t.CommonProcessFinalize(task, t.tenantID, t.bizID, t.processID, t.processInstanceID); err != nil {
 		return err
 	}
 

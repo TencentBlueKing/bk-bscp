@@ -39,58 +39,60 @@ func init() {
 }
 
 var messageKeyToIndex = map[string]int{
-	"%s and %s path file conflict":                             494,
-	"%s sub path is system reserved path, do not allow to use": 414,
+	"%s and %s path file conflict":                             501,
+	"%s sub path is system reserved path, do not allow to use": 419,
 	"%s type not supported":                                    29,
-	"Abnormal":                                                 282,
-	"ConfigCheck":                                              477,
-	"ConfigFile":                                               466,
-	"ConfigGenerate":                                           476,
-	"ConfigPublish":                                            475,
-	"Deleted":                                                  280,
-	"Executing":                                                478,
-	"ExecutionFailed":                                          480,
-	"ExecutionSuccessful":                                      479,
-	"Kill":                                                     472,
-	"Managed":                                                  276,
-	"Normal":                                                   279,
-	"NotRunning":                                               273,
-	"PartialFailure":                                           481,
-	"PartiallyManaged":                                         278,
-	"PartiallyRunning":                                         268,
-	"Process":                                                  467,
-	"Register":                                                 473,
-	"Reload":                                                   471,
-	"Reloading":                                                272,
-	"Restart":                                                  470,
-	"Restarting":                                               270,
-	"Running":                                                  267,
-	"Start":                                                    468,
-	"Starting":                                                 269,
-	"StartingManagement":                                       274,
-	"Stop":                                                     469,
-	"Stopping":                                                 271,
-	"StoppingManagement":                                       275,
-	"Unmanaged":                                                277,
-	"Unnamed Version":                                          367,
-	"Unregister":                                               474,
-	"Updated":                                                  281,
+	"Abnormal":                                                 289,
+	"ConfigCheck":                                              482,
+	"ConfigFile":                                               471,
+	"ConfigGenerate":                                           481,
+	"ConfigPublish":                                            480,
+	"Delete":                                                   484,
+	"Deleted":                                                  287,
+	"Executing":                                                485,
+	"ExecutionFailed":                                          487,
+	"ExecutionSuccessful":                                      486,
+	"Kill":                                                     477,
+	"Managed":                                                  283,
+	"Normal":                                                   286,
+	"NotRunning":                                               280,
+	"PartialFailure":                                           488,
+	"PartiallyManaged":                                         285,
+	"PartiallyRunning":                                         275,
+	"Process":                                                  472,
+	"Register":                                                 478,
+	"Reload":                                                   476,
+	"Reloading":                                                279,
+	"Restart":                                                  475,
+	"Restarting":                                               277,
+	"Running":                                                  274,
+	"Start":                                                    473,
+	"Starting":                                                 276,
+	"StartingManagement":                                       281,
+	"Stop":                                                     474,
+	"Stopping":                                                 278,
+	"StoppingManagement":                                       282,
+	"Unmanaged":                                                284,
+	"Unnamed Version":                                          372,
+	"Unregister":                                               479,
+	"UpdateRegister":                                           483,
+	"Updated":                                                  288,
 	"app %d not found":                                         58,
 	"app %s is not file type":                                  75,
 	"app alias %s already exists":                              53,
-	"app does not exist":                                       287,
-	"app is nil":                                               353,
+	"app does not exist":                                       294,
+	"app is nil":                                               358,
 	"app name %s already exists":                               52,
-	"app query failed":                                         288,
+	"app query failed":                                         295,
 	"app related biz %d is not exist":                          60,
-	"app spec is nil":                                          437,
-	"app's type can not be updated":                            439,
-	"appID can not be 0":                                       368,
-	"approval has been revoked, invalid tikcet status: %s": 303,
+	"app spec is nil":                                          442,
+	"app's type can not be updated":                            444,
+	"appID can not be 0":                                       373,
+	"approval has been revoked, invalid tikcet status: %s": 310,
 	"at least one config template group is required":       80,
-	"attachment not set":                      402,
-	"attachment should be set":                482,
-	"authorize failed":                        395,
+	"attachment not set":                      407,
+	"attachment should be set":                489,
+	"authorize failed":                        400,
 	"batch %d is not a config generate batch": 117,
 	"batch %s has %s failed task(s) (success %s), please regenerate the config before pushing":                 123,
 	"batch %s is still running (completed %s), please wait for the config generation to finish before pushing": 122,
@@ -106,21 +108,21 @@ var messageKeyToIndex = map[string]int{
 	"batch process count by service instances failed, err: %v":                                                 195,
 	"batch recovery config items failed":                                                                       19,
 	"batch recovery kv failed":                                                                                 43,
-	"batch update app template binding's failed, err: %s":                                                      330,
-	"batch update app template binding's failed, err: %v":                                                      335,
-	"batch update of template permissions failed, err: %s":                                                     338,
+	"batch update app template binding's failed, err: %s":                                                      335,
+	"batch update app template binding's failed, err: %v":                                                      340,
+	"batch update of template permissions failed, err: %s":                                                     343,
 	"batch upsert vault failed, err: %v":                                                                       234,
 	"biz id is required":                                                                                       79,
-	"bizID can not be 0":                                                                                       369,
+	"bizID can not be 0":                                                                                       374,
 	"biz_id is required":                                                                                       108,
-	"build process operate task failed, err: %v":                                                               255,
+	"build process operate task failed, err: %v":                                                               261,
 	"business query failed, err: %v":                                                                           59,
-	"calculate relative path failed, base: %s, dst: %s, err: %v":                                               489,
+	"calculate relative path failed, base: %s, dst: %s, err: %v":                                               496,
 	"cc_process_id is required":                                                                                110,
 	"check running config push tasks failed, err: %v":                                                          126,
 	"clearing draft area failed, err: %v":                                                                      233,
 	"client ids is empty":                                                                                      17,
-	"commit spec's content is empty":                                                                           446,
+	"commit spec's content is empty":                                                                           451,
 	"commit transaction failed, err: %v":                                                                       208,
 	"config instance not found, biz_id=%d, config_template_id=%d, cc_process_id=%d, module_inst_seq=%d": 150,
 	"config item %s format error":               32,
@@ -139,81 +141,81 @@ var messageKeyToIndex = map[string]int{
 	"config template version id is not latest":                                                        142,
 	"config template version id is required":                                                          82,
 	"config templates not found for ids: %s":                                                          92,
-	"content id can not set":                                                                          453,
-	"content signature should be lowercase":                                                           455,
-	"count app %d's config items failed, err: %v":                                                     357,
-	"count applications by environment failed":                                                        350,
-	"count applications under projects failed":                                                        351,
-	"count the number of app configs failed, err: %s":                                                 343,
+	"content id can not set":                                                                          458,
+	"content signature should be lowercase":                                                           460,
+	"count app %d's config items failed, err: %v":                                                     362,
+	"count applications by environment failed":                                                        355,
+	"count applications under projects failed":                                                        356,
+	"count the number of app configs failed, err: %s":                                                 348,
 	"count the number of kV files that have not been deleted failed, err: %v":                         237,
 	"count the number of service configurations failed, err: %s":                                      74,
-	"create app failed, err: %v":                                                                      355,
+	"create app failed, err: %v":                                                                      360,
 	"create batch failed, err: %v":                                                                    125,
 	"create config template failed, err: %v":                                                          182,
-	"create data failed, err: %v":                                                                     354,
+	"create data failed, err: %v":                                                                     359,
 	"create default template configuration space failed, err: %v":                                     188,
 	"create default template set failed, err: %v":                                                     190,
 	"create directory failed, err: %v":                                                                3,
-	"create file failed, path: %s, err: %v":                                                           492,
+	"create file failed, path: %s, err: %v":                                                           499,
 	"create kv failed, err: %v":                                                                       225,
-	"create parent directory failed, dir: %s, err: %v":                                                491,
-	"create release failed there is a certificate expiration exists":                                  307,
-	"create release failed there is a file conflict":                                                  306,
+	"create parent directory failed, dir: %s, err: %v":                                                498,
+	"create release failed there is a certificate expiration exists":                                  314,
+	"create release failed there is a file conflict":                                                  313,
 	"create run config generation or verification task failed, err: %v":                               148,
-	"create sync cmdb task failed, err: %v":                                                           311,
+	"create sync cmdb task failed, err: %v":                                                           318,
 	"create task batch failed, err: %v":                                                               252,
 	"create template and revision failed, err: %v":                                                    181,
 	"create template failed, err: %v":                                                                 183,
 	"create template revision failed, err: %v":                                                        185,
 	"create temporary directory failed, err: %v":                                                      4,
-	"db operation failed":                                                                             398,
+	"db operation failed":                                                                             403,
 	"decompress file failed, exceeding the maximum file limit threshold of %d":                        13,
 	"decompress the file. The size of file %s exceeds the maximum limit of %s":                        5,
 	"decompression failed, err: %v":                                                                   6,
-	"default_val %s is not a number type":                                                             485,
+	"default_val %s is not a number type":                                                             492,
 	"delete app failed, err: %v":                                                                      57,
 	"delete app related resources failed, err: %v":                                                    56,
 	"delete config template failed, err: %v":                                                          207,
 	"delete one app template binding instance by app id failed, err: %s":                              155,
 	"delete one app template variable failed, err: %s":                                                157,
-	"delete process instance %d failed, err: %v":                                                      265,
+	"delete process instance %d failed, err: %v":                                                      260,
 	"delete template failed, err: %v":                                                                 204,
 	"delete template from all sets failed, err: %v":                                                   206,
 	"delete template from template sets failed":                                                       47,
-	"delete template from template sets failed, err: %v":                                              333,
+	"delete template from template sets failed, err: %v":                                              338,
 	"delete template revision failed, err: %v":                                                        205,
+	"dispatch process operate task group failed, err: %v":                                             264,
 	"download template config failed, template id: %d, name: %s, path: %s, err: %v":                   152,
-	"environment application count failed":                                                            349,
-	"environment count failed":                                                                        360,
-	"environment creation failed":                                                                     363,
-	"environment deletion failed":                                                                     362,
+	"environment application count failed":                                                            354,
+	"environment count failed":                                                                        365,
+	"environment creation failed":                                                                     368,
+	"environment deletion failed":                                                                     367,
 	"environment does not exist":                                                                      218,
-	"environment is nil":                                                                              361,
+	"environment is nil":                                                                              366,
 	"environment is protected, cannot be deleted":                                                     214,
 	"environment list failed":                                                                         217,
 	"environment name %s already exists":                                                              213,
-	"environment query failed":                                                                        365,
-	"environment update failed":                                                                       364,
+	"environment query failed":                                                                        370,
+	"environment update failed":                                                                       369,
 	"expand ginclude failed, err: %v":                                                                 114,
 	"fetch all module details failed, err: %v":                                                        176,
 	"fetch all service template failed, err: %v":                                                      191,
 	"find topo brief failed, err: %v":                                                                 173,
 	"format error, please check the key: %s":                                                          31,
-	"get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: %v":                                    393,
+	"get 'kv_type' as a string \n\t\tfrom kv.Data failed, err: %v":                                    398,
 	"get a list of expired certificates failed, err: %v":                                              227,
-	"get absolute base path failed, baseDir: %s, err: %v":                                             487,
-	"get absolute destination path failed, path: %s, err: %v":                                         488,
+	"get absolute base path failed, baseDir: %s, err: %v":                                             494,
+	"get absolute destination path failed, path: %s, err: %v":                                         495,
 	"get all config templates failed, err: %v":                                                        86,
-	"get app %d's template binding failed, err: %v":                                                   358,
+	"get app %d's template binding failed, err: %v":                                                   363,
 	"get app fail, key: %s, err: %v":                                                                  223,
 	"get app failed, err: %v":                                                                         54,
-	"get app template bindings by template set ids, err: %s":                                          329,
-	"get app template bindings by template set ids, err: %v":                                          334,
+	"get app template bindings by template set ids, err: %s":                                          334,
+	"get app template bindings by template set ids, err: %v":                                          339,
 	"get batch failed, batch_id: %d, err: %v":                                                         116,
 	"get biz object attributes failed, err: %v":                                                       197,
-	"get business data failed, err: %v":                                                               312,
 	"get common payload failed, err: %v":                                                              104,
-	"get common payload from task failed, err: %v":                                                    320,
+	"get common payload from task failed, err: %v":                                                    326,
 	"get config item failed, err: %v":                                                                 153,
 	"get config template %d failed, err: %v":                                                          128,
 	"get config template by ID failed, err: %v":                                                       198,
@@ -228,10 +230,8 @@ var messageKeyToIndex = map[string]int{
 	"get kv (%d) failed, err: %v":                                                                     222,
 	"get latest template revision failed, err: %v":                                                    99,
 	"get latest template revision for config template %d failed, err: %v":                             129,
-	"get operate payload from task step failed, taskID: %s, err: %v":                                  325,
-	"get permission to apply failed, err: %v":                                                         396,
+	"get permission to apply failed, err: %v":                                                         401,
 	"get process failed, err: %v":                                                                     143,
-	"get process instance by ID %d failed, err: %v":                                                   326,
 	"get process instances by IDs failed, err: %v":                                                    246,
 	"get process instances by process IDs failed, err: %v":                                            239,
 	"get process instances failed, err: %v":                                                           95,
@@ -240,85 +240,86 @@ var messageKeyToIndex = map[string]int{
 	"get records greater than the latest released version failed, err: %v":                            163,
 	"get reference template set under this app failed, err: %s":                                       167,
 	"get source batch task data failed, err: %v":                                                      124,
-	"get task batch %d failed, err: %v":                                                               316,
+	"get task batch %d failed, err: %v":                                                               322,
 	"get task batch failed, err: %v":                                                                  135,
+	"get task common payload failed, err: %v":                                                         262,
 	"get task failed, err: %v":                                                                        105,
 	"get template binding relationships through business and service IDs failed, err: %s":             166,
 	"get template by ID failed, err: %v":                                                              203,
-	"get template count failed, err: %v":                                                              389,
+	"get template count failed, err: %v":                                                              394,
 	"get template failed, err: %v":                                                                    97,
-	"get template file failed, err: %v":                                                               309,
-	"get template release failed, err: %v":                                                            385,
-	"get template set count failed, err: %v":                                                          387,
-	"get template set data failed, err: %s":                                                           331,
-	"get template set failed, err: %s":                                                                340,
+	"get template file failed, err: %v":                                                               316,
+	"get template release failed, err: %v":                                                            390,
+	"get template set count failed, err: %v":                                                          392,
+	"get template set data failed, err: %s":                                                           336,
+	"get template set failed, err: %s":                                                                345,
 	"get template set failed, err: %v":                                                                180,
 	"get the current number of service config items failed, err: %v":                                  12,
 	"get the latest released version failed, err: %v":                                                 159,
-	"get the package associated with the app failed, err: %v":                                         308,
+	"get the package associated with the app failed, err: %v":                                         315,
 	"get the published config failed, err: %v":                                                        160,
 	"gray_percent key must be equal":                                                                  21,
 	"gray_percent value must be a valid percentage (1-99)":                                            22,
-	"grpc status with details failed, err: %v":                                                        397,
-	"hook is nil":                 366,
+	"grpc status with details failed, err: %v":                                                        402,
+	"hook is nil":                 371,
 	"hook name %s already exists": 219,
-	"id can not be set":           434,
+	"id can not be set":           439,
 	"id is required":              0,
-	"id should be set":            464,
-	"id should not be set":        400,
+	"id should be set":            469,
+	"id should not be set":        405,
 	"if gray_percent groups exist, all groups must contain gray_percent label": 44,
-	"invalid %s format: %v":            322,
-	"invalid app id":                   458,
-	"invalid argument":                 399,
-	"invalid attachment biz id":        462,
-	"invalid attachment project id":    463,
-	"invalid base directory":           486,
+	"invalid %s format: %v":            328,
+	"invalid app id":                   463,
+	"invalid argument":                 404,
+	"invalid attachment biz id":        467,
+	"invalid attachment project id":    468,
+	"invalid base directory":           493,
 	"invalid binding relationship":     145,
-	"invalid biz id":                   435,
-	"invalid biz_id":                   283,
-	"invalid commit spec's content id": 445,
-	"invalid config item id":           459,
-	"invalid content signature, should be config's sha256 value": 454,
-	"invalid data-type": 443,
-	"invalid environment name, length should be greater than 0":                                                                              431,
-	"invalid environment name, length should be less than or equal to 255":                                                                   432,
-	"invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number": 433,
-	"invalid environment type":                460,
+	"invalid biz id":                   440,
+	"invalid biz_id":                   290,
+	"invalid commit spec's content id": 450,
+	"invalid config item id":           464,
+	"invalid content signature, should be config's sha256 value": 459,
+	"invalid data-type": 448,
+	"invalid environment name, length should be greater than 0":                                                                              436,
+	"invalid environment name, length should be less than or equal to 255":                                                                   437,
+	"invalid environment name, only letters, numbers, underscores and hyphens are allowed,and it must start and end with a letter or number": 438,
+	"invalid environment type":                465,
 	"invalid file name":                       1,
-	"invalid file path":                       490,
-	"invalid memo, length should <= 200":      416,
-	"invalid name %s, name cannot all be '.'": 425,
-	"invalid name %s, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space": 426,
-	"invalid name, length should <= 128":                                                 419,
-	"invalid name, length should <= 64":                                                  424,
-	"invalid name, length should >= 1":                                                   418,
-	"invalid name, length should >= 9 and must start with prefix bk_bscp_ (ignore case)": 421,
-	"invalid name: %s, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number": 423,
-	"invalid name: %s, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)":                              422,
-	"invalid name: %s, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers":                      420,
-	"invalid namespace, length should <= 128":                                               428,
-	"invalid namespace, length should >= 1":                                                 427,
-	"invalid origin content signature, should be config's sha256 value":                     456,
-	"invalid path %s, length should <= 1024":                                                405,
-	"invalid path %s, length should >= 1":                                                   404,
-	"invalid path %s, the path must start with '/'":                                         406,
-	"invalid path %s, the pathcannot contain consecutive '/'":                               407,
-	"invalid path, length should <= 256":                                                    409,
-	"invalid path, length should >= 1":                                                      408,
-	"invalid path,path does not conform to the win file path format specification":          410,
-	"invalid publish_status: %s":                                                            292,
-	"invalid reload file path, should <= 128":                                               412,
-	"invalid spec, is nil":                                                                  436,
-	"invalid username, length should <= 32":                                                 430,
-	"invalid username, length should >= 1":                                                  429,
+	"invalid file path":                       497,
+	"invalid memo, length should <= 200":      421,
+	"invalid name %s, name cannot all be '.'": 430,
+	"invalid name %s, only allows Chinese, English, numbers, underscore (_), hyphen (-), dot (.) and space": 431,
+	"invalid name, length should <= 128":                                                 424,
+	"invalid name, length should <= 64":                                                  429,
+	"invalid name, length should >= 1":                                                   423,
+	"invalid name, length should >= 9 and must start with prefix bk_bscp_ (ignore case)": 426,
+	"invalid name: %s, only allows to include Chinese, English,numbers, underscore (_),hyphen (-), and must start and end with Chinese, English, or a number": 428,
+	"invalid name: %s, only allows to include english、numbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)":                              427,
+	"invalid name: %s, only allows to include english、numbers、underscore (_)、hyphen (-), and must start and end with an english、numbers":                      425,
+	"invalid namespace, length should <= 128":                                               433,
+	"invalid namespace, length should >= 1":                                                 432,
+	"invalid origin content signature, should be config's sha256 value":                     461,
+	"invalid path %s, length should <= 1024":                                                410,
+	"invalid path %s, length should >= 1":                                                   409,
+	"invalid path %s, the path must start with '/'":                                         411,
+	"invalid path %s, the pathcannot contain consecutive '/'":                               412,
+	"invalid path, length should <= 256":                                                    414,
+	"invalid path, length should >= 1":                                                      413,
+	"invalid path,path does not conform to the win file path format specification":          415,
+	"invalid publish_status: %s":                                                            299,
+	"invalid reload file path, should <= 128":                                               417,
+	"invalid spec, is nil":                                                                  441,
+	"invalid username, length should <= 32":                                                 435,
+	"invalid username, length should >= 1":                                                  434,
 	"json format error, err: %v":                                                            27,
-	"key should be set":                                                                     465,
+	"key should be set":                                                                     470,
 	"keys is required":                                                                      42,
 	"kv type does not match the data type defined in the application":                       224,
 	"latest revision not found for template %d":                                             89,
-	"list app template bindings by app ids failed, err: %s":                                 339,
-	"list applications by environment ids failed":                                           352,
-	"list apps by app ids failed, err: %s":                                                  342,
+	"list app template bindings by app ids failed, err: %s":                                 344,
+	"list applications by environment ids failed":                                           357,
+	"list apps by app ids failed, err: %s":                                                  347,
 	"list config instances by template ID failed, err: %v":                                  171,
 	"list config instances failed, err: %v":                                                 96,
 	"list config item failed, err: %v":                                                      11,
@@ -326,31 +327,31 @@ var messageKeyToIndex = map[string]int{
 	"list config templates by CC template process ID failed, err: %v":                       241,
 	"list config templates by ids failed, err: %v":                                          91,
 	"list config templates failed, err: %v":                                                 90,
-	"list distinct executors failed, err: %v":                                               314,
-	"list failed tasks from task storage failed, err: %v":                                   261,
+	"list distinct executors failed, err: %v":                                               320,
+	"list failed tasks from task storage failed, err: %v":                                   271,
 	"list filtered processes failed, err: %v":                                               94,
 	"list kv failed, err: %v":                                                               230,
 	"list latest revisions failed, err: %v":                                                 88,
 	"list proc template failed, err: %v":                                                    193,
-	"list process filter options (CC process IDs) failed, err: %v":                          259,
-	"list process filter options (aliases) failed, err: %v":                                 260,
-	"list process filter options (inner IP) failed, err: %v":                                266,
-	"list process filter options (modules) failed, err: %v":                                 257,
-	"list process filter options (service instances) failed, err: %v":                       258,
-	"list process filter options (sets) failed, err: %v":                                    256,
+	"list process filter options (CC process IDs) failed, err: %v":                          269,
+	"list process filter options (aliases) failed, err: %v":                                 270,
+	"list process filter options (inner IP) failed, err: %v":                                273,
+	"list process filter options (modules) failed, err: %v":                                 267,
+	"list process filter options (service instances) failed, err: %v":                       268,
+	"list process filter options (sets) failed, err: %v":                                    266,
 	"list process instance failed, err: %v":                                                 196,
 	"list processes by cc process IDs failed, err: %v":                                      200,
 	"list processes by process template IDs failed, err: %v":                                201,
 	"list processes by template process ids failed, err: %v":                                93,
-	"list processes failed for process instance topo, err: %v":                              262,
+	"list processes failed for process instance topo, err: %v":                              272,
 	"list processes failed, err: %v":                                                        177,
 	"list service instance failed, err: %v":                                                 194,
-	"list task batch failed, err: %v":                                                       313,
+	"list task batch failed, err: %v":                                                       319,
 	"list task failed, err: %v":                                                             118,
 	"list tasks failed, err: %v":                                                            103,
-	"list tasks from task storage failed for status %s, err: %v":                            321,
-	"list tasks from task storage failed, err: %v":                                          317,
-	"list tasks returned nil pagination":                                                    318,
+	"list tasks from task storage failed for status %s, err: %v":                            327,
+	"list tasks from task storage failed, err: %v":                                          323,
+	"list tasks returned nil pagination":                                                    324,
 	"list template config failed, err: %v":                                                  8,
 	"list template revisions by ids failed, err: %v":                                        100,
 	"list template revisions failed, err: %v":                                               71,
@@ -358,110 +359,115 @@ var messageKeyToIndex = map[string]int{
 	"list template sets by template set ids failed, err: %v":                                64,
 	"list template spaces failed, err: %v":                                                  66,
 	"list templates by IDs failed, err: %v":                                                 172,
-	"list templates by tuple failed, err: %v":                                               336,
-	"list templates data failed, err: %s":                                                   345,
+	"list templates by tuple failed, err: %v":                                               341,
+	"list templates data failed, err: %s":                                                   350,
 	"list templates failed, err: %v":                                                        15,
 	"list templates of template set failed, err: %v":                                        69,
-	"list templates revisions data failed, err: %s":                                         347,
-	"lists the latest version by template ids failed, err: %s":                              337,
-	"memo is required, can not be empty":                                                    415,
-	"name should be set":                                                                    461,
+	"list templates revisions data failed, err: %s":                                         352,
+	"lists the latest version by template ids failed, err: %s":                              342,
+	"memo is required, can not be empty":                                                    420,
+	"name should be set":                                                                    466,
 	"no available space or packages":                                                        170,
 	"no available topo nodes":                                                               174,
 	"no executable config bindings in the operate range":                                    87,
-	"no permission to approve":                                                              298,
-	"no permission to approve this ticket":                                                  293,
+	"no permission to approve":                                                              305,
+	"no permission to approve this ticket":                                                  300,
 	"no process instances found for process IDs %v":                                         251,
 	"no process instances found for processes matching operate range":                       245,
+	"no process instances need to operate":                                                  244,
 	"no processes found for biz %d with provided operate range":                             85,
 	"no processes found for biz %d with provided process IDs":                               250,
+	"no scaled down process instances to delete, processID: %d":                             257,
 	"no tasks to create":                                                                    146,
 	"no valid module IDs found":                                                             175,
 	"no valid tasks found for batch %d":                                                     134,
 	"non-gray_percent labels must be consistent across all gray_percent groups":             45,
 	"not a KV type service":                                                                 229,
 	"not legal JSON data":                                                                   26,
-	"not support table config type for now":                                                 440,
+	"not support table config type for now":                                                 445,
 	"obtain the number of configuration items":                                              165,
-	"operate process step not found for taskID: %s":                                         324,
-	"operate type is not supported: %v":                                                     243,
-	"origin content signature should be lowercase":                                          457,
-	"pass not allowed, current publish status is: %s":                                       299,
+	"operate type is not supported: %s":                                                     242,
+	"origin content signature should be lowercase":                                          462,
+	"pass not allowed, current publish status is: %s":                                       306,
 	"path cannot be empty":                                                                  209,
 	"path cannot contain null character":                                                    210,
 	"path contains invalid segment: %s":                                                     211,
 	"payload not found in task":                                                             149,
 	"please fill in the value of configuration item %s first":                               39,
 	"process %d is not in the config template":                                              101,
-	"process config view is not enabled for biz %d":                                         310,
-	"process instance with ID %d does not exist":                                            327,
+	"process cc sync status is %s, no need to update register":                              254,
+	"process config view is not enabled for biz %d":                                         317,
+	"process configs equal to cmdb latest config, no need to update register":               256,
 	"process instances not found for IDs %v":                                                247,
 	"process list is required":                                                              83,
 	"process not found for cc process id: %d":                                               98,
 	"process not found for cc_process_id: %d":                                               112,
 	"process not found for id %d":                                                           248,
-	"process not found in processMap, processID=%d":                                         254,
+	"process not found in processMap, processID=%d":                                         243,
 	"process payload is nil for task %s":                                                    132,
-	"project creation failed":                                                               373,
-	"project does not exist":                                                                370,
-	"project is nil":                                                                        372,
-	"project is protected, cannot be deleted":                                               284,
-	"project list failed":                                                                   286,
-	"project query failed":                                                                  371,
-	"project update failed":                                                                 374,
-	"publish not allowed, current publish status is: %s":                                    300,
+	"project creation failed":                                                               378,
+	"project does not exist":                                                                375,
+	"project is nil":                                                                        377,
+	"project is protected, cannot be deleted":                                               291,
+	"project list failed":                                                                   293,
+	"project query failed":                                                                  376,
+	"project update failed":                                                                 379,
+	"publish not allowed, current publish status is: %s":                                    307,
 	"query failed tasks failed, err: %v":                                                    139,
 	"query process by cc_process_id failed, err: %v":                                        111,
 	"query process instance failed, err: %v":                                                113,
-	"query_status operation is not supported":                                               244,
 	"read file failed, err: %v":                                                             2,
-	"reason can not empty":                                                                  297,
+	"reason can not empty":                                                                  304,
 	"recover config item failed, err: %v":                                                   162,
 	"recovery failed. A file with the same path exists and is not in a new state":           161,
+	"refresh retry task %s payload failed, err: %v":                                         331,
 	"regenerate task failed, err: %v":                                                       138,
-	"rejected not allowed, current publish status is: %s":                                   296,
-	"release %s is deprecated, can not be revoke":                                           291,
-	"release %s is deprecated, can not be submited":                                         289,
-	"release name %s already exists":                                                        294,
-	"reload file path is not the absolute path":                                             413,
-	"reload file path is required":                                                          411,
+	"rejected not allowed, current publish status is: %s":                                   303,
+	"release %s is deprecated, can not be revoke":                                           298,
+	"release %s is deprecated, can not be submited":                                         296,
+	"release name %s already exists":                                                        301,
+	"reload file path is not the absolute path":                                             418,
+	"reload file path is required":                                                          416,
 	"remove the template set bound to the app failed, err: %s":                              169,
 	"render template failed, err: %v":                                                       115,
 	"reset counts for retry failed, err: %v":                                                140,
-	"reset task batch counts for retry failed, batchID: %d, err: %v":                        323,
-	"resource name '%s' is prefixed with '%s' is reserved name, which is not allows to use": 417,
+	"reset task batch counts for retry failed, batchID: %d, err: %v":                        329,
+	"resource name '%s' is prefixed with '%s' is reserved name, which is not allows to use": 422,
 	"retrieve the referenced script failed, err: %s":                                        221,
-	"retry failed task %s failed, err: %v":                                                  328,
+	"retry failed task %s failed, err: %v":                                                  333,
 	"retry failed task failed, err: %v":                                                     141,
-	"revision not set":                                                                      403,
-	"revision should be set":                                                                483,
-	"revoked not allowed, current publish status is: %s":                                    295,
-	"same template variable name %s already exists":                                         348,
+	"retry task group %s failed, err: %v":                                                   330,
+	"revision not set":                                                                      408,
+	"revision should be set":                                                                490,
+	"revoked not allowed, current publish status is: %s":                                    302,
+	"same template variable name %s already exists":                                         353,
 	"save kv failed":                                                                        61,
 	"sensitive data is not visible, unable to view actual content":                          25,
 	"sensitive information cannot be exported":                                              16,
+	"set task common payload failed, err: %v":                                               263,
+	"set task group payload failed, err: %v":                                                265,
 	"some processes not found for biz %d":                                                   144,
-	"spec not set":                                                                          401,
-	"spec should be set":                                                                    444,
+	"spec not set":                                                                          406,
+	"spec should be set":                                                                    449,
 	"task batch %d does not exist":                                                          136,
-	"task is nil":                                                                           319,
+	"task is nil":                                                                           325,
 	"task not found: %s":                                                                    106,
-	"task storage is not initialized":                                                       315,
+	"task storage is not initialized":                                                       321,
 	"task storage not initialized":                                                          102,
-	"template %d is not exist":                                                              383,
-	"template data is empty":                                                                346,
-	"template id in %v is not belong to template set id %d":                                 392,
-	"template id in %v is not exist":                                                        378,
+	"template %d is not exist":                                                              388,
+	"template data is empty":                                                                351,
+	"template id in %v is not belong to template set id %d":                                 397,
+	"template id in %v is not exist":                                                        383,
 	"template not match template revision, template_id=%d, template_revision_id=%d":         151,
-	"template release %d is not exist":                                                      384,
-	"template revision id in %v is not exist":                                               380,
-	"template set %d is not exist":                                                          386,
+	"template release %d is not exist":                                                      389,
+	"template revision id in %v is not exist":                                               385,
+	"template set %d is not exist":                                                          391,
 	"template set %s not found":                                                             68,
-	"template set data is empty":                                                            344,
-	"template set id in %v is not exist":                                                    382,
+	"template set data is empty":                                                            349,
+	"template set id in %v is not exist":                                                    387,
 	"template space %s not found":                                                           67,
-	"template space id in %v is not exist":                                                  377,
-	"template space id should be set":                                                       484,
+	"template space id in %v is not exist":                                                  382,
+	"template space id should be set":                                                       491,
 	"template variable %s type error":                                                       50,
 	"template variable name must start with %s":                                             48,
 	"template version %s in template file %s\n\t\t\t\thas been removed. Please import the set again": 72,
@@ -479,64 +485,65 @@ var messageKeyToIndex = map[string]int{
 	"the specified type does not match the actual configuration":                                                                               55,
 	"the success task count of batch %s does not match its total count (settled %s), still inconsistent after waiting %s, config push aborted": 121,
 	"the template file %s in the template set\n\t\t\t\t%s has been removed. Please import the set again":                                       70,
-	"the total number of app %d's config items(including template and non-template)exceeded the limit %d":                                      359,
+	"the total number of app %d's config items(including template and non-template)exceeded the limit %d":                                      364,
 	"the total number of app %s config items(including template and non-template)exceeded the limit %d":                                        76,
 	"the total number of config items exceeded the limit %d":                                                                                   238,
 	"the total number of config items(including template and non-template)\n\t\t\texceeded the limit %d":                                       164,
-	"the total number of template set %d's templates exceeded the limit %d":                                                                    375,
-	"the total number of template set %s templates exceeded the limit %d":                                                                      341,
+	"the total number of template set %d's templates exceeded the limit %d":                                                                    380,
+	"the total number of template set %s templates exceeded the limit %d":                                                                      346,
 	"the type of config item %s is incorrect":                                                                                                  232,
 	"the version number %s in the template file %s is not the\n\t\tlatest version. Please import the set again":                                73,
 	"there are duplicate keys %s": 235,
-	"there are still active resources in the environments under this project, cannot be deleted": 285,
+	"there are still active resources in the environments under this project, cannot be deleted": 292,
 	"there are still app under the environments, please delete the app first":                    216,
-	"there are template sets under the template space, need to delete them first":                388,
-	"there are templates under the template space, need to delete them first":                    390,
-	"there is a release in publishing currently":                                                 290,
-	"there is no template file under this template set":                                          332,
-	"this ticket has been approved, no further processing is required":                           305,
-	"this ticket has been finished, no further processing is required":                           302,
-	"this ticket has been rejected, no further processing is required":                           304,
-	"this ticket has been revoked, no further processing is required":                            301,
-	"undefined task action":                                              46,
-	"unknown config type: %s":                                            438,
-	"unknown operation type: %s":                                         137,
-	"unsupported app reload type: %s":                                    442,
-	"unsupported config task mode: %v":                                   147,
-	"unsupported config type: %s":                                        441,
-	"unsupported file charset: %s":                                       451,
-	"unsupported file format: %s":                                        449,
-	"unsupported file mode: %s":                                          450,
-	"unsupported highlight style: %s":                                    452,
-	"unsupported managed status for delete: %s":                          263,
-	"unsupported process state for delete: status=%s managedStatus=%s":   264,
-	"unsupported variable type: %s":                                      51,
-	"update app failed, err: %s":                                         356,
-	"update app template binding failed, err: %v":                        65,
-	"update config template failed, err: %v":                             199,
-	"update kv failed, err: %v":                                          226,
-	"update process instance status failed, err: %v":                     253,
-	"update template failed, err: %v":                                    202,
-	"upload completed":                                                   9,
-	"upload completed, %d failed":                                        10,
-	"upload failed, please make sure the file size does not exceed %s":   14,
-	"upload file failed, err: %v":                                        7,
-	"validate page parameters failed, err: %v":                           77,
-	"validate template releases exist failed, err: %v":                   379,
-	"validate template sets exist failed, err: %v":                       381,
-	"validate templates exist failed, err: %v":                           376,
-	"validate templates in a template set failed, err: %v":               391,
-	"value type assertion failed, err: %v":                               394,
-	"verify Unix file paths failed, path: %s, err: %v":                   448,
-	"verify Windows file paths failed, path: %s, err: %v":                447,
-	"version number %s already exists. Please change it and try again.":  184,
-	"waiting for tasks of batch %s to settle is canceled, err: %v":       120,
-	"when ProcessInstanceId is specified, only one ProcessId is allowed": 242,
-	"write file failed, path: %s, err: %v":                               493,
-	"yaml format error, err: %v":                                         28,
+	"there are template sets under the template space, need to delete them first":                393,
+	"there are templates under the template space, need to delete them first":                    395,
+	"there is a release in publishing currently":                                                 297,
+	"there is no template file under this template set":                                          337,
+	"this ticket has been approved, no further processing is required":                           312,
+	"this ticket has been finished, no further processing is required":                           309,
+	"this ticket has been rejected, no further processing is required":                           311,
+	"this ticket has been revoked, no further processing is required":                            308,
+	"undefined task action":                                             46,
+	"unknown config type: %s":                                           443,
+	"unknown operation type: %s":                                        137,
+	"unsupported app reload type: %s":                                   447,
+	"unsupported config task mode: %v":                                  147,
+	"unsupported config type: %s":                                       446,
+	"unsupported file charset: %s":                                      456,
+	"unsupported file format: %s":                                       454,
+	"unsupported file mode: %s":                                         455,
+	"unsupported highlight style: %s":                                   457,
+	"unsupported managed status for delete: %s":                         258,
+	"unsupported process state for delete: status=%s managedStatus=%s":  259,
+	"unsupported variable type: %s":                                     51,
+	"update app failed, err: %s":                                        361,
+	"update app template binding failed, err: %v":                       65,
+	"update config template failed, err: %v":                            199,
+	"update kv failed, err: %v":                                         226,
+	"update process cc sync status failed, err: %v":                     255,
+	"update process instance status failed, err: %v":                    253,
+	"update retry task %s payload failed, err: %v":                      332,
+	"update template failed, err: %v":                                   202,
+	"upload completed":                                                  9,
+	"upload completed, %d failed":                                       10,
+	"upload failed, please make sure the file size does not exceed %s":  14,
+	"upload file failed, err: %v":                                       7,
+	"validate page parameters failed, err: %v":                          77,
+	"validate template releases exist failed, err: %v":                  384,
+	"validate template sets exist failed, err: %v":                      386,
+	"validate templates exist failed, err: %v":                          381,
+	"validate templates in a template set failed, err: %v":              396,
+	"value type assertion failed, err: %v":                              399,
+	"verify Unix file paths failed, path: %s, err: %v":                  453,
+	"verify Windows file paths failed, path: %s, err: %v":               452,
+	"version number %s already exists. Please change it and try again.": 184,
+	"waiting for tasks of batch %s to settle is canceled, err: %v":      120,
+	"write file failed, path: %s, err: %v":                              500,
+	"yaml format error, err: %v":                                        28,
 }
 
-var enIndex = []uint32{ // 496 elements
+var enIndex = []uint32{ // 503 elements
 	// Entry 0 - 1F
 	0x00000000, 0x0000000f, 0x00000021, 0x0000003e,
 	0x00000062, 0x00000090, 0x000000df, 0x00000100,
@@ -605,81 +612,83 @@ var enIndex = []uint32{ // 496 elements
 	0x00002952, 0x00002973, 0x00002989, 0x000029a4,
 	0x000029d1, 0x000029fc, 0x00002a23, 0x00002a49,
 	0x00002a68, 0x00002a8b, 0x00002ad6, 0x00002b10,
-	0x00002b48, 0x00002b82, 0x00002bc5, 0x00002c08,
-	0x00002c2d, 0x00002c55, 0x00002c95, 0x00002cc5,
-	0x00002cef, 0x00002d0e, 0x00002d2f, 0x00002d6a,
-	0x00002d9b, 0x00002dc0, 0x00002df2, 0x00002e23,
+	0x00002b48, 0x00002b82, 0x00002bc5, 0x00002bea,
+	0x00002c1b, 0x00002c40, 0x00002c80, 0x00002cb0,
+	0x00002cda, 0x00002cf9, 0x00002d1a, 0x00002d55,
+	0x00002d86, 0x00002dab, 0x00002ddd, 0x00002e19,
 	// Entry 100 - 11F
-	0x00002e51, 0x00002e87, 0x00002ec0, 0x00002f03,
-	0x00002f43, 0x00002f7c, 0x00002fb3, 0x00002fef,
-	0x0000301c, 0x00003063, 0x00003094, 0x000030ce,
-	0x000030d6, 0x000030e7, 0x000030f0, 0x000030fb,
-	0x00003104, 0x0000310e, 0x00003119, 0x0000312c,
-	0x0000313f, 0x00003147, 0x00003151, 0x00003162,
-	0x00003169, 0x00003171, 0x00003179, 0x00003182,
-	0x00003191, 0x000031b9, 0x00003214, 0x00003228,
+	0x00002e4a, 0x00002e92, 0x00002ecf, 0x00002efc,
+	0x00002f43, 0x00002f74, 0x00002fa2, 0x00002fcd,
+	0x00002ff8, 0x0000302f, 0x00003059, 0x0000308f,
+	0x000030c8, 0x0000310b, 0x0000314b, 0x00003184,
+	0x000031bb, 0x000031f7, 0x00003231, 0x00003239,
+	0x0000324a, 0x00003253, 0x0000325e, 0x00003267,
+	0x00003271, 0x0000327c, 0x0000328f, 0x000032a2,
+	0x000032aa, 0x000032b4, 0x000032c5, 0x000032cc,
 	// Entry 120 - 13F
-	0x0000323b, 0x0000324c, 0x0000327d, 0x000032a8,
-	0x000032d7, 0x000032f5, 0x0000331a, 0x0000333c,
-	0x00003372, 0x000033a9, 0x000033be, 0x000033d7,
-	0x0000340a, 0x00003440, 0x00003480, 0x000034c1,
-	0x000034f9, 0x0000353a, 0x0000357b, 0x000035aa,
-	0x000035e9, 0x00003624, 0x00003649, 0x0000367a,
-	0x000036a3, 0x000036c8, 0x000036eb, 0x00003716,
-	0x00003736, 0x0000375e, 0x0000378e, 0x000037b1,
+	0x000032d4, 0x000032dc, 0x000032e5, 0x000032f4,
+	0x0000331c, 0x00003377, 0x0000338b, 0x0000339e,
+	0x000033af, 0x000033e0, 0x0000340b, 0x0000343a,
+	0x00003458, 0x0000347d, 0x0000349f, 0x000034d5,
+	0x0000350c, 0x00003521, 0x0000353a, 0x0000356d,
+	0x000035a3, 0x000035e3, 0x00003624, 0x0000365c,
+	0x0000369d, 0x000036de, 0x0000370d, 0x0000374c,
+	0x00003787, 0x000037ac, 0x000037dd, 0x00003806,
 	// Entry 140 - 15F
-	0x000037bd, 0x000037ed, 0x0000382e, 0x0000384a,
-	0x0000388f, 0x000038c0, 0x00003905, 0x00003939,
-	0x00003967, 0x00003992, 0x000039cc, 0x00003a03,
-	0x00003a2c, 0x00003a5e, 0x00003a94, 0x00003ace,
-	0x00003b05, 0x00003b30, 0x00003b6c, 0x00003ba4,
-	0x00003bdd, 0x00003c01, 0x00003c4b, 0x00003c73,
-	0x00003ca6, 0x00003cc1, 0x00003ce8, 0x00003cff,
-	0x00003d30, 0x00003d61, 0x00003d86, 0x00003daf,
+	0x00003829, 0x00003854, 0x00003874, 0x0000389c,
+	0x000038cc, 0x000038ef, 0x000038fb, 0x0000392b,
+	0x0000396c, 0x00003988, 0x000039cd, 0x000039f7,
+	0x00003a2b, 0x00003a5e, 0x00003a89, 0x00003ac3,
+	0x00003afa, 0x00003b23, 0x00003b55, 0x00003b8b,
+	0x00003bc5, 0x00003bfc, 0x00003c27, 0x00003c63,
+	0x00003c9b, 0x00003cd4, 0x00003cf8, 0x00003d42,
+	0x00003d6a, 0x00003d9d, 0x00003db8, 0x00003ddf,
 	// Entry 160 - 17F
-	0x00003dd8, 0x00003e04, 0x00003e0f, 0x00003e2e,
-	0x00003e4c, 0x00003e6a, 0x00003e9c, 0x00003ed0,
-	0x00003f3a, 0x00003f53, 0x00003f66, 0x00003f82,
-	0x00003f9e, 0x00003fb8, 0x00003fd1, 0x00003fdd,
-	0x00003fed, 0x00004000, 0x00004013, 0x0000402a,
-	0x0000403f, 0x0000404e, 0x00004066, 0x0000407c,
-	0x000040c8, 0x000040f4, 0x0000411c, 0x0000413e,
-	0x00004172, 0x0000419d, 0x000041cd, 0x000041f3,
+	0x00003df6, 0x00003e27, 0x00003e58, 0x00003e7d,
+	0x00003ea6, 0x00003ecf, 0x00003efb, 0x00003f06,
+	0x00003f25, 0x00003f43, 0x00003f61, 0x00003f93,
+	0x00003fc7, 0x00004031, 0x0000404a, 0x0000405d,
+	0x00004079, 0x00004095, 0x000040af, 0x000040c8,
+	0x000040d4, 0x000040e4, 0x000040f7, 0x0000410a,
+	0x00004121, 0x00004136, 0x00004145, 0x0000415d,
+	0x00004173, 0x000041bf, 0x000041eb, 0x00004213,
 	// Entry 180 - 19F
-	0x0000420f, 0x00004233, 0x0000425b, 0x0000427b,
-	0x000042a5, 0x000042f1, 0x00004317, 0x0000435f,
-	0x00004397, 0x000043d3, 0x00004410, 0x00004438,
-	0x00004449, 0x00004474, 0x000044a0, 0x000044b4,
-	0x000044c5, 0x000044da, 0x000044e7, 0x000044fa,
-	0x0000450b, 0x00004532, 0x0000455c, 0x0000458d,
-	0x000045c8, 0x000045e9, 0x0000460c, 0x00004659,
-	0x00004676, 0x0000469e, 0x000046c8, 0x00004704,
+	0x00004235, 0x00004269, 0x00004294, 0x000042c4,
+	0x000042ea, 0x00004306, 0x0000432a, 0x00004352,
+	0x00004372, 0x0000439c, 0x000043e8, 0x0000440e,
+	0x00004456, 0x0000448e, 0x000044ca, 0x00004507,
+	0x0000452f, 0x00004540, 0x0000456b, 0x00004597,
+	0x000045ab, 0x000045bc, 0x000045d1, 0x000045de,
+	0x000045f1, 0x00004602, 0x00004629, 0x00004653,
+	0x00004684, 0x000046bf, 0x000046e0, 0x00004703,
 	// Entry 1A0 - 1BF
-	0x00004727, 0x0000474a, 0x000047a6, 0x000047c7,
-	0x000047ea, 0x00004878, 0x000048cb, 0x0000494d,
-	0x000049e8, 0x00004a0a, 0x00004a35, 0x00004a9e,
-	0x00004ac4, 0x00004aec, 0x00004b11, 0x00004b37,
-	0x00004b71, 0x00004bb6, 0x00004c3d, 0x00004c4f,
-	0x00004c5e, 0x00004c73, 0x00004c83, 0x00004c9e,
-	0x00004cbc, 0x00004ce2, 0x00004d01, 0x00004d24,
-	0x00004d36, 0x00004d49, 0x00004d6a, 0x00004d89,
+	0x00004750, 0x0000476d, 0x00004795, 0x000047bf,
+	0x000047fb, 0x0000481e, 0x00004841, 0x0000489d,
+	0x000048be, 0x000048e1, 0x0000496f, 0x000049c2,
+	0x00004a44, 0x00004adf, 0x00004b01, 0x00004b2c,
+	0x00004b95, 0x00004bbb, 0x00004be3, 0x00004c08,
+	0x00004c2e, 0x00004c68, 0x00004cad, 0x00004d34,
+	0x00004d46, 0x00004d55, 0x00004d6a, 0x00004d7a,
+	0x00004d95, 0x00004db3, 0x00004dd9, 0x00004df8,
 	// Entry 1C0 - 1DF
-	0x00004dc3, 0x00004dfa, 0x00004e19, 0x00004e36,
-	0x00004e56, 0x00004e79, 0x00004e90, 0x00004ecb,
-	0x00004ef1, 0x00004f33, 0x00004f60, 0x00004f6f,
-	0x00004f86, 0x00004f9f, 0x00004fb2, 0x00004fcc,
-	0x00004fea, 0x00004ffb, 0x0000500d, 0x00005018,
-	0x00005020, 0x00005026, 0x0000502b, 0x00005033,
-	0x0000503a, 0x0000503f, 0x00005048, 0x00005053,
-	0x00005061, 0x00005070, 0x0000507c, 0x00005086,
+	0x00004e1b, 0x00004e2d, 0x00004e40, 0x00004e61,
+	0x00004e80, 0x00004eba, 0x00004ef1, 0x00004f10,
+	0x00004f2d, 0x00004f4d, 0x00004f70, 0x00004f87,
+	0x00004fc2, 0x00004fe8, 0x0000502a, 0x00005057,
+	0x00005066, 0x0000507d, 0x00005096, 0x000050a9,
+	0x000050c3, 0x000050e1, 0x000050f2, 0x00005104,
+	0x0000510f, 0x00005117, 0x0000511d, 0x00005122,
+	0x0000512a, 0x00005131, 0x00005136, 0x0000513f,
 	// Entry 1E0 - 1FF
-	0x0000509a, 0x000050aa, 0x000050b9, 0x000050d2,
-	0x000050e9, 0x00005109, 0x00005130, 0x00005147,
-	0x00005181, 0x000051bf, 0x00005203, 0x00005215,
-	0x0000524c, 0x00005278, 0x000052a3, 0x000052c6,
-} // Size: 2008 bytes
+	0x0000514a, 0x00005158, 0x00005167, 0x00005173,
+	0x00005182, 0x00005189, 0x00005193, 0x000051a7,
+	0x000051b7, 0x000051c6, 0x000051df, 0x000051f6,
+	0x00005216, 0x0000523d, 0x00005254, 0x0000528e,
+	0x000052cc, 0x00005310, 0x00005322, 0x00005359,
+	0x00005385, 0x000053b0, 0x000053d3,
+} // Size: 2036 bytes
 
-const enData string = "" + // Size: 21190 bytes
+const enData string = "" + // Size: 21459 bytes
 	"\x02id is required\x02invalid file name\x02read file failed, err: %[1]v" +
 	"\x02create directory failed, err: %[1]v\x02create temporary directory fa" +
 	"iled, err: %[1]v\x02decompress the file. The size of file %[1]s exceeds " +
@@ -846,159 +855,163 @@ const enData string = "" + // Size: 21190 bytes
 	"r: %[1]v\x02the total number of config items exceeded the limit %[1]d" +
 	"\x02get process instances by process IDs failed, err: %[1]v\x02list conf" +
 	"ig templates by CC process ID failed, err: %[1]v\x02list config template" +
-	"s by CC template process ID failed, err: %[1]v\x02when ProcessInstanceId" +
-	" is specified, only one ProcessId is allowed\x02operate type is not supp" +
-	"orted: %[1]v\x02query_status operation is not supported\x02no process in" +
-	"stances found for processes matching operate range\x02get process instan" +
-	"ces by IDs failed, err: %[1]v\x02process instances not found for IDs %[1" +
-	"]v\x02process not found for id %[1]d\x02get processes failed, err: %[1]v" +
-	"\x02no processes found for biz %[1]d with provided process IDs\x02no pro" +
-	"cess instances found for process IDs %[1]v\x02create task batch failed, " +
-	"err: %[1]v\x02update process instance status failed, err: %[1]v\x02proce" +
-	"ss not found in processMap, processID=%[1]d\x02build process operate tas" +
-	"k failed, err: %[1]v\x02list process filter options (sets) failed, err: " +
-	"%[1]v\x02list process filter options (modules) failed, err: %[1]v\x02lis" +
-	"t process filter options (service instances) failed, err: %[1]v\x02list " +
-	"process filter options (CC process IDs) failed, err: %[1]v\x02list proce" +
-	"ss filter options (aliases) failed, err: %[1]v\x02list failed tasks from" +
-	" task storage failed, err: %[1]v\x02list processes failed for process in" +
-	"stance topo, err: %[1]v\x02unsupported managed status for delete: %[1]s" +
-	"\x02unsupported process state for delete: status=%[1]s managedStatus=%[2" +
-	"]s\x02delete process instance %[1]d failed, err: %[2]v\x02list process f" +
-	"ilter options (inner IP) failed, err: %[1]v\x02Running\x02PartiallyRunni" +
-	"ng\x02Starting\x02Restarting\x02Stopping\x02Reloading\x02NotRunning\x02S" +
-	"tartingManagement\x02StoppingManagement\x02Managed\x02Unmanaged\x02Parti" +
-	"allyManaged\x02Normal\x02Deleted\x02Updated\x02Abnormal\x02invalid biz_i" +
-	"d\x02project is protected, cannot be deleted\x02there are still active r" +
-	"esources in the environments under this project, cannot be deleted\x02pr" +
-	"oject list failed\x02app does not exist\x02app query failed\x02release %" +
-	"[1]s is deprecated, can not be submited\x02there is a release in publish" +
-	"ing currently\x02release %[1]s is deprecated, can not be revoke\x02inval" +
-	"id publish_status: %[1]s\x02no permission to approve this ticket\x02rele" +
-	"ase name %[1]s already exists\x02revoked not allowed, current publish st" +
-	"atus is: %[1]s\x02rejected not allowed, current publish status is: %[1]s" +
-	"\x02reason can not empty\x02no permission to approve\x02pass not allowed" +
-	", current publish status is: %[1]s\x02publish not allowed, current publi" +
-	"sh status is: %[1]s\x02this ticket has been revoked, no further processi" +
-	"ng is required\x02this ticket has been finished, no further processing i" +
-	"s required\x02approval has been revoked, invalid tikcet status: %[1]s" +
-	"\x02this ticket has been rejected, no further processing is required\x02" +
-	"this ticket has been approved, no further processing is required\x02crea" +
-	"te release failed there is a file conflict\x02create release failed ther" +
-	"e is a certificate expiration exists\x02get the package associated with " +
-	"the app failed, err: %[1]v\x02get template file failed, err: %[1]v\x02pr" +
-	"ocess config view is not enabled for biz %[1]d\x02create sync cmdb task " +
-	"failed, err: %[1]v\x02get business data failed, err: %[1]v\x02list task " +
-	"batch failed, err: %[1]v\x02list distinct executors failed, err: %[1]v" +
-	"\x02task storage is not initialized\x02get task batch %[1]d failed, err:" +
-	" %[2]v\x02list tasks from task storage failed, err: %[1]v\x02list tasks " +
-	"returned nil pagination\x02task is nil\x02get common payload from task f" +
-	"ailed, err: %[1]v\x02list tasks from task storage failed for status %[1]" +
-	"s, err: %[2]v\x02invalid %[1]s format: %[2]v\x02reset task batch counts " +
-	"for retry failed, batchID: %[1]d, err: %[2]v\x02operate process step not" +
-	" found for taskID: %[1]s\x02get operate payload from task step failed, t" +
-	"askID: %[1]s, err: %[2]v\x02get process instance by ID %[1]d failed, err" +
-	": %[2]v\x02process instance with ID %[1]d does not exist\x02retry failed" +
-	" task %[1]s failed, err: %[2]v\x02get app template bindings by template " +
-	"set ids, err: %[1]s\x02batch update app template binding's failed, err: " +
-	"%[1]s\x02get template set data failed, err: %[1]s\x02there is no templat" +
-	"e file under this template set\x02delete template from template sets fai" +
-	"led, err: %[1]v\x02get app template bindings by template set ids, err: %" +
-	"[1]v\x02batch update app template binding's failed, err: %[1]v\x02list t" +
-	"emplates by tuple failed, err: %[1]v\x02lists the latest version by temp" +
-	"late ids failed, err: %[1]s\x02batch update of template permissions fail" +
-	"ed, err: %[1]s\x02list app template bindings by app ids failed, err: %[1" +
-	"]s\x02get template set failed, err: %[1]s\x02the total number of templat" +
-	"e set %[1]s templates exceeded the limit %[2]d\x02list apps by app ids f" +
-	"ailed, err: %[1]s\x02count the number of app configs failed, err: %[1]s" +
-	"\x02template set data is empty\x02list templates data failed, err: %[1]s" +
-	"\x02template data is empty\x02list templates revisions data failed, err:" +
-	" %[1]s\x02same template variable name %[1]s already exists\x02environmen" +
-	"t application count failed\x02count applications by environment failed" +
-	"\x02count applications under projects failed\x02list applications by env" +
-	"ironment ids failed\x02app is nil\x02create data failed, err: %[1]v\x02c" +
-	"reate app failed, err: %[1]v\x02update app failed, err: %[1]s\x02count a" +
-	"pp %[1]d's config items failed, err: %[2]v\x02get app %[1]d's template b" +
-	"inding failed, err: %[2]v\x02the total number of app %[1]d's config item" +
-	"s(including template and non-template)exceeded the limit %[2]d\x02enviro" +
-	"nment count failed\x02environment is nil\x02environment deletion failed" +
-	"\x02environment creation failed\x02environment update failed\x02environm" +
-	"ent query failed\x02hook is nil\x02Unnamed Version\x02appID can not be 0" +
-	"\x02bizID can not be 0\x02project does not exist\x02project query failed" +
-	"\x02project is nil\x02project creation failed\x02project update failed" +
-	"\x02the total number of template set %[1]d's templates exceeded the limi" +
-	"t %[2]d\x02validate templates exist failed, err: %[1]v\x02template space" +
-	" id in %[1]v is not exist\x02template id in %[1]v is not exist\x02valida" +
-	"te template releases exist failed, err: %[1]v\x02template revision id in" +
-	" %[1]v is not exist\x02validate template sets exist failed, err: %[1]v" +
-	"\x02template set id in %[1]v is not exist\x02template %[1]d is not exist" +
-	"\x02template release %[1]d is not exist\x02get template release failed, " +
-	"err: %[1]v\x02template set %[1]d is not exist\x02get template set count " +
-	"failed, err: %[1]v\x02there are template sets under the template space, " +
-	"need to delete them first\x02get template count failed, err: %[1]v\x02th" +
-	"ere are templates under the template space, need to delete them first" +
-	"\x02validate templates in a template set failed, err: %[1]v\x02template " +
-	"id in %[1]v is not belong to template set id %[2]d\x02get 'kv_type' as a" +
-	" string \x0a\x09\x09from kv.Data failed, err: %[1]v\x02value type assert" +
-	"ion failed, err: %[1]v\x02authorize failed\x02get permission to apply fa" +
-	"iled, err: %[1]v\x02grpc status with details failed, err: %[1]v\x02db op" +
-	"eration failed\x02invalid argument\x02id should not be set\x02spec not s" +
-	"et\x02attachment not set\x02revision not set\x02invalid path %[1]s, leng" +
-	"th should >= 1\x02invalid path %[1]s, length should <= 1024\x02invalid p" +
-	"ath %[1]s, the path must start with '/'\x02invalid path %[1]s, the pathc" +
-	"annot contain consecutive '/'\x02invalid path, length should >= 1\x02inv" +
-	"alid path, length should <= 256\x02invalid path,path does not conform to" +
-	" the win file path format specification\x02reload file path is required" +
-	"\x02invalid reload file path, should <= 128\x02reload file path is not t" +
-	"he absolute path\x02%[1]s sub path is system reserved path, do not allow" +
-	" to use\x02memo is required, can not be empty\x02invalid memo, length sh" +
-	"ould <= 200\x02resource name '%[1]s' is prefixed with '%[2]s' is reserve" +
-	"d name, which is not allows to use\x02invalid name, length should >= 1" +
-	"\x02invalid name, length should <= 128\x02invalid name: %[1]s, only allo" +
-	"ws to include english、numbers、underscore (_)、hyphen (-), and must start " +
-	"and end with an english、numbers\x02invalid name, length should >= 9 and " +
-	"must start with prefix bk_bscp_ (ignore case)\x02invalid name: %[1]s, on" +
-	"ly allows to include english、numbers、underscore (_), and must start with" +
-	" prefix bk_bscp_ (ignore case)\x02invalid name: %[1]s, only allows to in" +
-	"clude Chinese, English,numbers, underscore (_),hyphen (-), and must star" +
-	"t and end with Chinese, English, or a number\x02invalid name, length sho" +
-	"uld <= 64\x02invalid name %[1]s, name cannot all be '.'\x02invalid name " +
-	"%[1]s, only allows Chinese, English, numbers, underscore (_), hyphen (-)" +
-	", dot (.) and space\x02invalid namespace, length should >= 1\x02invalid " +
-	"namespace, length should <= 128\x02invalid username, length should >= 1" +
-	"\x02invalid username, length should <= 32\x02invalid environment name, l" +
-	"ength should be greater than 0\x02invalid environment name, length shoul" +
-	"d be less than or equal to 255\x02invalid environment name, only letters" +
-	", numbers, underscores and hyphens are allowed,and it must start and end" +
-	" with a letter or number\x02id can not be set\x02invalid biz id\x02inval" +
-	"id spec, is nil\x02app spec is nil\x02unknown config type: %[1]s\x02app'" +
-	"s type can not be updated\x02not support table config type for now\x02un" +
-	"supported config type: %[1]s\x02unsupported app reload type: %[1]s\x02in" +
-	"valid data-type\x02spec should be set\x02invalid commit spec's content i" +
-	"d\x02commit spec's content is empty\x02verify Windows file paths failed," +
-	" path: %[1]s, err: %[2]v\x02verify Unix file paths failed, path: %[1]s, " +
-	"err: %[2]v\x02unsupported file format: %[1]s\x02unsupported file mode: %" +
-	"[1]s\x02unsupported file charset: %[1]s\x02unsupported highlight style: " +
-	"%[1]s\x02content id can not set\x02invalid content signature, should be " +
-	"config's sha256 value\x02content signature should be lowercase\x02invali" +
-	"d origin content signature, should be config's sha256 value\x02origin co" +
-	"ntent signature should be lowercase\x02invalid app id\x02invalid config " +
-	"item id\x02invalid environment type\x02name should be set\x02invalid att" +
-	"achment biz id\x02invalid attachment project id\x02id should be set\x02k" +
-	"ey should be set\x02ConfigFile\x02Process\x02Start\x02Stop\x02Restart" +
-	"\x02Reload\x02Kill\x02Register\x02Unregister\x02ConfigPublish\x02ConfigG" +
-	"enerate\x02ConfigCheck\x02Executing\x02ExecutionSuccessful\x02ExecutionF" +
-	"ailed\x02PartialFailure\x02attachment should be set\x02revision should b" +
-	"e set\x02template space id should be set\x02default_val %[1]s is not a n" +
-	"umber type\x02invalid base directory\x02get absolute base path failed, b" +
-	"aseDir: %[1]s, err: %[2]v\x02get absolute destination path failed, path:" +
-	" %[1]s, err: %[2]v\x02calculate relative path failed, base: %[1]s, dst: " +
-	"%[2]s, err: %[3]v\x02invalid file path\x02create parent directory failed" +
-	", dir: %[1]s, err: %[2]v\x02create file failed, path: %[1]s, err: %[2]v" +
+	"s by CC template process ID failed, err: %[1]v\x02operate type is not su" +
+	"pported: %[1]s\x02process not found in processMap, processID=%[1]d\x02no" +
+	" process instances need to operate\x02no process instances found for pro" +
+	"cesses matching operate range\x02get process instances by IDs failed, er" +
+	"r: %[1]v\x02process instances not found for IDs %[1]v\x02process not fou" +
+	"nd for id %[1]d\x02get processes failed, err: %[1]v\x02no processes foun" +
+	"d for biz %[1]d with provided process IDs\x02no process instances found " +
+	"for process IDs %[1]v\x02create task batch failed, err: %[1]v\x02update " +
+	"process instance status failed, err: %[1]v\x02process cc sync status is " +
+	"%[1]s, no need to update register\x02update process cc sync status faile" +
+	"d, err: %[1]v\x02process configs equal to cmdb latest config, no need to" +
+	" update register\x02no scaled down process instances to delete, processI" +
+	"D: %[1]d\x02unsupported managed status for delete: %[1]s\x02unsupported " +
+	"process state for delete: status=%[1]s managedStatus=%[2]s\x02delete pro" +
+	"cess instance %[1]d failed, err: %[2]v\x02build process operate task fai" +
+	"led, err: %[1]v\x02get task common payload failed, err: %[1]v\x02set tas" +
+	"k common payload failed, err: %[1]v\x02dispatch process operate task gro" +
+	"up failed, err: %[1]v\x02set task group payload failed, err: %[1]v\x02li" +
+	"st process filter options (sets) failed, err: %[1]v\x02list process filt" +
+	"er options (modules) failed, err: %[1]v\x02list process filter options (" +
+	"service instances) failed, err: %[1]v\x02list process filter options (CC" +
+	" process IDs) failed, err: %[1]v\x02list process filter options (aliases" +
+	") failed, err: %[1]v\x02list failed tasks from task storage failed, err:" +
+	" %[1]v\x02list processes failed for process instance topo, err: %[1]v" +
+	"\x02list process filter options (inner IP) failed, err: %[1]v\x02Running" +
+	"\x02PartiallyRunning\x02Starting\x02Restarting\x02Stopping\x02Reloading" +
+	"\x02NotRunning\x02StartingManagement\x02StoppingManagement\x02Managed" +
+	"\x02Unmanaged\x02PartiallyManaged\x02Normal\x02Deleted\x02Updated\x02Abn" +
+	"ormal\x02invalid biz_id\x02project is protected, cannot be deleted\x02th" +
+	"ere are still active resources in the environments under this project, c" +
+	"annot be deleted\x02project list failed\x02app does not exist\x02app que" +
+	"ry failed\x02release %[1]s is deprecated, can not be submited\x02there i" +
+	"s a release in publishing currently\x02release %[1]s is deprecated, can " +
+	"not be revoke\x02invalid publish_status: %[1]s\x02no permission to appro" +
+	"ve this ticket\x02release name %[1]s already exists\x02revoked not allow" +
+	"ed, current publish status is: %[1]s\x02rejected not allowed, current pu" +
+	"blish status is: %[1]s\x02reason can not empty\x02no permission to appro" +
+	"ve\x02pass not allowed, current publish status is: %[1]s\x02publish not " +
+	"allowed, current publish status is: %[1]s\x02this ticket has been revoke" +
+	"d, no further processing is required\x02this ticket has been finished, n" +
+	"o further processing is required\x02approval has been revoked, invalid t" +
+	"ikcet status: %[1]s\x02this ticket has been rejected, no further process" +
+	"ing is required\x02this ticket has been approved, no further processing " +
+	"is required\x02create release failed there is a file conflict\x02create " +
+	"release failed there is a certificate expiration exists\x02get the packa" +
+	"ge associated with the app failed, err: %[1]v\x02get template file faile" +
+	"d, err: %[1]v\x02process config view is not enabled for biz %[1]d\x02cre" +
+	"ate sync cmdb task failed, err: %[1]v\x02list task batch failed, err: %[" +
+	"1]v\x02list distinct executors failed, err: %[1]v\x02task storage is not" +
+	" initialized\x02get task batch %[1]d failed, err: %[2]v\x02list tasks fr" +
+	"om task storage failed, err: %[1]v\x02list tasks returned nil pagination" +
+	"\x02task is nil\x02get common payload from task failed, err: %[1]v\x02li" +
+	"st tasks from task storage failed for status %[1]s, err: %[2]v\x02invali" +
+	"d %[1]s format: %[2]v\x02reset task batch counts for retry failed, batch" +
+	"ID: %[1]d, err: %[2]v\x02retry task group %[1]s failed, err: %[2]v\x02re" +
+	"fresh retry task %[1]s payload failed, err: %[2]v\x02update retry task %" +
+	"[1]s payload failed, err: %[2]v\x02retry failed task %[1]s failed, err: " +
+	"%[2]v\x02get app template bindings by template set ids, err: %[1]s\x02ba" +
+	"tch update app template binding's failed, err: %[1]s\x02get template set" +
+	" data failed, err: %[1]s\x02there is no template file under this templat" +
+	"e set\x02delete template from template sets failed, err: %[1]v\x02get ap" +
+	"p template bindings by template set ids, err: %[1]v\x02batch update app " +
+	"template binding's failed, err: %[1]v\x02list templates by tuple failed," +
+	" err: %[1]v\x02lists the latest version by template ids failed, err: %[1" +
+	"]s\x02batch update of template permissions failed, err: %[1]s\x02list ap" +
+	"p template bindings by app ids failed, err: %[1]s\x02get template set fa" +
+	"iled, err: %[1]s\x02the total number of template set %[1]s templates exc" +
+	"eeded the limit %[2]d\x02list apps by app ids failed, err: %[1]s\x02coun" +
+	"t the number of app configs failed, err: %[1]s\x02template set data is e" +
+	"mpty\x02list templates data failed, err: %[1]s\x02template data is empty" +
+	"\x02list templates revisions data failed, err: %[1]s\x02same template va" +
+	"riable name %[1]s already exists\x02environment application count failed" +
+	"\x02count applications by environment failed\x02count applications under" +
+	" projects failed\x02list applications by environment ids failed\x02app i" +
+	"s nil\x02create data failed, err: %[1]v\x02create app failed, err: %[1]v" +
+	"\x02update app failed, err: %[1]s\x02count app %[1]d's config items fail" +
+	"ed, err: %[2]v\x02get app %[1]d's template binding failed, err: %[2]v" +
+	"\x02the total number of app %[1]d's config items(including template and " +
+	"non-template)exceeded the limit %[2]d\x02environment count failed\x02env" +
+	"ironment is nil\x02environment deletion failed\x02environment creation f" +
+	"ailed\x02environment update failed\x02environment query failed\x02hook i" +
+	"s nil\x02Unnamed Version\x02appID can not be 0\x02bizID can not be 0\x02" +
+	"project does not exist\x02project query failed\x02project is nil\x02proj" +
+	"ect creation failed\x02project update failed\x02the total number of temp" +
+	"late set %[1]d's templates exceeded the limit %[2]d\x02validate template" +
+	"s exist failed, err: %[1]v\x02template space id in %[1]v is not exist" +
+	"\x02template id in %[1]v is not exist\x02validate template releases exis" +
+	"t failed, err: %[1]v\x02template revision id in %[1]v is not exist\x02va" +
+	"lidate template sets exist failed, err: %[1]v\x02template set id in %[1]" +
+	"v is not exist\x02template %[1]d is not exist\x02template release %[1]d " +
+	"is not exist\x02get template release failed, err: %[1]v\x02template set " +
+	"%[1]d is not exist\x02get template set count failed, err: %[1]v\x02there" +
+	" are template sets under the template space, need to delete them first" +
+	"\x02get template count failed, err: %[1]v\x02there are templates under t" +
+	"he template space, need to delete them first\x02validate templates in a " +
+	"template set failed, err: %[1]v\x02template id in %[1]v is not belong to" +
+	" template set id %[2]d\x02get 'kv_type' as a string \x0a\x09\x09from kv." +
+	"Data failed, err: %[1]v\x02value type assertion failed, err: %[1]v\x02au" +
+	"thorize failed\x02get permission to apply failed, err: %[1]v\x02grpc sta" +
+	"tus with details failed, err: %[1]v\x02db operation failed\x02invalid ar" +
+	"gument\x02id should not be set\x02spec not set\x02attachment not set\x02" +
+	"revision not set\x02invalid path %[1]s, length should >= 1\x02invalid pa" +
+	"th %[1]s, length should <= 1024\x02invalid path %[1]s, the path must sta" +
+	"rt with '/'\x02invalid path %[1]s, the pathcannot contain consecutive '/" +
+	"'\x02invalid path, length should >= 1\x02invalid path, length should <= " +
+	"256\x02invalid path,path does not conform to the win file path format sp" +
+	"ecification\x02reload file path is required\x02invalid reload file path," +
+	" should <= 128\x02reload file path is not the absolute path\x02%[1]s sub" +
+	" path is system reserved path, do not allow to use\x02memo is required, " +
+	"can not be empty\x02invalid memo, length should <= 200\x02resource name " +
+	"'%[1]s' is prefixed with '%[2]s' is reserved name, which is not allows t" +
+	"o use\x02invalid name, length should >= 1\x02invalid name, length should" +
+	" <= 128\x02invalid name: %[1]s, only allows to include english、numbers、u" +
+	"nderscore (_)、hyphen (-), and must start and end with an english、numbers" +
+	"\x02invalid name, length should >= 9 and must start with prefix bk_bscp_" +
+	" (ignore case)\x02invalid name: %[1]s, only allows to include english、nu" +
+	"mbers、underscore (_), and must start with prefix bk_bscp_ (ignore case)" +
+	"\x02invalid name: %[1]s, only allows to include Chinese, English,numbers" +
+	", underscore (_),hyphen (-), and must start and end with Chinese, Englis" +
+	"h, or a number\x02invalid name, length should <= 64\x02invalid name %[1]" +
+	"s, name cannot all be '.'\x02invalid name %[1]s, only allows Chinese, En" +
+	"glish, numbers, underscore (_), hyphen (-), dot (.) and space\x02invalid" +
+	" namespace, length should >= 1\x02invalid namespace, length should <= 12" +
+	"8\x02invalid username, length should >= 1\x02invalid username, length sh" +
+	"ould <= 32\x02invalid environment name, length should be greater than 0" +
+	"\x02invalid environment name, length should be less than or equal to 255" +
+	"\x02invalid environment name, only letters, numbers, underscores and hyp" +
+	"hens are allowed,and it must start and end with a letter or number\x02id" +
+	" can not be set\x02invalid biz id\x02invalid spec, is nil\x02app spec is" +
+	" nil\x02unknown config type: %[1]s\x02app's type can not be updated\x02n" +
+	"ot support table config type for now\x02unsupported config type: %[1]s" +
+	"\x02unsupported app reload type: %[1]s\x02invalid data-type\x02spec shou" +
+	"ld be set\x02invalid commit spec's content id\x02commit spec's content i" +
+	"s empty\x02verify Windows file paths failed, path: %[1]s, err: %[2]v\x02" +
+	"verify Unix file paths failed, path: %[1]s, err: %[2]v\x02unsupported fi" +
+	"le format: %[1]s\x02unsupported file mode: %[1]s\x02unsupported file cha" +
+	"rset: %[1]s\x02unsupported highlight style: %[1]s\x02content id can not " +
+	"set\x02invalid content signature, should be config's sha256 value\x02con" +
+	"tent signature should be lowercase\x02invalid origin content signature, " +
+	"should be config's sha256 value\x02origin content signature should be lo" +
+	"wercase\x02invalid app id\x02invalid config item id\x02invalid environme" +
+	"nt type\x02name should be set\x02invalid attachment biz id\x02invalid at" +
+	"tachment project id\x02id should be set\x02key should be set\x02ConfigFi" +
+	"le\x02Process\x02Start\x02Stop\x02Restart\x02Reload\x02Kill\x02Register" +
+	"\x02Unregister\x02ConfigPublish\x02ConfigGenerate\x02ConfigCheck\x02Upda" +
+	"teRegister\x02Delete\x02Executing\x02ExecutionSuccessful\x02ExecutionFai" +
+	"led\x02PartialFailure\x02attachment should be set\x02revision should be " +
+	"set\x02template space id should be set\x02default_val %[1]s is not a num" +
+	"ber type\x02invalid base directory\x02get absolute base path failed, bas" +
+	"eDir: %[1]s, err: %[2]v\x02get absolute destination path failed, path: %" +
+	"[1]s, err: %[2]v\x02calculate relative path failed, base: %[1]s, dst: %[" +
+	"2]s, err: %[3]v\x02invalid file path\x02create parent directory failed, " +
+	"dir: %[1]s, err: %[2]v\x02create file failed, path: %[1]s, err: %[2]v" +
 	"\x02write file failed, path: %[1]s, err: %[2]v\x02%[1]s and %[2]s path f" +
 	"ile conflict"
 
-var zhIndex = []uint32{ // 496 elements
+var zhIndex = []uint32{ // 503 elements
 	// Entry 0 - 1F
 	0x00000000, 0x0000000f, 0x00000022, 0x00000041,
 	0x00000060, 0x00000085, 0x000000d1, 0x000000ea,
@@ -1067,81 +1080,83 @@ var zhIndex = []uint32{ // 496 elements
 	0x0000246b, 0x0000248a, 0x000024a2, 0x000024c3,
 	0x000024ea, 0x0000250d, 0x0000252f, 0x00002558,
 	0x0000256e, 0x00002595, 0x000025cd, 0x000025ef,
-	0x00002622, 0x00002657, 0x00002692, 0x000026c8,
-	0x000026e8, 0x00002704, 0x00002732, 0x00002760,
-	0x00002788, 0x000027a7, 0x000027c6, 0x000027f5,
-	0x00002820, 0x00002845, 0x00002870, 0x0000289e,
+	0x00002622, 0x00002657, 0x00002692, 0x00002692,
+	0x000026c0, 0x000026c0, 0x000026ee, 0x0000271c,
+	0x00002744, 0x00002763, 0x00002782, 0x000027b1,
+	0x000027dc, 0x00002801, 0x0000282c, 0x0000282c,
 	// Entry 100 - 11F
-	0x000028c9, 0x000028fc, 0x0000292f, 0x00002968,
-	0x0000299f, 0x000029d2, 0x00002a06, 0x00002a3a,
-	0x00002a60, 0x00002aa1, 0x00002acb, 0x00002b00,
-	0x00002b0a, 0x00002b1a, 0x00002b24, 0x00002b2e,
-	0x00002b38, 0x00002b42, 0x00002b4c, 0x00002b59,
-	0x00002b66, 0x00002b70, 0x00002b7a, 0x00002b87,
-	0x00002b8e, 0x00002b98, 0x00002ba2, 0x00002ba9,
-	0x00002bb5, 0x00002bd4, 0x00002c11, 0x00002c2a,
+	0x0000285b, 0x0000285b, 0x0000285b, 0x00002881,
+	0x000028c2, 0x000028ec, 0x00002917, 0x00002917,
+	0x00002917, 0x00002917, 0x00002917, 0x0000294a,
+	0x0000297d, 0x000029b6, 0x000029ed, 0x00002a20,
+	0x00002a54, 0x00002a88, 0x00002abd, 0x00002ac7,
+	0x00002ad7, 0x00002ae1, 0x00002aeb, 0x00002af5,
+	0x00002aff, 0x00002b09, 0x00002b16, 0x00002b23,
+	0x00002b2d, 0x00002b37, 0x00002b44, 0x00002b4b,
 	// Entry 120 - 13F
-	0x00002c3a, 0x00002c4d, 0x00002c71, 0x00002c8a,
-	0x00002cae, 0x00002cc9, 0x00002ce5, 0x00002d00,
-	0x00002d30, 0x00002d5d, 0x00002d70, 0x00002d80,
-	0x00002dad, 0x00002ddd, 0x00002e08, 0x00002e33,
-	0x00002e65, 0x00002e96, 0x00002ec7, 0x00002eef,
-	0x00002f1d, 0x00002f4b, 0x00002f70, 0x00002f97,
-	0x00002fc0, 0x00002fe5, 0x0000300a, 0x00003035,
-	0x0000304e, 0x00003078, 0x000030a6, 0x000030c2,
+	0x00002b55, 0x00002b5f, 0x00002b66, 0x00002b72,
+	0x00002b91, 0x00002bce, 0x00002be7, 0x00002bf7,
+	0x00002c0a, 0x00002c2e, 0x00002c47, 0x00002c6b,
+	0x00002c86, 0x00002ca2, 0x00002cbd, 0x00002ced,
+	0x00002d1a, 0x00002d2d, 0x00002d3d, 0x00002d6a,
+	0x00002d9a, 0x00002dc5, 0x00002df0, 0x00002e22,
+	0x00002e53, 0x00002e84, 0x00002eac, 0x00002eda,
+	0x00002f08, 0x00002f2d, 0x00002f54, 0x00002f7d,
 	// Entry 140 - 15F
-	0x000030cf, 0x000030fd, 0x00003139, 0x00003155,
-	0x00003196, 0x000031c0, 0x00003203, 0x00003235,
-	0x00003253, 0x0000327d, 0x000032b6, 0x000032e7,
-	0x0000330f, 0x00003331, 0x00003362, 0x0000339b,
-	0x000033cc, 0x000033eb, 0x00003426, 0x00003456,
-	0x0000348c, 0x000034ae, 0x000034f5, 0x0000351f,
-	0x0000354a, 0x00003563, 0x00003588, 0x0000359b,
-	0x000035c6, 0x000035f0, 0x0000360f, 0x00003631,
+	0x00002fa2, 0x00002fcd, 0x00002fe6, 0x00003010,
+	0x00003010, 0x0000302c, 0x00003039, 0x00003067,
+	0x000030a3, 0x000030bf, 0x00003100, 0x00003100,
+	0x00003100, 0x00003100, 0x0000312a, 0x00003163,
+	0x00003194, 0x000031bc, 0x000031de, 0x0000320f,
+	0x00003248, 0x00003279, 0x00003298, 0x000032d3,
+	0x00003303, 0x00003339, 0x0000335b, 0x000033a2,
+	0x000033cc, 0x000033f7, 0x00003410, 0x00003435,
 	// Entry 160 - 17F
-	0x00003653, 0x00003677, 0x00003684, 0x0000369d,
-	0x000036bc, 0x000036db, 0x0000370d, 0x00003743,
-	0x00003793, 0x000037ac, 0x000037b9, 0x000037cc,
-	0x000037df, 0x000037f2, 0x00003805, 0x00003815,
-	0x00003825, 0x00003835, 0x00003845, 0x00003855,
-	0x00003868, 0x00003875, 0x00003888, 0x0000389b,
-	0x000038e4, 0x0000390f, 0x00003935, 0x00003955,
-	0x00003986, 0x000039ac, 0x000039dd, 0x00003a03,
+	0x00003448, 0x00003473, 0x0000349d, 0x000034bc,
+	0x000034de, 0x00003500, 0x00003524, 0x00003531,
+	0x0000354a, 0x00003569, 0x00003588, 0x000035ba,
+	0x000035f0, 0x00003640, 0x00003659, 0x00003666,
+	0x00003679, 0x0000368c, 0x0000369f, 0x000036b2,
+	0x000036c2, 0x000036d2, 0x000036e2, 0x000036f2,
+	0x00003702, 0x00003715, 0x00003722, 0x00003735,
+	0x00003748, 0x00003791, 0x000037bc, 0x000037e2,
 	// Entry 180 - 19F
-	0x00003a1a, 0x00003a37, 0x00003a5c, 0x00003a79,
-	0x00003aa4, 0x00003ad4, 0x00003af9, 0x00003b23,
-	0x00003b54, 0x00003b89, 0x00003bca, 0x00003bec,
-	0x00003bf9, 0x00003c18, 0x00003c42, 0x00003c51,
-	0x00003c5e, 0x00003c73, 0x00003c87, 0x00003ca1,
-	0x00003cb9, 0x00003ce1, 0x00003d0c, 0x00003d3f,
-	0x00003d78, 0x00003d98, 0x00003dba, 0x00003df3,
-	0x00003e12, 0x00003e40, 0x00003e6b, 0x00003ea1,
+	0x00003802, 0x00003833, 0x00003859, 0x0000388a,
+	0x000038b0, 0x000038c7, 0x000038e4, 0x00003909,
+	0x00003926, 0x00003951, 0x00003981, 0x000039a6,
+	0x000039d0, 0x00003a01, 0x00003a36, 0x00003a77,
+	0x00003a99, 0x00003aa6, 0x00003ac5, 0x00003aef,
+	0x00003afe, 0x00003b0b, 0x00003b20, 0x00003b34,
+	0x00003b4e, 0x00003b66, 0x00003b8e, 0x00003bb9,
+	0x00003bec, 0x00003c25, 0x00003c45, 0x00003c67,
 	// Entry 1A0 - 1BF
-	0x00003ec2, 0x00003ee4, 0x00003f35, 0x00003f55,
-	0x00003f75, 0x00003ffc, 0x0000404f, 0x000040c8,
-	0x00004161, 0x00004182, 0x000041b4, 0x00004226,
-	0x0000424c, 0x00004274, 0x00004297, 0x000042bb,
-	0x000042e1, 0x0000430f, 0x00004382, 0x00004392,
-	0x000043a7, 0x000043b4, 0x000043c7, 0x000043e5,
-	0x000043fe, 0x0000441a, 0x0000443b, 0x0000445c,
-	0x00004475, 0x00004482, 0x00004495, 0x000044a2,
+	0x00003ca0, 0x00003cbf, 0x00003ced, 0x00003d18,
+	0x00003d4e, 0x00003d6f, 0x00003d91, 0x00003de2,
+	0x00003e02, 0x00003e22, 0x00003ea9, 0x00003efc,
+	0x00003f75, 0x0000400e, 0x0000402f, 0x00004061,
+	0x000040d3, 0x000040f9, 0x00004121, 0x00004144,
+	0x00004168, 0x0000418e, 0x000041bc, 0x0000422f,
+	0x0000423f, 0x00004254, 0x00004261, 0x00004274,
+	0x00004292, 0x000042ab, 0x000042c7, 0x000042e8,
 	// Entry 1C0 - 1DF
-	0x000044dd, 0x00004515, 0x00004536, 0x00004557,
-	0x0000457a, 0x0000459a, 0x000045a7, 0x000045d6,
-	0x000045ec, 0x00004624, 0x00004640, 0x00004652,
-	0x00004667, 0x0000467a, 0x0000468d, 0x0000469f,
-	0x000046b4, 0x000046c3, 0x000046d3, 0x000046e0,
-	0x000046e7, 0x000046ee, 0x000046f5, 0x000046fc,
-	0x00004703, 0x00004710, 0x00004717, 0x00004724,
-	0x00004731, 0x0000473e, 0x0000474b, 0x00004758,
+	0x00004309, 0x00004322, 0x0000432f, 0x00004342,
+	0x0000434f, 0x0000438a, 0x000043c2, 0x000043e3,
+	0x00004404, 0x00004427, 0x00004447, 0x00004454,
+	0x00004483, 0x00004499, 0x000044d1, 0x000044ed,
+	0x000044ff, 0x00004514, 0x00004527, 0x0000453a,
+	0x0000454c, 0x00004561, 0x00004570, 0x00004580,
+	0x0000458d, 0x00004594, 0x0000459b, 0x000045a2,
+	0x000045a9, 0x000045b0, 0x000045bd, 0x000045c4,
 	// Entry 1E0 - 1FF
-	0x00004765, 0x00004772, 0x0000477f, 0x00004792,
-	0x000047ab, 0x000047c6, 0x000047eb, 0x000047fe,
-	0x00004839, 0x00004871, 0x000048af, 0x000048c5,
-	0x000048f3, 0x0000491f, 0x0000494b, 0x0000496e,
-} // Size: 2008 bytes
+	0x000045d1, 0x000045de, 0x000045eb, 0x000045f8,
+	0x0000460b, 0x00004612, 0x0000461f, 0x0000462c,
+	0x00004639, 0x00004646, 0x00004659, 0x00004672,
+	0x0000468d, 0x000046b2, 0x000046c5, 0x00004700,
+	0x00004738, 0x00004776, 0x0000478c, 0x000047ba,
+	0x000047e6, 0x00004812, 0x00004835,
+} // Size: 2036 bytes
 
-const zhData string = "" + // Size: 18798 bytes
+const zhData string = "" + // Size: 18485 bytes
 	"\x02id不能为空\x02无效的文件名\x02读取文件失败, err: %[1]v\x02创建目录失败, err: %[1]v\x02创建临时" +
 	"目录失败, err: %[1]v\x02解压文件失败, 文件 %[1]s 的大小超过了最大限制阈值 %[2]s\x02解压失败, err: " +
 	"%[1]v\x02上传文件失败, err: %[1]v\x02获取模板配置失败, err: %[1]v\x02上传完成\x02上传完成, %[1" +
@@ -1223,78 +1238,75 @@ const zhData string = "" + // Size: 18798 bytes
 	"败, err: %[1]v\x02配置项 %[1]s 的类型不正确\x02清除草稿区失败, err: %[1]v\x02批量更新vault失" +
 	"败，错误：%[1]v\x02存在重复的 %[1]s\x02获取排除后的kv失败, err: %[1]s\x02统计未删除的kV文件数量失败，" +
 	"错误：%[1]v\x02配置项总数超出限制 %[1]d\x02根据进程ID获取进程实例失败, err: %[1]v\x02根据CC进程ID列" +
-	"出配置模板失败, err: %[1]v\x02根据CC模板进程ID列出配置模板失败, err: %[1]v\x02指定了ProcessIns" +
-	"tanceId时只允许一个ProcessId\x02不支持的操作类型: %[1]v\x02不支持query_status操作\x02操作范围内未" +
-	"找到匹配的进程实例\x02根据IDs获取进程实例失败, err: %[1]v\x02以下ID的进程实例未找到: %[1]v\x02根据ID未" +
-	"找到进程: %[1]d\x02获取进程失败, err: %[1]v\x02业务%[1]d在指定进程ID下未找到进程\x02以下进程ID未找到" +
-	"进程实例: %[1]v\x02创建任务批次失败, err: %[1]v\x02更新进程实例状态失败, err: %[1]v\x02proce" +
-	"ssMap中未找到进程, processID=%[1]d\x02构建进程操作任务失败, err: %[1]v\x02列出进程过滤选项(集群)失败" +
-	", err: %[1]v\x02列出进程过滤选项(模块)失败, err: %[1]v\x02列出进程过滤选项(服务实例)失败, err: %[1" +
-	"]v\x02列出进程过滤选项(CC进程ID)失败, err: %[1]v\x02列出进程过滤选项(别名)失败, err: %[1]v\x02从任" +
-	"务存储列出失败任务失败, err: %[1]v\x02为进程实例拓扑列出进程失败, err: %[1]v\x02不支持删除的管理状态: %[" +
-	"1]s\x02不支持删除的进程状态: status=%[1]s managedStatus=%[2]s\x02删除进程实例%[1]d失败, er" +
-	"r: %[2]v\x02列出进程过滤选项(内网IP)失败, err: %[1]v\x02运行中\x02部分运行中\x02启动中\x02重启中" +
-	"\x02停止中\x02重载中\x02未运行\x02启动托管\x02停止托管\x02已托管\x02未托管\x02部分托管\x02正常\x02已删除" +
-	"\x02有更新\x02异常\x02bizID无效\x02项目受保护，无法删除\x02该项目下的环境中仍存在活跃资源，无法删除\x02项目列表获取" +
-	"失败\x02服务不存在\x02服务查询失败\x02版本%[1]s已弃用，无法提交\x02当前有版本在上线\x02版本%[1]s已弃用，无法撤" +
-	"消\x02上线状态无效：%[1]s\x02没有权限批准此工单\x02版本名称%[1]s已存在\x02不允许撤销，当前上线状态为：%[1]s" +
-	"\x02无法拒绝，当前上线状态为：%[1]s\x02原因不能为空\x02无权限审批\x02无法通过，当前上线状态为：%[1]s\x02不允许上线" +
-	"，当前上线状态为：%[1]s\x02此单据已撤销，无需进一步处理\x02此单据已结束，无需进一步处理\x02此单据已撤销，无效的单据状态: " +
-	"%[1]s\x02此单据已被拒绝，无需进一步处理。\x02此单据已审批完成，无需进一步处理\x02创建发布失败，存在文件冲突\x02创建发布失败" +
-	"，存在证书过期问题\x02获取服务关联的套餐失败, err: %[1]v\x02获取模板文件失败, err: %[1]v\x02业务%[1]" +
-	"d未开启进程配置视图\x02创建同步CMDB任务失败, err: %[1]v\x02获取业务数据失败, err: %[1]v\x02列出任务批次" +
-	"失败, err: %[1]v\x02列出不同的执行者失败, err: %[1]v\x02任务存储未初始化\x02获取任务批次%[1]d失败," +
-	" err: %[2]v\x02从任务存储列出任务失败, err: %[1]v\x02列出任务返回nil分页\x02任务为空\x02从任务获取公共" +
-	"负载失败, err: %[1]v\x02从任务存储按状态%[1]s列出任务失败, err: %[2]v\x02无效的%[1]s格式: %[2" +
-	"]v\x02重置任务批次重试计数失败, batchID: %[1]d, err: %[2]v\x02未找到任务%[1]s的操作进程步骤\x02从" +
-	"任务步骤获取操作负载失败, taskID: %[1]s, err: %[2]v\x02根据ID获取进程实例%[1]d失败, err: %[2" +
-	"]v\x02进程实例ID %[1]d不存在\x02重试失败任务%[1]s失败, err: %[2]v\x02按模板集ID获取应用程序模板绑定, " +
-	"err: %[1]s\x02批量更新应用模板绑定失败, err: %[1]s\x02获取模板集数据失败, err: %[1]s\x02此模板集下" +
-	"没有模板文件\x02从模板套餐中删除模板失败, err: %[1]v\x02按模板集ID获取应用程序模板绑定, err: %[1]v\x02" +
-	"批量更新应用模板绑定失败, err: %[1]v\x02列出模板失败, err: %[1]v\x02按模板ID列表获取最新版本失败，错误：%" +
-	"[1]s\x02批量更新模板权限失败，错误：%[1]s\x02按服务ID列出应用模板绑定失败, err: %[1]s\x02获取模板集失败, e" +
-	"rr: %[1]s\x02模板套餐 %[1]s 超过单套餐最大配置文件数量限制 %[2]d\x02按服务ID列出服务失败, err: %[1]s" +
-	"\x02统计服务配置数量失败, err: %[1]s\x02模板套餐数据为空\x02列出模板数据失败, err: %[1]s\x02模板数据为空" +
-	"\x02列出模板版本数据失败, err: %[1]s\x02同名的模版变量名称%[1]s已存在\x02环境应用数量统计失败\x02按环境统计应用" +
-	"数量失败\x02按项目统计应用数量失败\x02按环境ID列表获取应用失败\x02服务为空\x02创建失败, err: %[1]v\x02创建" +
-	"服务失败, err: %[1]v\x02更新服务失败, err: %[1]s\x02统计服务 %[1]d 的配置项失败, err: %[2]" +
-	"v\x02获取服务 %[1]d 的模板绑定失败,  err: %[2]v\x02服务 %[1]d 的配置项总数（包括模板和非模板）超出限制 %[" +
-	"2]d\x02环境数量统计失败\x02环境为空\x02环境删除失败\x02环境创建失败\x02环境更新失败\x02环境查询失败\x02脚本不存在" +
-	"\x02未命名版本\x02appID不能为0\x02bizID不能为0\x02项目不存在\x02项目查询失败\x02项目为空\x02项目创建失败" +
-	"\x02项目更新失败\x02模板套餐 %[1]d's 超过单套餐最大配置文件数量限制 %[2]d\x02验证模板是否存在失败, err: %[1" +
-	"]v\x02%[1]v 中的模板空间 ID 不存在\x02%[1]v 中的模板 ID 不存在\x02验证模板版本是否存在失败, err: %[1" +
-	"]v\x02%[1]v 中的模板版本 ID 不存在\x02验证模板套餐是否存在失败, err: %[1]v\x02%[1]v 中的模板套餐 ID" +
-	" 不存在\x02模板 %[1]d 不存在\x02模板版本 %[1]d 不存在\x02获取模板版本失败, err: %[1]v\x02模板套餐 %" +
-	"[1]d 不存在\x02统计模板套餐数量失败, err: %[1]v\x02模板空间下有模板套餐, 需要先删除\x02获取模板数量失败, err" +
-	": %[1]v\x02模板空间下有模板, 需要先删除\x02验证模板套餐中的模板失败, err: %[1]v\x02%[1]v 中的模板 ID " +
-	"不属于模板套餐 ID %[2]d\x02从 kv.Data 获取“kv_type”作为字符串失败, err: %[1]v\x02值类型断言失" +
-	"败, err: %[1]v\x02授权失败\x02获取权限失败, err: %[1]v\x02grpc 状态详细信息失败, err: %[1" +
-	"]v\x02db操作失败\x02无效参数\x02id不应该被设置\x02spec没有被设置\x02attachment没有被设置\x02revi" +
-	"sion没有被设置\x02路径 %[1]s 无效，长度应为 >= 1\x02路径 %[1]s 无效，长度应为 <= 1024\x02路径 %[1" +
-	"]s 无效，路径必须以“/”开头\x02路径 %[1]s 无效，路径不能包含连续的“/”\x02路径无效, 长度应为 >= 1\x02路径无效," +
-	" 长度应为 <= 256\x02路径无效, 路径不符合win文件路径格式规范\x02需要重新加载文件路径\x02重新加载文件路径无效, 应该 <" +
-	"= 128\x02重新加载文件路径不是绝对路径\x02%[1]s 子路径为系统保留路径, 不允许使用\x02描述为必填项, 不能为空\x02描述" +
-	"无效, 长度应为 <= 200\x02资源名称“%[1]s”以“%[2]s”为前缀, 是保留名称, 不允许使用\x02名称无效, 长度应为 " +
-	">= 1\x02无效名称, 长度应该<=128\x02无效名称：%[1]s, 只允许包含英文、数字、下划线（_）、连字符（-）, 且必须以英文、" +
-	"数字开头和结尾\x02无效名称, 长度应该>=9且必须以bk_bscp_前缀开头（忽略大小写）\x02无效名称：%[1]s, 只允许英文、数" +
-	"字、下划线（_）, 且必须以bk_bscp_前缀开头（忽略大小写）\x02无效名称：%[1]s, 只允许包含中文、英文、数字、下划线（_）、" +
-	"连字符（-）, 且必须以中文、英文或数字开头和结尾\x02名称无效, 长度应为 <= 64\x02名称 %[1]s 无效, 名称不能全部为“" +
-	".”\x02无效名称 %[1]s, 只允许中文、英文、数字、下划线（_）、连字符（-）、点（.）和空格\x02命名空间无效, 长度应为 >= 1" +
-	"\x02命名空间无效, 长度应为 <= 128\x02用户名无效, 长度应为 >= 1\x02用户名无效, 长度应为 <= 32\x02环境名称" +
-	"无效，长度应大于0\x02环境名称无效，长度应小于等于255\x02环境名称无效，仅允许字母、数字、下划线和连字符，且必须以字母或数字开头和" +
-	"结尾\x02ID 不能为空\x02无法验证业务ID\x02参数为空\x02服务参数为空\x02未知的配置类型：%[1]s\x02服务类型不能" +
-	"编辑\x02暂不支持表配置类型\x02不支持的配置类型：%[1]s\x02不支持的服务类型：%[1]s\x02无法验证数据类型\x02参数为" +
-	"空\x02无法验证参数\x02参数为空\x02验证 Windows 文件路径失败, path: %[1]s, err: %[2]v\x02验" +
-	"证 Unix 文件路径失败, path: %[1]s, err: %[2]v\x02不支持的文件格式：%[1]s\x02不支持的文件模式：%" +
-	"[1]s\x02不支持的文件字符集: %[1]s\x02不支持的高亮样式: %[1]s\x02参数为空\x02内容签名无效, 应为配置的 sha" +
-	"256 值\x02内容签名应小写\x02无效的原始内容签名, 应为配置的 sha256 值\x02原始内容签名应小写\x02无效的服务ID" +
-	"\x02无效的配置项ID\x02环境类型无效\x02名称必须设置\x02附件bizID无效\x02附件项目ID无效\x02ID必须设置\x02键" +
-	"必须设置\x02配置文件\x02进程\x02启动\x02停止\x02重启\x02重载\x02强制停止\x02托管\x02取消托管\x02配置" +
-	"下发\x02配置生成\x02配置检查\x02正在执行\x02执行成功\x02执行失败\x02部分失败\x02附件必须设置\x02修订版本必须" +
-	"设置\x02模板空间ID必须设置\x02default_val %[1]s 不是数字类型\x02无效的根目录\x02获取绝对基本路径失败, " +
-	"baseDir: %[1]s, err: %[2]v\x02获取绝对目标路径失败, path: %[1]s, err: %[2]v\x02计算相" +
-	"对路径失败, base: %[1]s, dst: %[2]s, err: %[3]v\x02无效的文件路径\x02创建父目录失败, dir:" +
-	" %[1]s, err: %[2]v\x02创建文件失败, path: %[1]s, err: %[2]v\x02文件写入失败, path: %" +
-	"[1]s, err: %[2]v\x02%[1]s 与 %[2]s 路径文件冲突"
+	"出配置模板失败, err: %[1]v\x02根据CC模板进程ID列出配置模板失败, err: %[1]v\x02processMap中未找" +
+	"到进程, processID=%[1]d\x02操作范围内未找到匹配的进程实例\x02根据IDs获取进程实例失败, err: %[1]v" +
+	"\x02以下ID的进程实例未找到: %[1]v\x02根据ID未找到进程: %[1]d\x02获取进程失败, err: %[1]v\x02业务%" +
+	"[1]d在指定进程ID下未找到进程\x02以下进程ID未找到进程实例: %[1]v\x02创建任务批次失败, err: %[1]v\x02更新进" +
+	"程实例状态失败, err: %[1]v\x02更新进程 CC 同步状态失败, err: %[1]v\x02不支持删除的管理状态: %[1]s" +
+	"\x02不支持删除的进程状态: status=%[1]s managedStatus=%[2]s\x02删除进程实例%[1]d失败, err: " +
+	"%[2]v\x02构建进程操作任务失败, err: %[1]v\x02列出进程过滤选项(集群)失败, err: %[1]v\x02列出进程过滤选" +
+	"项(模块)失败, err: %[1]v\x02列出进程过滤选项(服务实例)失败, err: %[1]v\x02列出进程过滤选项(CC进程ID" +
+	")失败, err: %[1]v\x02列出进程过滤选项(别名)失败, err: %[1]v\x02从任务存储列出失败任务失败, err: %[1" +
+	"]v\x02为进程实例拓扑列出进程失败, err: %[1]v\x02列出进程过滤选项(内网IP)失败, err: %[1]v\x02运行中" +
+	"\x02部分运行中\x02启动中\x02重启中\x02停止中\x02重载中\x02未运行\x02启动托管\x02停止托管\x02已托管\x02未" +
+	"托管\x02部分托管\x02正常\x02已删除\x02有更新\x02异常\x02bizID无效\x02项目受保护，无法删除\x02该项目下的" +
+	"环境中仍存在活跃资源，无法删除\x02项目列表获取失败\x02服务不存在\x02服务查询失败\x02版本%[1]s已弃用，无法提交\x02当" +
+	"前有版本在上线\x02版本%[1]s已弃用，无法撤消\x02上线状态无效：%[1]s\x02没有权限批准此工单\x02版本名称%[1]s已存" +
+	"在\x02不允许撤销，当前上线状态为：%[1]s\x02无法拒绝，当前上线状态为：%[1]s\x02原因不能为空\x02无权限审批\x02无" +
+	"法通过，当前上线状态为：%[1]s\x02不允许上线，当前上线状态为：%[1]s\x02此单据已撤销，无需进一步处理\x02此单据已结束，无" +
+	"需进一步处理\x02此单据已撤销，无效的单据状态: %[1]s\x02此单据已被拒绝，无需进一步处理。\x02此单据已审批完成，无需进一步处" +
+	"理\x02创建发布失败，存在文件冲突\x02创建发布失败，存在证书过期问题\x02获取服务关联的套餐失败, err: %[1]v\x02获取" +
+	"模板文件失败, err: %[1]v\x02业务%[1]d未开启进程配置视图\x02创建同步CMDB任务失败, err: %[1]v\x02" +
+	"列出任务批次失败, err: %[1]v\x02列出不同的执行者失败, err: %[1]v\x02任务存储未初始化\x02获取任务批次%[" +
+	"1]d失败, err: %[2]v\x02列出任务返回nil分页\x02任务为空\x02从任务获取公共负载失败, err: %[1]v\x02从" +
+	"任务存储按状态%[1]s列出任务失败, err: %[2]v\x02无效的%[1]s格式: %[2]v\x02重置任务批次重试计数失败, b" +
+	"atchID: %[1]d, err: %[2]v\x02重试失败任务%[1]s失败, err: %[2]v\x02按模板集ID获取应用程序模板" +
+	"绑定, err: %[1]s\x02批量更新应用模板绑定失败, err: %[1]s\x02获取模板集数据失败, err: %[1]s" +
+	"\x02此模板集下没有模板文件\x02从模板套餐中删除模板失败, err: %[1]v\x02按模板集ID获取应用程序模板绑定, err: %[" +
+	"1]v\x02批量更新应用模板绑定失败, err: %[1]v\x02列出模板失败, err: %[1]v\x02按模板ID列表获取最新版本失败" +
+	"，错误：%[1]s\x02批量更新模板权限失败，错误：%[1]s\x02按服务ID列出应用模板绑定失败, err: %[1]s\x02获取模" +
+	"板集失败, err: %[1]s\x02模板套餐 %[1]s 超过单套餐最大配置文件数量限制 %[2]d\x02按服务ID列出服务失败, e" +
+	"rr: %[1]s\x02统计服务配置数量失败, err: %[1]s\x02模板套餐数据为空\x02列出模板数据失败, err: %[1]s" +
+	"\x02模板数据为空\x02列出模板版本数据失败, err: %[1]s\x02同名的模版变量名称%[1]s已存在\x02环境应用数量统计失败" +
+	"\x02按环境统计应用数量失败\x02按项目统计应用数量失败\x02按环境ID列表获取应用失败\x02服务为空\x02创建失败, err: %[" +
+	"1]v\x02创建服务失败, err: %[1]v\x02更新服务失败, err: %[1]s\x02统计服务 %[1]d 的配置项失败, er" +
+	"r: %[2]v\x02获取服务 %[1]d 的模板绑定失败,  err: %[2]v\x02服务 %[1]d 的配置项总数（包括模板和非模板）" +
+	"超出限制 %[2]d\x02环境数量统计失败\x02环境为空\x02环境删除失败\x02环境创建失败\x02环境更新失败\x02环境查询失败" +
+	"\x02脚本不存在\x02未命名版本\x02appID不能为0\x02bizID不能为0\x02项目不存在\x02项目查询失败\x02项目为空" +
+	"\x02项目创建失败\x02项目更新失败\x02模板套餐 %[1]d's 超过单套餐最大配置文件数量限制 %[2]d\x02验证模板是否存在失败" +
+	", err: %[1]v\x02%[1]v 中的模板空间 ID 不存在\x02%[1]v 中的模板 ID 不存在\x02验证模板版本是否存在失败" +
+	", err: %[1]v\x02%[1]v 中的模板版本 ID 不存在\x02验证模板套餐是否存在失败, err: %[1]v\x02%[1]v" +
+	" 中的模板套餐 ID 不存在\x02模板 %[1]d 不存在\x02模板版本 %[1]d 不存在\x02获取模板版本失败, err: %[1]v" +
+	"\x02模板套餐 %[1]d 不存在\x02统计模板套餐数量失败, err: %[1]v\x02模板空间下有模板套餐, 需要先删除\x02获取模" +
+	"板数量失败, err: %[1]v\x02模板空间下有模板, 需要先删除\x02验证模板套餐中的模板失败, err: %[1]v\x02%[" +
+	"1]v 中的模板 ID 不属于模板套餐 ID %[2]d\x02从 kv.Data 获取“kv_type”作为字符串失败, err: %[1]v" +
+	"\x02值类型断言失败, err: %[1]v\x02授权失败\x02获取权限失败, err: %[1]v\x02grpc 状态详细信息失败, " +
+	"err: %[1]v\x02db操作失败\x02无效参数\x02id不应该被设置\x02spec没有被设置\x02attachment没有被设置" +
+	"\x02revision没有被设置\x02路径 %[1]s 无效，长度应为 >= 1\x02路径 %[1]s 无效，长度应为 <= 1024" +
+	"\x02路径 %[1]s 无效，路径必须以“/”开头\x02路径 %[1]s 无效，路径不能包含连续的“/”\x02路径无效, 长度应为 >= " +
+	"1\x02路径无效, 长度应为 <= 256\x02路径无效, 路径不符合win文件路径格式规范\x02需要重新加载文件路径\x02重新加载文件" +
+	"路径无效, 应该 <= 128\x02重新加载文件路径不是绝对路径\x02%[1]s 子路径为系统保留路径, 不允许使用\x02描述为必填项" +
+	", 不能为空\x02描述无效, 长度应为 <= 200\x02资源名称“%[1]s”以“%[2]s”为前缀, 是保留名称, 不允许使用\x02名" +
+	"称无效, 长度应为 >= 1\x02无效名称, 长度应该<=128\x02无效名称：%[1]s, 只允许包含英文、数字、下划线（_）、连字符" +
+	"（-）, 且必须以英文、数字开头和结尾\x02无效名称, 长度应该>=9且必须以bk_bscp_前缀开头（忽略大小写）\x02无效名称：%[" +
+	"1]s, 只允许英文、数字、下划线（_）, 且必须以bk_bscp_前缀开头（忽略大小写）\x02无效名称：%[1]s, 只允许包含中文、英文、" +
+	"数字、下划线（_）、连字符（-）, 且必须以中文、英文或数字开头和结尾\x02名称无效, 长度应为 <= 64\x02名称 %[1]s 无效" +
+	", 名称不能全部为“.”\x02无效名称 %[1]s, 只允许中文、英文、数字、下划线（_）、连字符（-）、点（.）和空格\x02命名空间无效," +
+	" 长度应为 >= 1\x02命名空间无效, 长度应为 <= 128\x02用户名无效, 长度应为 >= 1\x02用户名无效, 长度应为 <= " +
+	"32\x02环境名称无效，长度应大于0\x02环境名称无效，长度应小于等于255\x02环境名称无效，仅允许字母、数字、下划线和连字符，且必须以" +
+	"字母或数字开头和结尾\x02ID 不能为空\x02无法验证业务ID\x02参数为空\x02服务参数为空\x02未知的配置类型：%[1]s" +
+	"\x02服务类型不能编辑\x02暂不支持表配置类型\x02不支持的配置类型：%[1]s\x02不支持的服务类型：%[1]s\x02无法验证数据类" +
+	"型\x02参数为空\x02无法验证参数\x02参数为空\x02验证 Windows 文件路径失败, path: %[1]s, err: %[" +
+	"2]v\x02验证 Unix 文件路径失败, path: %[1]s, err: %[2]v\x02不支持的文件格式：%[1]s\x02不支持的" +
+	"文件模式：%[1]s\x02不支持的文件字符集: %[1]s\x02不支持的高亮样式: %[1]s\x02参数为空\x02内容签名无效, 应" +
+	"为配置的 sha256 值\x02内容签名应小写\x02无效的原始内容签名, 应为配置的 sha256 值\x02原始内容签名应小写\x02" +
+	"无效的服务ID\x02无效的配置项ID\x02环境类型无效\x02名称必须设置\x02附件bizID无效\x02附件项目ID无效\x02ID" +
+	"必须设置\x02键必须设置\x02配置文件\x02进程\x02启动\x02停止\x02重启\x02重载\x02强制停止\x02托管\x02取" +
+	"消托管\x02配置下发\x02配置生成\x02配置检查\x02更新托管信息\x02清除\x02正在执行\x02执行成功\x02执行失败" +
+	"\x02部分失败\x02附件必须设置\x02修订版本必须设置\x02模板空间ID必须设置\x02default_val %[1]s 不是数字类型" +
+	"\x02无效的根目录\x02获取绝对基本路径失败, baseDir: %[1]s, err: %[2]v\x02获取绝对目标路径失败, path" +
+	": %[1]s, err: %[2]v\x02计算相对路径失败, base: %[1]s, dst: %[2]s, err: %[3]v\x02" +
+	"无效的文件路径\x02创建父目录失败, dir: %[1]s, err: %[2]v\x02创建文件失败, path: %[1]s, err" +
+	": %[2]v\x02文件写入失败, path: %[1]s, err: %[2]v\x02%[1]s 与 %[2]s 路径文件冲突"
 
-	// Total table size 44004 bytes (42KiB); checksum: 35FAF29A
+	// Total table size 44016 bytes (42KiB); checksum: C42386EF

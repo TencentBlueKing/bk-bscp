@@ -58,6 +58,10 @@ const (
 	TaskActionConfigGenerate TaskAction = "config_generate"
 	// TaskActionConfigCheck 任务动作：配置检查
 	TaskActionConfigCheck TaskAction = "config_check"
+	// TaskActionUpdateRegister 任务动作：更新托管信息
+	TaskActionUpdateRegister TaskAction = "update_register"
+	// TaskActionDelete 任务动作：清除进程实例
+	TaskActionDelete TaskAction = "delete"
 
 	// TaskBatchStatusRunning 任务状态：执行中
 	TaskBatchStatusRunning TaskBatchStatus = "running"
@@ -108,6 +112,8 @@ func GetTaskActionChoices(kt *kit.Kit) []TaskActionChoice {
 		{ID: string(TaskActionConfigPublish), Name: i18n.T(kt, "ConfigPublish")},
 		{ID: string(TaskActionConfigGenerate), Name: i18n.T(kt, "ConfigGenerate")},
 		{ID: string(TaskActionConfigCheck), Name: i18n.T(kt, "ConfigCheck")},
+		{ID: string(TaskActionUpdateRegister), Name: i18n.T(kt, "UpdateRegister")},
+		{ID: string(TaskActionDelete), Name: i18n.T(kt, "Delete")},
 	}
 }
 

@@ -2073,6 +2073,21 @@ func (s *ProcessUpdateRegisterSteps) trySetDefault() {
 	trySetStepDefault(&s.OperationCompleted, 3*time.Minute, 3)
 }
 
+// ProcessDeleteSteps 清除进程实例步骤（复用进程操作步骤的时长结构）
+type ProcessDeleteSteps struct {
+	CompareWithCMDBProcessInfo StepTiming `yaml:"compareWithCMDBProcessInfo"`
+	ValidateOperateProcess     StepTiming `yaml:"validateOperateProcess"`
+	OperateProcess             StepTiming `yaml:"operateProcess"`
+	FinalizeOperateProcess     StepTiming `yaml:"finalizeOperateProcess"`
+}
+
+func (s *ProcessDeleteSteps) trySetDefault() {
+	trySetStepDefault(&s.CompareWithCMDBProcessInfo, 3*time.Minute, 0)
+	trySetStepDefault(&s.ValidateOperateProcess, 3*time.Minute, 0)
+	trySetStepDefault(&s.OperateProcess, 3*time.Minute, 0)
+	trySetStepDefault(&s.FinalizeOperateProcess, 3*time.Minute, 3)
+}
+
 // SyncCMDBSteps CMDB 同步步骤
 type SyncCMDBSteps struct {
 	SyncCMDB StepTiming `yaml:"syncCMDB"`
@@ -2166,6 +2181,7 @@ type TaskFramework struct {
 	ConfigCheck           ConfigCheckSteps           `yaml:"configCheck"`
 	ProcessOperate        ProcessOperateSteps        `yaml:"processOperate"`
 	ProcessUpdateRegister ProcessUpdateRegisterSteps `yaml:"processUpdateRegister"`
+	ProcessDelete         ProcessDeleteSteps         `yaml:"processDelete"`
 	SyncCMDB              SyncCMDBSteps              `yaml:"syncCMDB"`
 	SyncGSE               SyncGSESteps               `yaml:"syncGSE"`
 	ScriptExecution       ScriptExecutionConfig      `yaml:"scriptExecution"`
@@ -2178,6 +2194,7 @@ func (tf *TaskFramework) trySetDefault() {
 	tf.ConfigCheck.trySetDefault()
 	tf.ProcessOperate.trySetDefault()
 	tf.ProcessUpdateRegister.trySetDefault()
+	tf.ProcessDelete.trySetDefault()
 	tf.SyncCMDB.trySetDefault()
 	tf.SyncGSE.trySetDefault()
 	tf.ScriptExecution.trySetDefault()

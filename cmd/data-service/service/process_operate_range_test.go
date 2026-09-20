@@ -13,27 +13,25 @@
 package service
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
-	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // TestBuildOperateRangePluginRaw 插件路径：原样记录请求 expression_scope 五段，缺省段补 "*"（AC-001/AC-T01）。
 func TestBuildOperateRangePluginRaw(t *testing.T) {
-	req := &pbds.OperateProcessReq{
-		OperateRange: &pbproc.OperateRange{
-			Environment: "1",
-			ExpressionScope: &pbproc.ExpressionScope{
-				SetName:   "[管控平台,PaaS平台]",
-				ProcessId: "4[6,8,9]",
-				// module/service/alias 留空，期望回退为 "*"
-			},
+	operateRange := &pbproc.OperateRange{
+		Environment: "1",
+		ExpressionScope: &pbproc.ExpressionScope{
+			SetName:   "[管控平台,PaaS平台]",
+			ProcessId: "4[6,8,9]",
+			// module/service/alias 留空，期望回退为 "*"
 		},
 	}
 
-	got := buildOperateRange(nil, req)
+	got := buildOperateRange(nil, operateRange)
 	want := table.OperateRange{
 		SetName:      "[管控平台,PaaS平台]",
 		ModuleName:   "*",
@@ -54,7 +52,7 @@ func TestBuildOperateRangeNonPlugin(t *testing.T) {
 		{Attachment: &table.ProcessAttachment{CcProcessID: 7}},
 		{Attachment: &table.ProcessAttachment{CcProcessID: 8}},
 	}
-	got := buildOperateRange(procs, &pbds.OperateProcessReq{})
+	got := buildOperateRange(procs, nil)
 	want := table.OperateRange{
 		SetName:      "*",
 		ModuleName:   "*",
@@ -64,6 +62,44 @@ func TestBuildOperateRangeNonPlugin(t *testing.T) {
 	}
 	if got != want {
 		t.Fatalf("non-plugin buildOperateRange = %+v, want %+v", got, want)
+	}
+}
+
+// TestFilterScaledDownInstances 一键清除缩容实例筛选：实例按 host_inst_seq 升序排列后
+// 序位超过 proc_num 的为缩容实例，按 host_inst_seq 降序返回（从最后一个实例开始清除）；
+// proc_num 与实例数量一致时无缩容实例，返回空。
+func TestFilterScaledDownInstances(t *testing.T) {
+	newInst := func(id, seq uint32) *table.ProcessInstance {
+		return &table.ProcessInstance{
+			ID:   id,
+			Spec: &table.ProcessInstanceSpec{HostInstSeq: seq},
+		}
+	}
+
+	// host_inst_seq 乱序输入：3、1、2
+	instances := []*table.ProcessInstance{
+		newInst(101, 3),
+		newInst(102, 1),
+		newInst(103, 2),
+	}
+
+	// proc_num=1，实例 3 个：缩容 2 个，从最后一个实例（host_inst_seq=3）开始降序返回
+	proc := &table.Process{Spec: &table.ProcessSpec{ProcNum: 1}}
+	got := filterScaledDownInstances(proc, instances)
+	wantIDs := []uint32{101, 103}
+	if len(got) != len(wantIDs) {
+		t.Fatalf("filterScaledDownInstances len = %d, want %d", len(got), len(wantIDs))
+	}
+	for i, inst := range got {
+		if inst.ID != wantIDs[i] {
+			t.Fatalf("filterScaledDownInstances[%d] = instance %d, want %d", i, inst.ID, wantIDs[i])
+		}
+	}
+
+	// proc_num 与实例数量一致（3=3）时无缩容实例，返回空
+	proc.Spec.ProcNum = 3
+	if got := filterScaledDownInstances(proc, instances); len(got) != 0 {
+		t.Fatalf("filterScaledDownInstances = %v, want empty", got)
 	}
 }
 
@@ -105,5 +141,44 @@ func TestBuildConfigOperateRange(t *testing.T) {
 	}
 	if nonPlugin != wantNonPlugin {
 		t.Fatalf("config non-plugin buildOperateRange = %+v, want %+v", nonPlugin, wantNonPlugin)
+	}
+}
+
+// TestProcessConfigsEqual 更新托管下发预检的配置一致性对比：
+// 字段一致（与字段顺序无关）视为相等，任一侧解析失败视为不一致。
+func TestProcessConfigsEqual(t *testing.T) {
+	full := table.ProcessInfo{
+		BkStartParamRegex: ".*bin",
+		WorkPath:          "/data/bkapp",
+		PidFile:           "/data/bkapp/pid",
+		User:              "root",
+		StartCmd:          "start.sh",
+		StopCmd:           "stop.sh",
+	}
+
+	fullJSON, err := json.Marshal(full)
+	if err != nil {
+		t.Fatalf("marshal process info failed: %v", err)
+	}
+
+	cases := []struct {
+		name string
+		a    string
+		b    string
+		want bool
+	}{
+		{"两者一致", string(fullJSON), string(fullJSON), true},
+		{"字段顺序不同但内容一致", `{"user":"root","work_path":"/data/bkapp"}`, `{"work_path":"/data/bkapp","user":"root"}`, true},
+		{"字段值不同", string(fullJSON), `{"work_path":"/data/other"}`, false},
+		{"空对象一致", `{}`, `{}`, true},
+		{"解析失败视为不一致", `{"work_path":"/data"`, `{}`, false},
+	}
+
+	for _, ct := range cases {
+		t.Run(ct.name, func(t *testing.T) {
+			if got := processConfigsEqual(ct.a, ct.b); got != ct.want {
+				t.Fatalf("processConfigsEqual(%q, %q) = %v, want %v", ct.a, ct.b, got, ct.want)
+			}
+		})
 	}
 }

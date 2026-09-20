@@ -6379,6 +6379,56 @@
         }
       }
     },
+    "/api/v1/config/biz_id/{bizId}/process/delete": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；\r\n进程数量与实例数量一致时无缩容，无需清除）",
+        "operationId": "Config_OperateDeleteProcess",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateDeleteProcessBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": true,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": true,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/process/inner_ips": {
       "post": {
         "tags": [
@@ -6484,7 +6534,7 @@
         "tags": [
           "Config"
         ],
-        "summary": "进程操作",
+        "summary": "进程操作（start、stop、register、unregister、restart、reload、kill）",
         "operationId": "Config_OperateProcess",
         "parameters": [
           {
@@ -6501,6 +6551,56 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/ConfigOperateProcessBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": true,
+          "allowApplyPermission": true,
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": true,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
+    "/api/v1/config/biz_id/{bizId}/process/update_register": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "更新托管信息操作（update_register）",
+        "operationId": "Config_OperateUpdateRegisterProcess",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateUpdateRegisterProcessBody"
             }
           }
         ],
@@ -8987,6 +9087,65 @@
         }
       }
     },
+    "/api/v1/inner/config/biz_id/{bizId}/process/delete": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；\r\n进程数量与实例数量一致时无缩容，无需清除）",
+        "operationId": "Config_OperateDeleteProcess2",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateDeleteProcessBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "backend": {
+            "type": "HTTP",
+            "method": "post",
+            "path": "/api/v1/config/biz_id/{bizId}/process/delete",
+            "matchSubpath": false,
+            "timeout": 0,
+            "upstreams": {},
+            "transformHeaders": {}
+          },
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
     "/api/v1/inner/config/biz_id/{bizId}/process/inner_ips": {
       "post": {
         "tags": [
@@ -9110,7 +9269,7 @@
         "tags": [
           "Config"
         ],
-        "summary": "进程操作",
+        "summary": "进程操作（start、stop、register、unregister、restart、reload、kill）",
         "operationId": "Config_OperateProcess2",
         "parameters": [
           {
@@ -9151,6 +9310,65 @@
             "type": "HTTP",
             "method": "post",
             "path": "/api/v1/config/biz_id/{bizId}/process/operate",
+            "matchSubpath": false,
+            "timeout": 0,
+            "upstreams": {},
+            "transformHeaders": {}
+          },
+          "authConfig": {
+            "appVerifiedRequired": true,
+            "userVerifiedRequired": false,
+            "resourcePermissionRequired": true
+          }
+        }
+      }
+    },
+    "/api/v1/inner/config/biz_id/{bizId}/process/update_register": {
+      "post": {
+        "tags": [
+          "Config"
+        ],
+        "summary": "更新托管信息操作（update_register）",
+        "operationId": "Config_OperateUpdateRegisterProcess2",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "业务ID",
+            "name": "bizId",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigOperateUpdateRegisterProcessBody"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsOperateProcessResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "x-bk-apigateway-resource": {
+          "isPublic": false,
+          "allowApplyPermission": true,
+          "backend": {
+            "type": "HTTP",
+            "method": "post",
+            "path": "/api/v1/config/biz_id/{bizId}/process/update_register",
             "matchSubpath": false,
             "timeout": 0,
             "upstreams": {},
@@ -10459,18 +10677,24 @@
         }
       }
     },
+    "ConfigOperateDeleteProcessBody": {
+      "type": "object",
+      "properties": {
+        "processId": {
+          "description": "进程ID",
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "ConfigOperateProcessBody": {
       "type": "object",
       "properties": {
-        "enableProcessRestart": {
-          "description": "是否启停进程：默认为false，只有操作类型是update_register才有效",
-          "type": "boolean"
-        },
         "operateRange": {
           "$ref": "#/definitions/pbprocOperateRange"
         },
         "operateType": {
-          "description": "操作类型：start、stop、query_status、register、unregister、restart、reload、kill、update_register、delete",
+          "description": "操作类型：start、stop、register、unregister、restart、reload、kill",
           "type": "string"
         },
         "processIds": {
@@ -10480,14 +10704,20 @@
             "type": "integer",
             "format": "int64"
           }
+        }
+      }
+    },
+    "ConfigOperateUpdateRegisterProcessBody": {
+      "type": "object",
+      "properties": {
+        "enableProcessRestart": {
+          "description": "是否启停进程：默认为false",
+          "type": "boolean"
         },
-        "processInstanceIds": {
-          "description": "进程实例ID",
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int64"
-          }
+        "processId": {
+          "description": "进程ID",
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -13956,7 +14186,7 @@
           "type": "string"
         },
         "status": {
-          "description": "任务状态",
+          "description": "任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE。IGNORED 为任务框架原生终态，步骤发现目标态已满足（GSE 幂等错误码 828 重复启动 / 829 无需停止）时收敛，表示操作被幂等忽略",
           "type": "string"
         },
         "taskId": {
@@ -14100,7 +14330,7 @@
           "type": "string"
         },
         "status": {
-          "description": "任务状态",
+          "description": "任务状态：INIT、RUNNING、SUCCESS、IGNORED、FAILURE（五类，IGNORED 为任务框架原生终态）",
           "type": "string"
         }
       }

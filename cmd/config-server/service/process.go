@@ -22,6 +22,7 @@ import (
 )
 
 // OperateProcess implements pbcs.ConfigServer.
+// 通用进程操作：start、stop、register、unregister、restart、reload、kill。
 func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessReq) (*pbcs.OperateProcessResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
@@ -34,12 +35,65 @@ func (s *Service) OperateProcess(ctx context.Context, req *pbcs.OperateProcessRe
 	}
 
 	resp, err := s.client.DS.OperateProcess(grpcKit.RpcCtx(), &pbds.OperateProcessReq{
+		BizId:        req.GetBizId(),
+		ProcessIds:   req.GetProcessIds(),
+		OperateType:  req.GetOperateType(),
+		OperateRange: req.GetOperateRange(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.OperateProcessResp{
+		BatchID: resp.GetBatchID(),
+	}, nil
+}
+
+// OperateUpdateRegisterProcess implements pbcs.ConfigServer.
+// 更新托管信息操作，enable_process_restart 决定是否启停进程。
+func (s *Service) OperateUpdateRegisterProcess(ctx context.Context, req *pbcs.OperateUpdateRegisterProcessReq) (
+	*pbcs.OperateProcessResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.ProcessOperate}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.OperateUpdateRegisterProcess(grpcKit.RpcCtx(), &pbds.OperateUpdateRegisterProcessReq{
 		BizId:                req.GetBizId(),
-		ProcessIds:           req.GetProcessIds(),
-		ProcessInstanceIds:   req.GetProcessInstanceIds(),
-		OperateType:          req.GetOperateType(),
+		ProcessId:            req.GetProcessId(),
 		EnableProcessRestart: req.GetEnableProcessRestart(),
-		OperateRange:         req.GetOperateRange(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pbcs.OperateProcessResp{
+		BatchID: resp.GetBatchID(),
+	}, nil
+}
+
+// OperateDeleteProcess implements pbcs.ConfigServer.
+// 一键清除进程缩容实例，无需指定实例 ID，由服务端按缩容口径自动确定待清除实例。
+func (s *Service) OperateDeleteProcess(ctx context.Context, req *pbcs.OperateDeleteProcessReq) (
+	*pbcs.OperateProcessResp, error) {
+	grpcKit := kit.FromGrpcContext(ctx)
+
+	res := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		{Basic: meta.Basic{Type: meta.ProcConfigMgmt, Action: meta.ProcessOperate}, BizID: req.BizId},
+	}
+	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.DS.OperateDeleteProcess(grpcKit.RpcCtx(), &pbds.OperateDeleteProcessReq{
+		BizId:     req.GetBizId(),
+		ProcessId: req.GetProcessId(),
 	})
 	if err != nil {
 		return nil, err

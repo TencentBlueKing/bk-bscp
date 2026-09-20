@@ -55,27 +55,28 @@ func NewBuilder(dao dao.Set) *Builder {
 	}
 }
 
-// SetCommonProcessParam 设置
+// CommonProcessFinalize 设置通用进程任务负载，返回进程记录供调用方做任务级差异化调整
+// （如更新托管任务把 ConfigData 改写为机器上正在托管的旧配置 prev_data）
 func (builder *Builder) CommonProcessFinalize(task *types.Task, tenantID string,
-	bizID, processID, processInstanceID uint32) error {
+	bizID, processID, processInstanceID uint32) (*table.Process, error) {
 	kt := kit.NewWithTenant(tenantID)
 	process, err := builder.dao.Process().GetByID(kt, bizID, processID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if process == nil {
-		return fmt.Errorf("no process found for biz %d", bizID)
+		return nil, fmt.Errorf("no process found for biz %d", bizID)
 	}
 
 	inst, err := builder.dao.ProcessInstance().GetByID(kt, bizID, processInstanceID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if inst == nil {
-		return fmt.Errorf("no process instance found for id %d", processInstanceID)
+		return nil, fmt.Errorf("no process instance found for id %d", processInstanceID)
 	}
 	priority := process.Spec.Priority
-	return task.SetCommonPayload(&common.TaskPayload{
+	return process, task.SetCommonPayload(&common.TaskPayload{
 		ProcessPayload: &common.ProcessPayload{
 			SetName:       process.Spec.SetName,
 			ModuleName:    process.Spec.ModuleName,

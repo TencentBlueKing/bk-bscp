@@ -3317,29 +3317,39 @@
             ]
         },
         {
-            "id": "when ProcessInstanceId is specified, only one ProcessId is allowed",
-            "message": "when ProcessInstanceId is specified, only one ProcessId is allowed",
-            "translation": "指定了ProcessInstanceId时只允许一个ProcessId"
-        },
-        {
-            "id": "operate type is not supported: {Err}",
-            "message": "operate type is not supported: {Err}",
-            "translation": "不支持的操作类型: {Err}",
+            "id": "operate type is not supported: {OperateType}",
+            "message": "operate type is not supported: {OperateType}",
+            "translation": "",
             "placeholders": [
                 {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
+                    "id": "OperateType",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "err"
+                    "expr": "operateType"
                 }
             ]
         },
         {
-            "id": "query_status operation is not supported",
-            "message": "query_status operation is not supported",
-            "translation": "不支持query_status操作"
+            "id": "process not found in processMap, processID={ProcessID}",
+            "message": "process not found in processMap, processID={ProcessID}",
+            "translation": "processMap中未找到进程, processID={ProcessID}",
+            "placeholders": [
+                {
+                    "id": "ProcessID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.Attachment.ProcessID"
+                }
+            ]
+        },
+        {
+            "id": "no process instances need to operate",
+            "message": "no process instances need to operate",
+            "translation": ""
         },
         {
             "id": "no process instances found for processes matching operate range",
@@ -3467,17 +3477,113 @@
             ]
         },
         {
-            "id": "process not found in processMap, processID={ProcessID}",
-            "message": "process not found in processMap, processID={ProcessID}",
-            "translation": "processMap中未找到进程, processID={ProcessID}",
+            "id": "process cc sync status is {CcSyncStatus}, no need to update register",
+            "message": "process cc sync status is {CcSyncStatus}, no need to update register",
+            "translation": "",
             "placeholders": [
                 {
-                    "id": "ProcessID",
+                    "id": "CcSyncStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.CCSyncStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "proc.Spec.CcSyncStatus"
+                }
+            ]
+        },
+        {
+            "id": "update process cc sync status failed, err: {Err}",
+            "message": "update process cc sync status failed, err: {Err}",
+            "translation": "更新进程 CC 同步状态失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "process configs equal to cmdb latest config, no need to update register",
+            "message": "process configs equal to cmdb latest config, no need to update register",
+            "translation": ""
+        },
+        {
+            "id": "no scaled down process instances to delete, processID: {ID}",
+            "message": "no scaled down process instances to delete, processID: {ID}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "ID",
                     "string": "%[1]d",
                     "type": "uint32",
                     "underlyingType": "uint32",
                     "argNum": 1,
-                    "expr": "inst.Attachment.ProcessID"
+                    "expr": "processes[0].ID"
+                }
+            ]
+        },
+        {
+            "id": "unsupported managed status for delete: {ManagedStatus}",
+            "message": "unsupported managed status for delete: {ManagedStatus}",
+            "translation": "不支持删除的管理状态: {ManagedStatus}",
+            "placeholders": [
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "managedStatus"
+                }
+            ]
+        },
+        {
+            "id": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "message": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
+            "translation": "不支持删除的进程状态: status={Status} managedStatus={ManagedStatus}",
+            "placeholders": [
+                {
+                    "id": "Status",
+                    "string": "%[1]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessStatus",
+                    "underlyingType": "string",
+                    "argNum": 1,
+                    "expr": "status"
+                },
+                {
+                    "id": "ManagedStatus",
+                    "string": "%[2]s",
+                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
+                    "underlyingType": "string",
+                    "argNum": 2,
+                    "expr": "managedStatus"
+                }
+            ]
+        },
+        {
+            "id": "delete process instance {ID} failed, err: {Err}",
+            "message": "delete process instance {ID} failed, err: {Err}",
+            "translation": "删除进程实例{ID}失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "ID",
+                    "string": "%[1]d",
+                    "type": "uint32",
+                    "underlyingType": "uint32",
+                    "argNum": 1,
+                    "expr": "inst.ID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
                 }
             ]
         },
@@ -3485,6 +3591,66 @@
             "id": "build process operate task failed, err: {Err}",
             "message": "build process operate task failed, err: {Err}",
             "translation": "构建进程操作任务失败, err: {Err}",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "get task common payload failed, err: {Err}",
+            "message": "get task common payload failed, err: {Err}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "set task common payload failed, err: {Err}",
+            "message": "set task common payload failed, err: {Err}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "dispatch process operate task group failed, err: {Err}",
+            "message": "dispatch process operate task group failed, err: {Err}",
+            "translation": "",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "set task group payload failed, err: {Err}",
+            "message": "set task group payload failed, err: {Err}",
+            "translation": "",
             "placeholders": [
                 {
                     "id": "Err",
@@ -3597,67 +3763,6 @@
                     "type": "error",
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
-            "id": "unsupported managed status for delete: {ManagedStatus}",
-            "message": "unsupported managed status for delete: {ManagedStatus}",
-            "translation": "不支持删除的管理状态: {ManagedStatus}",
-            "placeholders": [
-                {
-                    "id": "ManagedStatus",
-                    "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "managedStatus"
-                }
-            ]
-        },
-        {
-            "id": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
-            "message": "unsupported process state for delete: status={Status} managedStatus={ManagedStatus}",
-            "translation": "不支持删除的进程状态: status={Status} managedStatus={ManagedStatus}",
-            "placeholders": [
-                {
-                    "id": "Status",
-                    "string": "%[1]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessStatus",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "status"
-                },
-                {
-                    "id": "ManagedStatus",
-                    "string": "%[2]s",
-                    "type": "github.com/TencentBlueKing/bk-bscp/pkg/dal/table.ProcessManagedStatus",
-                    "underlyingType": "string",
-                    "argNum": 2,
-                    "expr": "managedStatus"
-                }
-            ]
-        },
-        {
-            "id": "delete process instance {ID} failed, err: {Err}",
-            "message": "delete process instance {ID} failed, err: {Err}",
-            "translation": "删除进程实例{ID}失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "ID",
-                    "string": "%[1]d",
-                    "type": "uint32",
-                    "underlyingType": "uint32",
-                    "argNum": 1,
-                    "expr": "inst.ID"
-                },
-                {
-                    "id": "Err",
-                    "string": "%[2]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 2,
                     "expr": "err"
                 }
             ]
@@ -4031,21 +4136,6 @@
             ]
         },
         {
-            "id": "get business data failed, err: {Err}",
-            "message": "get business data failed, err: {Err}",
-            "translation": "获取业务数据失败, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "Err",
-                    "string": "%[1]v",
-                    "type": "error",
-                    "underlyingType": "interface{Error() string}",
-                    "argNum": 1,
-                    "expr": "err"
-                }
-            ]
-        },
-        {
             "id": "list task batch failed, err: {Err}",
             "message": "list task batch failed, err: {Err}",
             "translation": "列出任务批次失败, err: {Err}",
@@ -4104,17 +4194,17 @@
             ]
         },
         {
-            "id": "list tasks from task storage failed, err: {Err}",
-            "message": "list tasks from task storage failed, err: {Err}",
-            "translation": "从任务存储列出任务失败, err: {Err}",
+            "id": "list tasks from task storage failed, err: {ListErr}",
+            "message": "list tasks from task storage failed, err: {ListErr}",
+            "translation": "",
             "placeholders": [
                 {
-                    "id": "Err",
+                    "id": "ListErr",
                     "string": "%[1]v",
                     "type": "error",
                     "underlyingType": "interface{Error() string}",
                     "argNum": 1,
-                    "expr": "err"
+                    "expr": "listErr"
                 }
             ]
         },
@@ -4213,32 +4303,17 @@
             ]
         },
         {
-            "id": "operate process step not found for taskID: {TaskID}",
-            "message": "operate process step not found for taskID: {TaskID}",
-            "translation": "未找到任务{TaskID}的操作进程步骤",
+            "id": "retry task group {GroupID} failed, err: {Err}",
+            "message": "retry task group {GroupID} failed, err: {Err}",
+            "translation": "",
             "placeholders": [
                 {
-                    "id": "TaskID",
+                    "id": "GroupID",
                     "string": "%[1]s",
                     "type": "string",
                     "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "failedTask.TaskID"
-                }
-            ]
-        },
-        {
-            "id": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
-            "message": "get operate payload from task step failed, taskID: {TaskID}, err: {Err}",
-            "translation": "从任务步骤获取操作负载失败, taskID: {TaskID}, err: {Err}",
-            "placeholders": [
-                {
-                    "id": "TaskID",
-                    "string": "%[1]s",
-                    "type": "string",
-                    "underlyingType": "string",
-                    "argNum": 1,
-                    "expr": "failedTask.TaskID"
+                    "expr": "groupID"
                 },
                 {
                     "id": "Err",
@@ -4251,17 +4326,17 @@
             ]
         },
         {
-            "id": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
-            "message": "get process instance by ID {ProcessInstanceID} failed, err: {Err}",
-            "translation": "根据ID获取进程实例{ProcessInstanceID}失败, err: {Err}",
+            "id": "refresh retry task {TaskID} payload failed, err: {Err}",
+            "message": "refresh retry task {TaskID} payload failed, err: {Err}",
+            "translation": "",
             "placeholders": [
                 {
-                    "id": "ProcessInstanceID",
-                    "string": "%[1]d",
-                    "type": "uint32",
-                    "underlyingType": "uint32",
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "processPayload.ProcessInstanceID"
+                    "expr": "task.TaskID"
                 },
                 {
                     "id": "Err",
@@ -4274,17 +4349,25 @@
             ]
         },
         {
-            "id": "process instance with ID {ProcessInstanceID} does not exist",
-            "message": "process instance with ID {ProcessInstanceID} does not exist",
-            "translation": "进程实例ID {ProcessInstanceID}不存在",
+            "id": "update retry task {TaskID} payload failed, err: {Err}",
+            "message": "update retry task {TaskID} payload failed, err: {Err}",
+            "translation": "",
             "placeholders": [
                 {
-                    "id": "ProcessInstanceID",
-                    "string": "%[1]d",
-                    "type": "uint32",
-                    "underlyingType": "uint32",
+                    "id": "TaskID",
+                    "string": "%[1]s",
+                    "type": "string",
+                    "underlyingType": "string",
                     "argNum": 1,
-                    "expr": "processPayload.ProcessInstanceID"
+                    "expr": "task.TaskID"
+                },
+                {
+                    "id": "Err",
+                    "string": "%[2]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 2,
+                    "expr": "err"
                 }
             ]
         },
@@ -5712,6 +5795,16 @@
             "id": "ConfigCheck",
             "message": "ConfigCheck",
             "translation": "配置检查"
+        },
+        {
+            "id": "UpdateRegister",
+            "message": "UpdateRegister",
+            "translation": "更新托管信息"
+        },
+        {
+            "id": "Delete",
+            "message": "Delete",
+            "translation": "清除"
         },
         {
             "id": "Executing",

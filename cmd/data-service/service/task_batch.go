@@ -747,7 +747,8 @@ func (s *Service) retryProcessTask(kt *kit.Kit, taskStorage istore.Store, bizID 
 }
 
 // refreshRetryTaskPayload 用实例当前状态改写任务各步骤 payload 里的原始状态字段，
-// 并同步刷新 CommonPayload 中的 CMDB 最新配置快照（LatestConfigData；ConfigData 保留 DB source_data）。
+// 并同步刷新 CommonPayload 中的 CMDB 最新配置快照（LatestConfigData；ConfigData 保留下发时
+// 取的 DB 配置，普通操作为 source_data，更新托管为 prev_data）。
 //
 // payload 里的原始状态是首次下发时的快照，仅用于失败回滚与前置校验。任务失败后回滚、
 // CMDB/GSE 状态同步、其他批次操作都会让实例真实状态与该快照脱节，此时沿用旧值会让
@@ -763,14 +764,46 @@ func (s *Service) refreshRetryTaskPayload(kt *kit.Kit, task *taskTypes.Task,
 	inst *table.ProcessInstance, configSnapshot map[uint32]string) error {
 
 	refreshed := false
-	// 更新托管任务的步骤 payload 是 UpdateRegisterPayload，若按 OperatePayload 解析回写
-	// 会丢失 OperateType / EnableProcessRestart / CCSyncStatus 等字段，需按任务类型区分
+	// 更新托管任务的步骤 payload 是 UpdateRegisterPayload，清除实例任务的步骤 payload 是
+	// DeletePayload，若按 OperatePayload 解析回写会丢失 OperateType / CCSyncStatus 等字段，
+	// 需按任务类型区分
 	isUpdateRegister := false
 	if _, ok := task.GetStep(process.OperationCompletedStepName.String()); ok {
 		isUpdateRegister = true
 	}
+	// 清除任务重试时沿用下发时拆解后的实际操作，无需刷新配置快照，仅同步原始状态字段
+	isDelete := false
+	if _, ok := task.GetStep(process.DeleteFinalizeOperateStepName.String()); ok {
+		isDelete = true
+	}
 
 	for _, step := range task.Steps {
+		if isDelete {
+			payload := &process.DeletePayload{}
+			if err := step.GetPayload(payload); err != nil {
+				logs.Warnf("get step %s payload failed, taskID: %s, err: %v, rid: %s",
+					step.GetName(), task.TaskID, err, kt.Rid)
+				continue
+			}
+			if payload.ProcessInstanceID != inst.ID {
+				continue
+			}
+			if payload.OriginalProcStatus == inst.Spec.Status &&
+				payload.OriginalProcManagedStatus == inst.Spec.ManagedStatus {
+				continue
+			}
+			payload.OriginalProcStatus = inst.Spec.Status
+			payload.OriginalProcManagedStatus = inst.Spec.ManagedStatus
+			if err := step.SetPayload(payload); err != nil {
+				logs.Errorf("set step %s payload failed, taskID: %s, err: %v, rid: %s",
+					step.GetName(), task.TaskID, err, kt.Rid)
+				return errf.Errorf(errf.Internal, "%s", i18n.T(kt,
+					"refresh retry task %s payload failed, err: %v", task.TaskID, err))
+			}
+			refreshed = true
+			continue
+		}
+
 		if isUpdateRegister {
 			payload := &process.UpdateRegisterPayload{}
 			if err := step.GetPayload(payload); err != nil {

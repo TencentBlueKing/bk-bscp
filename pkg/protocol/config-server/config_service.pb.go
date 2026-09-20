@@ -23410,12 +23410,10 @@ type OperateProcessReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BizId                uint32                `protobuf:"varint,1,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
-	ProcessIds           []uint32              `protobuf:"varint,2,rep,packed,name=process_ids,json=processIds,proto3" json:"process_ids,omitempty"`
-	ProcessInstanceIds   []uint32              `protobuf:"varint,3,rep,packed,name=process_instance_ids,json=processInstanceIds,proto3" json:"process_instance_ids,omitempty"`
-	OperateType          string                `protobuf:"bytes,4,opt,name=operate_type,json=operateType,proto3" json:"operate_type,omitempty"`
-	EnableProcessRestart bool                  `protobuf:"varint,5,opt,name=enable_process_restart,json=enableProcessRestart,proto3" json:"enable_process_restart,omitempty"`
-	OperateRange         *process.OperateRange `protobuf:"bytes,6,opt,name=operate_range,json=operateRange,proto3" json:"operate_range,omitempty"`
+	BizId        uint32                `protobuf:"varint,1,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
+	ProcessIds   []uint32              `protobuf:"varint,2,rep,packed,name=process_ids,json=processIds,proto3" json:"process_ids,omitempty"`
+	OperateType  string                `protobuf:"bytes,4,opt,name=operate_type,json=operateType,proto3" json:"operate_type,omitempty"`
+	OperateRange *process.OperateRange `protobuf:"bytes,6,opt,name=operate_range,json=operateRange,proto3" json:"operate_range,omitempty"`
 }
 
 func (x *OperateProcessReq) Reset() {
@@ -23462,13 +23460,6 @@ func (x *OperateProcessReq) GetProcessIds() []uint32 {
 	return nil
 }
 
-func (x *OperateProcessReq) GetProcessInstanceIds() []uint32 {
-	if x != nil {
-		return x.ProcessInstanceIds
-	}
-	return nil
-}
-
 func (x *OperateProcessReq) GetOperateType() string {
 	if x != nil {
 		return x.OperateType
@@ -23476,18 +23467,125 @@ func (x *OperateProcessReq) GetOperateType() string {
 	return ""
 }
 
-func (x *OperateProcessReq) GetEnableProcessRestart() bool {
+func (x *OperateProcessReq) GetOperateRange() *process.OperateRange {
+	if x != nil {
+		return x.OperateRange
+	}
+	return nil
+}
+
+type OperateUpdateRegisterProcessReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BizId                uint32 `protobuf:"varint,1,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
+	ProcessId            uint32 `protobuf:"varint,2,opt,name=process_id,json=processId,proto3" json:"process_id,omitempty"`
+	EnableProcessRestart bool   `protobuf:"varint,3,opt,name=enable_process_restart,json=enableProcessRestart,proto3" json:"enable_process_restart,omitempty"`
+}
+
+func (x *OperateUpdateRegisterProcessReq) Reset() {
+	*x = OperateUpdateRegisterProcessReq{}
+	mi := &file_config_service_proto_msgTypes[346]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperateUpdateRegisterProcessReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperateUpdateRegisterProcessReq) ProtoMessage() {}
+
+func (x *OperateUpdateRegisterProcessReq) ProtoReflect() protoreflect.Message {
+	mi := &file_config_service_proto_msgTypes[346]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperateUpdateRegisterProcessReq.ProtoReflect.Descriptor instead.
+func (*OperateUpdateRegisterProcessReq) Descriptor() ([]byte, []int) {
+	return file_config_service_proto_rawDescGZIP(), []int{346}
+}
+
+func (x *OperateUpdateRegisterProcessReq) GetBizId() uint32 {
+	if x != nil {
+		return x.BizId
+	}
+	return 0
+}
+
+func (x *OperateUpdateRegisterProcessReq) GetProcessId() uint32 {
+	if x != nil {
+		return x.ProcessId
+	}
+	return 0
+}
+
+func (x *OperateUpdateRegisterProcessReq) GetEnableProcessRestart() bool {
 	if x != nil {
 		return x.EnableProcessRestart
 	}
 	return false
 }
 
-func (x *OperateProcessReq) GetOperateRange() *process.OperateRange {
+type OperateDeleteProcessReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BizId     uint32 `protobuf:"varint,1,opt,name=biz_id,json=bizId,proto3" json:"biz_id,omitempty"`
+	ProcessId uint32 `protobuf:"varint,2,opt,name=process_id,json=processId,proto3" json:"process_id,omitempty"`
+}
+
+func (x *OperateDeleteProcessReq) Reset() {
+	*x = OperateDeleteProcessReq{}
+	mi := &file_config_service_proto_msgTypes[347]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperateDeleteProcessReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperateDeleteProcessReq) ProtoMessage() {}
+
+func (x *OperateDeleteProcessReq) ProtoReflect() protoreflect.Message {
+	mi := &file_config_service_proto_msgTypes[347]
 	if x != nil {
-		return x.OperateRange
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	return nil
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperateDeleteProcessReq.ProtoReflect.Descriptor instead.
+func (*OperateDeleteProcessReq) Descriptor() ([]byte, []int) {
+	return file_config_service_proto_rawDescGZIP(), []int{347}
+}
+
+func (x *OperateDeleteProcessReq) GetBizId() uint32 {
+	if x != nil {
+		return x.BizId
+	}
+	return 0
+}
+
+func (x *OperateDeleteProcessReq) GetProcessId() uint32 {
+	if x != nil {
+		return x.ProcessId
+	}
+	return 0
 }
 
 type OperateProcessResp struct {
@@ -23500,7 +23598,7 @@ type OperateProcessResp struct {
 
 func (x *OperateProcessResp) Reset() {
 	*x = OperateProcessResp{}
-	mi := &file_config_service_proto_msgTypes[346]
+	mi := &file_config_service_proto_msgTypes[348]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23512,7 +23610,7 @@ func (x *OperateProcessResp) String() string {
 func (*OperateProcessResp) ProtoMessage() {}
 
 func (x *OperateProcessResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[346]
+	mi := &file_config_service_proto_msgTypes[348]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23525,7 +23623,7 @@ func (x *OperateProcessResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperateProcessResp.ProtoReflect.Descriptor instead.
 func (*OperateProcessResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{346}
+	return file_config_service_proto_rawDescGZIP(), []int{348}
 }
 
 func (x *OperateProcessResp) GetBatchID() uint32 {
@@ -23545,7 +23643,7 @@ type SyncCmdbGseStatusReq struct {
 
 func (x *SyncCmdbGseStatusReq) Reset() {
 	*x = SyncCmdbGseStatusReq{}
-	mi := &file_config_service_proto_msgTypes[347]
+	mi := &file_config_service_proto_msgTypes[349]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23557,7 +23655,7 @@ func (x *SyncCmdbGseStatusReq) String() string {
 func (*SyncCmdbGseStatusReq) ProtoMessage() {}
 
 func (x *SyncCmdbGseStatusReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[347]
+	mi := &file_config_service_proto_msgTypes[349]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23570,7 +23668,7 @@ func (x *SyncCmdbGseStatusReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncCmdbGseStatusReq.ProtoReflect.Descriptor instead.
 func (*SyncCmdbGseStatusReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{347}
+	return file_config_service_proto_rawDescGZIP(), []int{349}
 }
 
 func (x *SyncCmdbGseStatusReq) GetBizId() uint32 {
@@ -23590,7 +23688,7 @@ type SyncCmdbGseStatusResp struct {
 
 func (x *SyncCmdbGseStatusResp) Reset() {
 	*x = SyncCmdbGseStatusResp{}
-	mi := &file_config_service_proto_msgTypes[348]
+	mi := &file_config_service_proto_msgTypes[350]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23602,7 +23700,7 @@ func (x *SyncCmdbGseStatusResp) String() string {
 func (*SyncCmdbGseStatusResp) ProtoMessage() {}
 
 func (x *SyncCmdbGseStatusResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[348]
+	mi := &file_config_service_proto_msgTypes[350]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23615,7 +23713,7 @@ func (x *SyncCmdbGseStatusResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncCmdbGseStatusResp.ProtoReflect.Descriptor instead.
 func (*SyncCmdbGseStatusResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{348}
+	return file_config_service_proto_rawDescGZIP(), []int{350}
 }
 
 func (x *SyncCmdbGseStatusResp) GetTaskId() string {
@@ -23637,7 +23735,7 @@ type SortRule struct {
 
 func (x *SortRule) Reset() {
 	*x = SortRule{}
-	mi := &file_config_service_proto_msgTypes[349]
+	mi := &file_config_service_proto_msgTypes[351]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23649,7 +23747,7 @@ func (x *SortRule) String() string {
 func (*SortRule) ProtoMessage() {}
 
 func (x *SortRule) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[349]
+	mi := &file_config_service_proto_msgTypes[351]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23662,7 +23760,7 @@ func (x *SortRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SortRule.ProtoReflect.Descriptor instead.
 func (*SortRule) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{349}
+	return file_config_service_proto_rawDescGZIP(), []int{351}
 }
 
 func (x *SortRule) GetField() string {
@@ -23698,7 +23796,7 @@ type ListTaskBatchReq struct {
 
 func (x *ListTaskBatchReq) Reset() {
 	*x = ListTaskBatchReq{}
-	mi := &file_config_service_proto_msgTypes[350]
+	mi := &file_config_service_proto_msgTypes[352]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23710,7 +23808,7 @@ func (x *ListTaskBatchReq) String() string {
 func (*ListTaskBatchReq) ProtoMessage() {}
 
 func (x *ListTaskBatchReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[350]
+	mi := &file_config_service_proto_msgTypes[352]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23723,7 +23821,7 @@ func (x *ListTaskBatchReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTaskBatchReq.ProtoReflect.Descriptor instead.
 func (*ListTaskBatchReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{350}
+	return file_config_service_proto_rawDescGZIP(), []int{352}
 }
 
 func (x *ListTaskBatchReq) GetBizId() uint32 {
@@ -23808,7 +23906,7 @@ type ListTaskBatchResp struct {
 
 func (x *ListTaskBatchResp) Reset() {
 	*x = ListTaskBatchResp{}
-	mi := &file_config_service_proto_msgTypes[351]
+	mi := &file_config_service_proto_msgTypes[353]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23820,7 +23918,7 @@ func (x *ListTaskBatchResp) String() string {
 func (*ListTaskBatchResp) ProtoMessage() {}
 
 func (x *ListTaskBatchResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[351]
+	mi := &file_config_service_proto_msgTypes[353]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23833,7 +23931,7 @@ func (x *ListTaskBatchResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTaskBatchResp.ProtoReflect.Descriptor instead.
 func (*ListTaskBatchResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{351}
+	return file_config_service_proto_rawDescGZIP(), []int{353}
 }
 
 func (x *ListTaskBatchResp) GetCount() uint32 {
@@ -23878,7 +23976,7 @@ type GetTaskBatchDetailReq struct {
 
 func (x *GetTaskBatchDetailReq) Reset() {
 	*x = GetTaskBatchDetailReq{}
-	mi := &file_config_service_proto_msgTypes[352]
+	mi := &file_config_service_proto_msgTypes[354]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -23890,7 +23988,7 @@ func (x *GetTaskBatchDetailReq) String() string {
 func (*GetTaskBatchDetailReq) ProtoMessage() {}
 
 func (x *GetTaskBatchDetailReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[352]
+	mi := &file_config_service_proto_msgTypes[354]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -23903,7 +24001,7 @@ func (x *GetTaskBatchDetailReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaskBatchDetailReq.ProtoReflect.Descriptor instead.
 func (*GetTaskBatchDetailReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{352}
+	return file_config_service_proto_rawDescGZIP(), []int{354}
 }
 
 func (x *GetTaskBatchDetailReq) GetBizId() uint32 {
@@ -24004,7 +24102,7 @@ type GetTaskBatchDetailResp struct {
 
 func (x *GetTaskBatchDetailResp) Reset() {
 	*x = GetTaskBatchDetailResp{}
-	mi := &file_config_service_proto_msgTypes[353]
+	mi := &file_config_service_proto_msgTypes[355]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24016,7 +24114,7 @@ func (x *GetTaskBatchDetailResp) String() string {
 func (*GetTaskBatchDetailResp) ProtoMessage() {}
 
 func (x *GetTaskBatchDetailResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[353]
+	mi := &file_config_service_proto_msgTypes[355]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24029,7 +24127,7 @@ func (x *GetTaskBatchDetailResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaskBatchDetailResp.ProtoReflect.Descriptor instead.
 func (*GetTaskBatchDetailResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{353}
+	return file_config_service_proto_rawDescGZIP(), []int{355}
 }
 
 func (x *GetTaskBatchDetailResp) GetTasks() []*task_batch.TaskDetail {
@@ -24079,7 +24177,7 @@ type RetryTasksReq struct {
 
 func (x *RetryTasksReq) Reset() {
 	*x = RetryTasksReq{}
-	mi := &file_config_service_proto_msgTypes[354]
+	mi := &file_config_service_proto_msgTypes[356]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24091,7 +24189,7 @@ func (x *RetryTasksReq) String() string {
 func (*RetryTasksReq) ProtoMessage() {}
 
 func (x *RetryTasksReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[354]
+	mi := &file_config_service_proto_msgTypes[356]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24104,7 +24202,7 @@ func (x *RetryTasksReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryTasksReq.ProtoReflect.Descriptor instead.
 func (*RetryTasksReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{354}
+	return file_config_service_proto_rawDescGZIP(), []int{356}
 }
 
 func (x *RetryTasksReq) GetBizId() uint32 {
@@ -24138,7 +24236,7 @@ type RetryTasksResp struct {
 
 func (x *RetryTasksResp) Reset() {
 	*x = RetryTasksResp{}
-	mi := &file_config_service_proto_msgTypes[355]
+	mi := &file_config_service_proto_msgTypes[357]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24150,7 +24248,7 @@ func (x *RetryTasksResp) String() string {
 func (*RetryTasksResp) ProtoMessage() {}
 
 func (x *RetryTasksResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[355]
+	mi := &file_config_service_proto_msgTypes[357]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24163,7 +24261,7 @@ func (x *RetryTasksResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryTasksResp.ProtoReflect.Descriptor instead.
 func (*RetryTasksResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{355}
+	return file_config_service_proto_rawDescGZIP(), []int{357}
 }
 
 func (x *RetryTasksResp) GetRetryCount() uint32 {
@@ -24183,7 +24281,7 @@ type CmdbGseStatusReq struct {
 
 func (x *CmdbGseStatusReq) Reset() {
 	*x = CmdbGseStatusReq{}
-	mi := &file_config_service_proto_msgTypes[356]
+	mi := &file_config_service_proto_msgTypes[358]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24195,7 +24293,7 @@ func (x *CmdbGseStatusReq) String() string {
 func (*CmdbGseStatusReq) ProtoMessage() {}
 
 func (x *CmdbGseStatusReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[356]
+	mi := &file_config_service_proto_msgTypes[358]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24208,7 +24306,7 @@ func (x *CmdbGseStatusReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CmdbGseStatusReq.ProtoReflect.Descriptor instead.
 func (*CmdbGseStatusReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{356}
+	return file_config_service_proto_rawDescGZIP(), []int{358}
 }
 
 func (x *CmdbGseStatusReq) GetBizId() uint32 {
@@ -24229,7 +24327,7 @@ type CmdbGseStatusResp struct {
 
 func (x *CmdbGseStatusResp) Reset() {
 	*x = CmdbGseStatusResp{}
-	mi := &file_config_service_proto_msgTypes[357]
+	mi := &file_config_service_proto_msgTypes[359]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24241,7 +24339,7 @@ func (x *CmdbGseStatusResp) String() string {
 func (*CmdbGseStatusResp) ProtoMessage() {}
 
 func (x *CmdbGseStatusResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[357]
+	mi := &file_config_service_proto_msgTypes[359]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24254,7 +24352,7 @@ func (x *CmdbGseStatusResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CmdbGseStatusResp.ProtoReflect.Descriptor instead.
 func (*CmdbGseStatusResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{357}
+	return file_config_service_proto_rawDescGZIP(), []int{359}
 }
 
 func (x *CmdbGseStatusResp) GetLastSyncTime() *timestamppb.Timestamp {
@@ -24282,7 +24380,7 @@ type ProcessFilterOptionsReq struct {
 
 func (x *ProcessFilterOptionsReq) Reset() {
 	*x = ProcessFilterOptionsReq{}
-	mi := &file_config_service_proto_msgTypes[358]
+	mi := &file_config_service_proto_msgTypes[360]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24294,7 +24392,7 @@ func (x *ProcessFilterOptionsReq) String() string {
 func (*ProcessFilterOptionsReq) ProtoMessage() {}
 
 func (x *ProcessFilterOptionsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[358]
+	mi := &file_config_service_proto_msgTypes[360]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24307,7 +24405,7 @@ func (x *ProcessFilterOptionsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessFilterOptionsReq.ProtoReflect.Descriptor instead.
 func (*ProcessFilterOptionsReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{358}
+	return file_config_service_proto_rawDescGZIP(), []int{360}
 }
 
 func (x *ProcessFilterOptionsReq) GetBizId() uint32 {
@@ -24338,7 +24436,7 @@ type ProcessFilterOptionsResp struct {
 
 func (x *ProcessFilterOptionsResp) Reset() {
 	*x = ProcessFilterOptionsResp{}
-	mi := &file_config_service_proto_msgTypes[359]
+	mi := &file_config_service_proto_msgTypes[361]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24350,7 +24448,7 @@ func (x *ProcessFilterOptionsResp) String() string {
 func (*ProcessFilterOptionsResp) ProtoMessage() {}
 
 func (x *ProcessFilterOptionsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[359]
+	mi := &file_config_service_proto_msgTypes[361]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24363,7 +24461,7 @@ func (x *ProcessFilterOptionsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessFilterOptionsResp.ProtoReflect.Descriptor instead.
 func (*ProcessFilterOptionsResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{359}
+	return file_config_service_proto_rawDescGZIP(), []int{361}
 }
 
 func (x *ProcessFilterOptionsResp) GetSets() []*process.ProcessFilterOption {
@@ -24411,7 +24509,7 @@ type BizTopoReq struct {
 
 func (x *BizTopoReq) Reset() {
 	*x = BizTopoReq{}
-	mi := &file_config_service_proto_msgTypes[360]
+	mi := &file_config_service_proto_msgTypes[362]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24423,7 +24521,7 @@ func (x *BizTopoReq) String() string {
 func (*BizTopoReq) ProtoMessage() {}
 
 func (x *BizTopoReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[360]
+	mi := &file_config_service_proto_msgTypes[362]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24436,7 +24534,7 @@ func (x *BizTopoReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BizTopoReq.ProtoReflect.Descriptor instead.
 func (*BizTopoReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{360}
+	return file_config_service_proto_rawDescGZIP(), []int{362}
 }
 
 func (x *BizTopoReq) GetBizId() uint32 {
@@ -24456,7 +24554,7 @@ type BizTopoResp struct {
 
 func (x *BizTopoResp) Reset() {
 	*x = BizTopoResp{}
-	mi := &file_config_service_proto_msgTypes[361]
+	mi := &file_config_service_proto_msgTypes[363]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24468,7 +24566,7 @@ func (x *BizTopoResp) String() string {
 func (*BizTopoResp) ProtoMessage() {}
 
 func (x *BizTopoResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[361]
+	mi := &file_config_service_proto_msgTypes[363]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24481,7 +24579,7 @@ func (x *BizTopoResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BizTopoResp.ProtoReflect.Descriptor instead.
 func (*BizTopoResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{361}
+	return file_config_service_proto_rawDescGZIP(), []int{363}
 }
 
 func (x *BizTopoResp) GetBizTopoNodes() []*config_template.BizTopoNode {
@@ -24501,7 +24599,7 @@ type ServiceTemplateReq struct {
 
 func (x *ServiceTemplateReq) Reset() {
 	*x = ServiceTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[362]
+	mi := &file_config_service_proto_msgTypes[364]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24513,7 +24611,7 @@ func (x *ServiceTemplateReq) String() string {
 func (*ServiceTemplateReq) ProtoMessage() {}
 
 func (x *ServiceTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[362]
+	mi := &file_config_service_proto_msgTypes[364]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24526,7 +24624,7 @@ func (x *ServiceTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceTemplateReq.ProtoReflect.Descriptor instead.
 func (*ServiceTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{362}
+	return file_config_service_proto_rawDescGZIP(), []int{364}
 }
 
 func (x *ServiceTemplateReq) GetBizId() uint32 {
@@ -24546,7 +24644,7 @@ type ServiceTemplateResp struct {
 
 func (x *ServiceTemplateResp) Reset() {
 	*x = ServiceTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[363]
+	mi := &file_config_service_proto_msgTypes[365]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24558,7 +24656,7 @@ func (x *ServiceTemplateResp) String() string {
 func (*ServiceTemplateResp) ProtoMessage() {}
 
 func (x *ServiceTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[363]
+	mi := &file_config_service_proto_msgTypes[365]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24571,7 +24669,7 @@ func (x *ServiceTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceTemplateResp.ProtoReflect.Descriptor instead.
 func (*ServiceTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{363}
+	return file_config_service_proto_rawDescGZIP(), []int{365}
 }
 
 func (x *ServiceTemplateResp) GetServiceTemplates() []*config_template.ServiceTemplate {
@@ -24593,7 +24691,7 @@ type ProcessTemplateReq struct {
 
 func (x *ProcessTemplateReq) Reset() {
 	*x = ProcessTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[364]
+	mi := &file_config_service_proto_msgTypes[366]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24605,7 +24703,7 @@ func (x *ProcessTemplateReq) String() string {
 func (*ProcessTemplateReq) ProtoMessage() {}
 
 func (x *ProcessTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[364]
+	mi := &file_config_service_proto_msgTypes[366]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24618,7 +24716,7 @@ func (x *ProcessTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessTemplateReq.ProtoReflect.Descriptor instead.
 func (*ProcessTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{364}
+	return file_config_service_proto_rawDescGZIP(), []int{366}
 }
 
 func (x *ProcessTemplateReq) GetBizId() uint32 {
@@ -24652,7 +24750,7 @@ type ProcessTemplateResp struct {
 
 func (x *ProcessTemplateResp) Reset() {
 	*x = ProcessTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[365]
+	mi := &file_config_service_proto_msgTypes[367]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24664,7 +24762,7 @@ func (x *ProcessTemplateResp) String() string {
 func (*ProcessTemplateResp) ProtoMessage() {}
 
 func (x *ProcessTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[365]
+	mi := &file_config_service_proto_msgTypes[367]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24677,7 +24775,7 @@ func (x *ProcessTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessTemplateResp.ProtoReflect.Descriptor instead.
 func (*ProcessTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{365}
+	return file_config_service_proto_rawDescGZIP(), []int{367}
 }
 
 func (x *ProcessTemplateResp) GetProcessTemplates() []*config_template.ProcTemplate {
@@ -24703,7 +24801,7 @@ type ListConfigInstancesReq struct {
 
 func (x *ListConfigInstancesReq) Reset() {
 	*x = ListConfigInstancesReq{}
-	mi := &file_config_service_proto_msgTypes[366]
+	mi := &file_config_service_proto_msgTypes[368]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24715,7 +24813,7 @@ func (x *ListConfigInstancesReq) String() string {
 func (*ListConfigInstancesReq) ProtoMessage() {}
 
 func (x *ListConfigInstancesReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[366]
+	mi := &file_config_service_proto_msgTypes[368]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24728,7 +24826,7 @@ func (x *ListConfigInstancesReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigInstancesReq.ProtoReflect.Descriptor instead.
 func (*ListConfigInstancesReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{366}
+	return file_config_service_proto_rawDescGZIP(), []int{368}
 }
 
 func (x *ListConfigInstancesReq) GetBizId() uint32 {
@@ -24792,7 +24890,7 @@ type ListConfigInstancesResp struct {
 
 func (x *ListConfigInstancesResp) Reset() {
 	*x = ListConfigInstancesResp{}
-	mi := &file_config_service_proto_msgTypes[367]
+	mi := &file_config_service_proto_msgTypes[369]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24804,7 +24902,7 @@ func (x *ListConfigInstancesResp) String() string {
 func (*ListConfigInstancesResp) ProtoMessage() {}
 
 func (x *ListConfigInstancesResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[367]
+	mi := &file_config_service_proto_msgTypes[369]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24817,7 +24915,7 @@ func (x *ListConfigInstancesResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigInstancesResp.ProtoReflect.Descriptor instead.
 func (*ListConfigInstancesResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{367}
+	return file_config_service_proto_rawDescGZIP(), []int{369}
 }
 
 func (x *ListConfigInstancesResp) GetCount() uint32 {
@@ -24854,7 +24952,7 @@ type CompareConfigReq struct {
 
 func (x *CompareConfigReq) Reset() {
 	*x = CompareConfigReq{}
-	mi := &file_config_service_proto_msgTypes[368]
+	mi := &file_config_service_proto_msgTypes[370]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24866,7 +24964,7 @@ func (x *CompareConfigReq) String() string {
 func (*CompareConfigReq) ProtoMessage() {}
 
 func (x *CompareConfigReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[368]
+	mi := &file_config_service_proto_msgTypes[370]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24879,7 +24977,7 @@ func (x *CompareConfigReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareConfigReq.ProtoReflect.Descriptor instead.
 func (*CompareConfigReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{368}
+	return file_config_service_proto_rawDescGZIP(), []int{370}
 }
 
 func (x *CompareConfigReq) GetBizId() uint32 {
@@ -24921,7 +25019,7 @@ type CompareConfigResp struct {
 
 func (x *CompareConfigResp) Reset() {
 	*x = CompareConfigResp{}
-	mi := &file_config_service_proto_msgTypes[369]
+	mi := &file_config_service_proto_msgTypes[371]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24933,7 +25031,7 @@ func (x *CompareConfigResp) String() string {
 func (*CompareConfigResp) ProtoMessage() {}
 
 func (x *CompareConfigResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[369]
+	mi := &file_config_service_proto_msgTypes[371]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -24946,7 +25044,7 @@ func (x *CompareConfigResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareConfigResp.ProtoReflect.Descriptor instead.
 func (*CompareConfigResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{369}
+	return file_config_service_proto_rawDescGZIP(), []int{371}
 }
 
 func (x *CompareConfigResp) GetOldConfigContent() *CompareConfigResp_ConfigContent {
@@ -24975,7 +25073,7 @@ type GenerateConfigReq struct {
 
 func (x *GenerateConfigReq) Reset() {
 	*x = GenerateConfigReq{}
-	mi := &file_config_service_proto_msgTypes[370]
+	mi := &file_config_service_proto_msgTypes[372]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -24987,7 +25085,7 @@ func (x *GenerateConfigReq) String() string {
 func (*GenerateConfigReq) ProtoMessage() {}
 
 func (x *GenerateConfigReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[370]
+	mi := &file_config_service_proto_msgTypes[372]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25000,7 +25098,7 @@ func (x *GenerateConfigReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateConfigReq.ProtoReflect.Descriptor instead.
 func (*GenerateConfigReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{370}
+	return file_config_service_proto_rawDescGZIP(), []int{372}
 }
 
 func (x *GenerateConfigReq) GetBizId() uint32 {
@@ -25034,7 +25132,7 @@ type GenerateConfigResp struct {
 
 func (x *GenerateConfigResp) Reset() {
 	*x = GenerateConfigResp{}
-	mi := &file_config_service_proto_msgTypes[371]
+	mi := &file_config_service_proto_msgTypes[373]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25046,7 +25144,7 @@ func (x *GenerateConfigResp) String() string {
 func (*GenerateConfigResp) ProtoMessage() {}
 
 func (x *GenerateConfigResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[371]
+	mi := &file_config_service_proto_msgTypes[373]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25059,7 +25157,7 @@ func (x *GenerateConfigResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateConfigResp.ProtoReflect.Descriptor instead.
 func (*GenerateConfigResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{371}
+	return file_config_service_proto_rawDescGZIP(), []int{373}
 }
 
 func (x *GenerateConfigResp) GetBatchId() uint32 {
@@ -25081,7 +25179,7 @@ type CheckConfigReq struct {
 
 func (x *CheckConfigReq) Reset() {
 	*x = CheckConfigReq{}
-	mi := &file_config_service_proto_msgTypes[372]
+	mi := &file_config_service_proto_msgTypes[374]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25093,7 +25191,7 @@ func (x *CheckConfigReq) String() string {
 func (*CheckConfigReq) ProtoMessage() {}
 
 func (x *CheckConfigReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[372]
+	mi := &file_config_service_proto_msgTypes[374]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25106,7 +25204,7 @@ func (x *CheckConfigReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckConfigReq.ProtoReflect.Descriptor instead.
 func (*CheckConfigReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{372}
+	return file_config_service_proto_rawDescGZIP(), []int{374}
 }
 
 func (x *CheckConfigReq) GetBizId() uint32 {
@@ -25140,7 +25238,7 @@ type CheckConfigResp struct {
 
 func (x *CheckConfigResp) Reset() {
 	*x = CheckConfigResp{}
-	mi := &file_config_service_proto_msgTypes[373]
+	mi := &file_config_service_proto_msgTypes[375]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25152,7 +25250,7 @@ func (x *CheckConfigResp) String() string {
 func (*CheckConfigResp) ProtoMessage() {}
 
 func (x *CheckConfigResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[373]
+	mi := &file_config_service_proto_msgTypes[375]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25165,7 +25263,7 @@ func (x *CheckConfigResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckConfigResp.ProtoReflect.Descriptor instead.
 func (*CheckConfigResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{373}
+	return file_config_service_proto_rawDescGZIP(), []int{375}
 }
 
 func (x *CheckConfigResp) GetBatchId() uint32 {
@@ -25186,7 +25284,7 @@ type PushConfigReq struct {
 
 func (x *PushConfigReq) Reset() {
 	*x = PushConfigReq{}
-	mi := &file_config_service_proto_msgTypes[374]
+	mi := &file_config_service_proto_msgTypes[376]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25198,7 +25296,7 @@ func (x *PushConfigReq) String() string {
 func (*PushConfigReq) ProtoMessage() {}
 
 func (x *PushConfigReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[374]
+	mi := &file_config_service_proto_msgTypes[376]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25211,7 +25309,7 @@ func (x *PushConfigReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PushConfigReq.ProtoReflect.Descriptor instead.
 func (*PushConfigReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{374}
+	return file_config_service_proto_rawDescGZIP(), []int{376}
 }
 
 func (x *PushConfigReq) GetBizId() uint32 {
@@ -25238,7 +25336,7 @@ type PushConfigResp struct {
 
 func (x *PushConfigResp) Reset() {
 	*x = PushConfigResp{}
-	mi := &file_config_service_proto_msgTypes[375]
+	mi := &file_config_service_proto_msgTypes[377]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25250,7 +25348,7 @@ func (x *PushConfigResp) String() string {
 func (*PushConfigResp) ProtoMessage() {}
 
 func (x *PushConfigResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[375]
+	mi := &file_config_service_proto_msgTypes[377]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25263,7 +25361,7 @@ func (x *PushConfigResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PushConfigResp.ProtoReflect.Descriptor instead.
 func (*PushConfigResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{375}
+	return file_config_service_proto_rawDescGZIP(), []int{377}
 }
 
 func (x *PushConfigResp) GetBatchId() uint32 {
@@ -25285,7 +25383,7 @@ type GetConfigRenderResultReq struct {
 
 func (x *GetConfigRenderResultReq) Reset() {
 	*x = GetConfigRenderResultReq{}
-	mi := &file_config_service_proto_msgTypes[376]
+	mi := &file_config_service_proto_msgTypes[378]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25297,7 +25395,7 @@ func (x *GetConfigRenderResultReq) String() string {
 func (*GetConfigRenderResultReq) ProtoMessage() {}
 
 func (x *GetConfigRenderResultReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[376]
+	mi := &file_config_service_proto_msgTypes[378]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25310,7 +25408,7 @@ func (x *GetConfigRenderResultReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigRenderResultReq.ProtoReflect.Descriptor instead.
 func (*GetConfigRenderResultReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{376}
+	return file_config_service_proto_rawDescGZIP(), []int{378}
 }
 
 func (x *GetConfigRenderResultReq) GetBizId() uint32 {
@@ -25346,7 +25444,7 @@ type GetConfigRenderResultResp struct {
 
 func (x *GetConfigRenderResultResp) Reset() {
 	*x = GetConfigRenderResultResp{}
-	mi := &file_config_service_proto_msgTypes[377]
+	mi := &file_config_service_proto_msgTypes[379]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25358,7 +25456,7 @@ func (x *GetConfigRenderResultResp) String() string {
 func (*GetConfigRenderResultResp) ProtoMessage() {}
 
 func (x *GetConfigRenderResultResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[377]
+	mi := &file_config_service_proto_msgTypes[379]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25371,7 +25469,7 @@ func (x *GetConfigRenderResultResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigRenderResultResp.ProtoReflect.Descriptor instead.
 func (*GetConfigRenderResultResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{377}
+	return file_config_service_proto_rawDescGZIP(), []int{379}
 }
 
 func (x *GetConfigRenderResultResp) GetConfigTemplateId() uint32 {
@@ -25451,7 +25549,7 @@ type ListConfigTemplateReq struct {
 
 func (x *ListConfigTemplateReq) Reset() {
 	*x = ListConfigTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[378]
+	mi := &file_config_service_proto_msgTypes[380]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25463,7 +25561,7 @@ func (x *ListConfigTemplateReq) String() string {
 func (*ListConfigTemplateReq) ProtoMessage() {}
 
 func (x *ListConfigTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[378]
+	mi := &file_config_service_proto_msgTypes[380]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25476,7 +25574,7 @@ func (x *ListConfigTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigTemplateReq.ProtoReflect.Descriptor instead.
 func (*ListConfigTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{378}
+	return file_config_service_proto_rawDescGZIP(), []int{380}
 }
 
 func (x *ListConfigTemplateReq) GetBizId() uint32 {
@@ -25527,7 +25625,7 @@ type ListConfigTemplateResp struct {
 
 func (x *ListConfigTemplateResp) Reset() {
 	*x = ListConfigTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[379]
+	mi := &file_config_service_proto_msgTypes[381]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25539,7 +25637,7 @@ func (x *ListConfigTemplateResp) String() string {
 func (*ListConfigTemplateResp) ProtoMessage() {}
 
 func (x *ListConfigTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[379]
+	mi := &file_config_service_proto_msgTypes[381]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25552,7 +25650,7 @@ func (x *ListConfigTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigTemplateResp.ProtoReflect.Descriptor instead.
 func (*ListConfigTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{379}
+	return file_config_service_proto_rawDescGZIP(), []int{381}
 }
 
 func (x *ListConfigTemplateResp) GetCount() uint32 {
@@ -25598,7 +25696,7 @@ type ListConfigTemplateRevisionsReq struct {
 
 func (x *ListConfigTemplateRevisionsReq) Reset() {
 	*x = ListConfigTemplateRevisionsReq{}
-	mi := &file_config_service_proto_msgTypes[380]
+	mi := &file_config_service_proto_msgTypes[382]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25610,7 +25708,7 @@ func (x *ListConfigTemplateRevisionsReq) String() string {
 func (*ListConfigTemplateRevisionsReq) ProtoMessage() {}
 
 func (x *ListConfigTemplateRevisionsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[380]
+	mi := &file_config_service_proto_msgTypes[382]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25623,7 +25721,7 @@ func (x *ListConfigTemplateRevisionsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigTemplateRevisionsReq.ProtoReflect.Descriptor instead.
 func (*ListConfigTemplateRevisionsReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{380}
+	return file_config_service_proto_rawDescGZIP(), []int{382}
 }
 
 func (x *ListConfigTemplateRevisionsReq) GetBizId() uint32 {
@@ -25679,7 +25777,7 @@ type ListConfigTemplateRevisionsResp struct {
 
 func (x *ListConfigTemplateRevisionsResp) Reset() {
 	*x = ListConfigTemplateRevisionsResp{}
-	mi := &file_config_service_proto_msgTypes[381]
+	mi := &file_config_service_proto_msgTypes[383]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25691,7 +25789,7 @@ func (x *ListConfigTemplateRevisionsResp) String() string {
 func (*ListConfigTemplateRevisionsResp) ProtoMessage() {}
 
 func (x *ListConfigTemplateRevisionsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[381]
+	mi := &file_config_service_proto_msgTypes[383]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25704,7 +25802,7 @@ func (x *ListConfigTemplateRevisionsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigTemplateRevisionsResp.ProtoReflect.Descriptor instead.
 func (*ListConfigTemplateRevisionsResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{381}
+	return file_config_service_proto_rawDescGZIP(), []int{383}
 }
 
 func (x *ListConfigTemplateRevisionsResp) GetCount() uint32 {
@@ -25732,7 +25830,7 @@ type ConfigGenerateStatusReq struct {
 
 func (x *ConfigGenerateStatusReq) Reset() {
 	*x = ConfigGenerateStatusReq{}
-	mi := &file_config_service_proto_msgTypes[382]
+	mi := &file_config_service_proto_msgTypes[384]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25744,7 +25842,7 @@ func (x *ConfigGenerateStatusReq) String() string {
 func (*ConfigGenerateStatusReq) ProtoMessage() {}
 
 func (x *ConfigGenerateStatusReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[382]
+	mi := &file_config_service_proto_msgTypes[384]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25757,7 +25855,7 @@ func (x *ConfigGenerateStatusReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigGenerateStatusReq.ProtoReflect.Descriptor instead.
 func (*ConfigGenerateStatusReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{382}
+	return file_config_service_proto_rawDescGZIP(), []int{384}
 }
 
 func (x *ConfigGenerateStatusReq) GetBizId() uint32 {
@@ -25784,7 +25882,7 @@ type ConfigGenerateStatusResp struct {
 
 func (x *ConfigGenerateStatusResp) Reset() {
 	*x = ConfigGenerateStatusResp{}
-	mi := &file_config_service_proto_msgTypes[383]
+	mi := &file_config_service_proto_msgTypes[385]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25796,7 +25894,7 @@ func (x *ConfigGenerateStatusResp) String() string {
 func (*ConfigGenerateStatusResp) ProtoMessage() {}
 
 func (x *ConfigGenerateStatusResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[383]
+	mi := &file_config_service_proto_msgTypes[385]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25809,7 +25907,7 @@ func (x *ConfigGenerateStatusResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigGenerateStatusResp.ProtoReflect.Descriptor instead.
 func (*ConfigGenerateStatusResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{383}
+	return file_config_service_proto_rawDescGZIP(), []int{385}
 }
 
 func (x *ConfigGenerateStatusResp) GetConfigGenerateStatuses() []*ConfigGenerateStatusResp_ConfigGenerateStatus {
@@ -25832,7 +25930,7 @@ type PreviewConfigReq struct {
 
 func (x *PreviewConfigReq) Reset() {
 	*x = PreviewConfigReq{}
-	mi := &file_config_service_proto_msgTypes[384]
+	mi := &file_config_service_proto_msgTypes[386]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25844,7 +25942,7 @@ func (x *PreviewConfigReq) String() string {
 func (*PreviewConfigReq) ProtoMessage() {}
 
 func (x *PreviewConfigReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[384]
+	mi := &file_config_service_proto_msgTypes[386]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25857,7 +25955,7 @@ func (x *PreviewConfigReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewConfigReq.ProtoReflect.Descriptor instead.
 func (*PreviewConfigReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{384}
+	return file_config_service_proto_rawDescGZIP(), []int{386}
 }
 
 func (x *PreviewConfigReq) GetBizId() uint32 {
@@ -25898,7 +25996,7 @@ type PreviewConfigResp struct {
 
 func (x *PreviewConfigResp) Reset() {
 	*x = PreviewConfigResp{}
-	mi := &file_config_service_proto_msgTypes[385]
+	mi := &file_config_service_proto_msgTypes[387]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25910,7 +26008,7 @@ func (x *PreviewConfigResp) String() string {
 func (*PreviewConfigResp) ProtoMessage() {}
 
 func (x *PreviewConfigResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[385]
+	mi := &file_config_service_proto_msgTypes[387]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25923,7 +26021,7 @@ func (x *PreviewConfigResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewConfigResp.ProtoReflect.Descriptor instead.
 func (*PreviewConfigResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{385}
+	return file_config_service_proto_rawDescGZIP(), []int{387}
 }
 
 func (x *PreviewConfigResp) GetContent() string {
@@ -25944,7 +26042,7 @@ type ProcessInstanceReq struct {
 
 func (x *ProcessInstanceReq) Reset() {
 	*x = ProcessInstanceReq{}
-	mi := &file_config_service_proto_msgTypes[386]
+	mi := &file_config_service_proto_msgTypes[388]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -25956,7 +26054,7 @@ func (x *ProcessInstanceReq) String() string {
 func (*ProcessInstanceReq) ProtoMessage() {}
 
 func (x *ProcessInstanceReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[386]
+	mi := &file_config_service_proto_msgTypes[388]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -25969,7 +26067,7 @@ func (x *ProcessInstanceReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessInstanceReq.ProtoReflect.Descriptor instead.
 func (*ProcessInstanceReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{386}
+	return file_config_service_proto_rawDescGZIP(), []int{388}
 }
 
 func (x *ProcessInstanceReq) GetBizId() uint32 {
@@ -25996,7 +26094,7 @@ type ProcessInstanceResp struct {
 
 func (x *ProcessInstanceResp) Reset() {
 	*x = ProcessInstanceResp{}
-	mi := &file_config_service_proto_msgTypes[387]
+	mi := &file_config_service_proto_msgTypes[389]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26008,7 +26106,7 @@ func (x *ProcessInstanceResp) String() string {
 func (*ProcessInstanceResp) ProtoMessage() {}
 
 func (x *ProcessInstanceResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[387]
+	mi := &file_config_service_proto_msgTypes[389]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26021,7 +26119,7 @@ func (x *ProcessInstanceResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessInstanceResp.ProtoReflect.Descriptor instead.
 func (*ProcessInstanceResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{387}
+	return file_config_service_proto_rawDescGZIP(), []int{389}
 }
 
 func (x *ProcessInstanceResp) GetProcessInstances() []*config_template.ListProcessInstance {
@@ -26042,7 +26140,7 @@ type ServiceInstanceReq struct {
 
 func (x *ServiceInstanceReq) Reset() {
 	*x = ServiceInstanceReq{}
-	mi := &file_config_service_proto_msgTypes[388]
+	mi := &file_config_service_proto_msgTypes[390]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26054,7 +26152,7 @@ func (x *ServiceInstanceReq) String() string {
 func (*ServiceInstanceReq) ProtoMessage() {}
 
 func (x *ServiceInstanceReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[388]
+	mi := &file_config_service_proto_msgTypes[390]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26067,7 +26165,7 @@ func (x *ServiceInstanceReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceInstanceReq.ProtoReflect.Descriptor instead.
 func (*ServiceInstanceReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{388}
+	return file_config_service_proto_rawDescGZIP(), []int{390}
 }
 
 func (x *ServiceInstanceReq) GetBizId() uint32 {
@@ -26094,7 +26192,7 @@ type ServiceInstanceResp struct {
 
 func (x *ServiceInstanceResp) Reset() {
 	*x = ServiceInstanceResp{}
-	mi := &file_config_service_proto_msgTypes[389]
+	mi := &file_config_service_proto_msgTypes[391]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26106,7 +26204,7 @@ func (x *ServiceInstanceResp) String() string {
 func (*ServiceInstanceResp) ProtoMessage() {}
 
 func (x *ServiceInstanceResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[389]
+	mi := &file_config_service_proto_msgTypes[391]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26119,7 +26217,7 @@ func (x *ServiceInstanceResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceInstanceResp.ProtoReflect.Descriptor instead.
 func (*ServiceInstanceResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{389}
+	return file_config_service_proto_rawDescGZIP(), []int{391}
 }
 
 func (x *ServiceInstanceResp) GetServiceInstances() []*config_template.ServiceInstanceInfo {
@@ -26153,7 +26251,7 @@ type CreateConfigTemplateReq struct {
 
 func (x *CreateConfigTemplateReq) Reset() {
 	*x = CreateConfigTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[390]
+	mi := &file_config_service_proto_msgTypes[392]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26165,7 +26263,7 @@ func (x *CreateConfigTemplateReq) String() string {
 func (*CreateConfigTemplateReq) ProtoMessage() {}
 
 func (x *CreateConfigTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[390]
+	mi := &file_config_service_proto_msgTypes[392]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26178,7 +26276,7 @@ func (x *CreateConfigTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateConfigTemplateReq.ProtoReflect.Descriptor instead.
 func (*CreateConfigTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{390}
+	return file_config_service_proto_rawDescGZIP(), []int{392}
 }
 
 func (x *CreateConfigTemplateReq) GetBizId() uint32 {
@@ -26296,7 +26394,7 @@ type CreateConfigTemplateResp struct {
 
 func (x *CreateConfigTemplateResp) Reset() {
 	*x = CreateConfigTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[391]
+	mi := &file_config_service_proto_msgTypes[393]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26308,7 +26406,7 @@ func (x *CreateConfigTemplateResp) String() string {
 func (*CreateConfigTemplateResp) ProtoMessage() {}
 
 func (x *CreateConfigTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[391]
+	mi := &file_config_service_proto_msgTypes[393]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26321,7 +26419,7 @@ func (x *CreateConfigTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateConfigTemplateResp.ProtoReflect.Descriptor instead.
 func (*CreateConfigTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{391}
+	return file_config_service_proto_rawDescGZIP(), []int{393}
 }
 
 func (x *CreateConfigTemplateResp) GetId() uint32 {
@@ -26355,7 +26453,7 @@ type UpdateConfigTemplateReq struct {
 
 func (x *UpdateConfigTemplateReq) Reset() {
 	*x = UpdateConfigTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[392]
+	mi := &file_config_service_proto_msgTypes[394]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26367,7 +26465,7 @@ func (x *UpdateConfigTemplateReq) String() string {
 func (*UpdateConfigTemplateReq) ProtoMessage() {}
 
 func (x *UpdateConfigTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[392]
+	mi := &file_config_service_proto_msgTypes[394]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26380,7 +26478,7 @@ func (x *UpdateConfigTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateConfigTemplateReq.ProtoReflect.Descriptor instead.
 func (*UpdateConfigTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{392}
+	return file_config_service_proto_rawDescGZIP(), []int{394}
 }
 
 func (x *UpdateConfigTemplateReq) GetBizId() uint32 {
@@ -26496,7 +26594,7 @@ type UpdateConfigTemplateResp struct {
 
 func (x *UpdateConfigTemplateResp) Reset() {
 	*x = UpdateConfigTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[393]
+	mi := &file_config_service_proto_msgTypes[395]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26508,7 +26606,7 @@ func (x *UpdateConfigTemplateResp) String() string {
 func (*UpdateConfigTemplateResp) ProtoMessage() {}
 
 func (x *UpdateConfigTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[393]
+	mi := &file_config_service_proto_msgTypes[395]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26521,7 +26619,7 @@ func (x *UpdateConfigTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateConfigTemplateResp.ProtoReflect.Descriptor instead.
 func (*UpdateConfigTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{393}
+	return file_config_service_proto_rawDescGZIP(), []int{395}
 }
 
 type GetConfigTemplateReq struct {
@@ -26535,7 +26633,7 @@ type GetConfigTemplateReq struct {
 
 func (x *GetConfigTemplateReq) Reset() {
 	*x = GetConfigTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[394]
+	mi := &file_config_service_proto_msgTypes[396]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26547,7 +26645,7 @@ func (x *GetConfigTemplateReq) String() string {
 func (*GetConfigTemplateReq) ProtoMessage() {}
 
 func (x *GetConfigTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[394]
+	mi := &file_config_service_proto_msgTypes[396]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26560,7 +26658,7 @@ func (x *GetConfigTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigTemplateReq.ProtoReflect.Descriptor instead.
 func (*GetConfigTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{394}
+	return file_config_service_proto_rawDescGZIP(), []int{396}
 }
 
 func (x *GetConfigTemplateReq) GetBizId() uint32 {
@@ -26587,7 +26685,7 @@ type GetConfigTemplateResp struct {
 
 func (x *GetConfigTemplateResp) Reset() {
 	*x = GetConfigTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[395]
+	mi := &file_config_service_proto_msgTypes[397]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26599,7 +26697,7 @@ func (x *GetConfigTemplateResp) String() string {
 func (*GetConfigTemplateResp) ProtoMessage() {}
 
 func (x *GetConfigTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[395]
+	mi := &file_config_service_proto_msgTypes[397]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26612,7 +26710,7 @@ func (x *GetConfigTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigTemplateResp.ProtoReflect.Descriptor instead.
 func (*GetConfigTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{395}
+	return file_config_service_proto_rawDescGZIP(), []int{397}
 }
 
 func (x *GetConfigTemplateResp) GetBindTemplate() *config_template.BindTemplate {
@@ -26632,7 +26730,7 @@ type ConfigTemplateVariableReq struct {
 
 func (x *ConfigTemplateVariableReq) Reset() {
 	*x = ConfigTemplateVariableReq{}
-	mi := &file_config_service_proto_msgTypes[396]
+	mi := &file_config_service_proto_msgTypes[398]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26644,7 +26742,7 @@ func (x *ConfigTemplateVariableReq) String() string {
 func (*ConfigTemplateVariableReq) ProtoMessage() {}
 
 func (x *ConfigTemplateVariableReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[396]
+	mi := &file_config_service_proto_msgTypes[398]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26657,7 +26755,7 @@ func (x *ConfigTemplateVariableReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigTemplateVariableReq.ProtoReflect.Descriptor instead.
 func (*ConfigTemplateVariableReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{396}
+	return file_config_service_proto_rawDescGZIP(), []int{398}
 }
 
 func (x *ConfigTemplateVariableReq) GetBizId() uint32 {
@@ -26677,7 +26775,7 @@ type ConfigTemplateVariableResp struct {
 
 func (x *ConfigTemplateVariableResp) Reset() {
 	*x = ConfigTemplateVariableResp{}
-	mi := &file_config_service_proto_msgTypes[397]
+	mi := &file_config_service_proto_msgTypes[399]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26689,7 +26787,7 @@ func (x *ConfigTemplateVariableResp) String() string {
 func (*ConfigTemplateVariableResp) ProtoMessage() {}
 
 func (x *ConfigTemplateVariableResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[397]
+	mi := &file_config_service_proto_msgTypes[399]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26702,7 +26800,7 @@ func (x *ConfigTemplateVariableResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigTemplateVariableResp.ProtoReflect.Descriptor instead.
 func (*ConfigTemplateVariableResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{397}
+	return file_config_service_proto_rawDescGZIP(), []int{399}
 }
 
 func (x *ConfigTemplateVariableResp) GetConfigTemplateVariables() []*config_template.ConfigTemplateVariable {
@@ -26725,7 +26823,7 @@ type BindProcessInstanceReq struct {
 
 func (x *BindProcessInstanceReq) Reset() {
 	*x = BindProcessInstanceReq{}
-	mi := &file_config_service_proto_msgTypes[398]
+	mi := &file_config_service_proto_msgTypes[400]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26737,7 +26835,7 @@ func (x *BindProcessInstanceReq) String() string {
 func (*BindProcessInstanceReq) ProtoMessage() {}
 
 func (x *BindProcessInstanceReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[398]
+	mi := &file_config_service_proto_msgTypes[400]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26750,7 +26848,7 @@ func (x *BindProcessInstanceReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BindProcessInstanceReq.ProtoReflect.Descriptor instead.
 func (*BindProcessInstanceReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{398}
+	return file_config_service_proto_rawDescGZIP(), []int{400}
 }
 
 func (x *BindProcessInstanceReq) GetBizId() uint32 {
@@ -26791,7 +26889,7 @@ type BindProcessInstanceResp struct {
 
 func (x *BindProcessInstanceResp) Reset() {
 	*x = BindProcessInstanceResp{}
-	mi := &file_config_service_proto_msgTypes[399]
+	mi := &file_config_service_proto_msgTypes[401]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26803,7 +26901,7 @@ func (x *BindProcessInstanceResp) String() string {
 func (*BindProcessInstanceResp) ProtoMessage() {}
 
 func (x *BindProcessInstanceResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[399]
+	mi := &file_config_service_proto_msgTypes[401]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26816,7 +26914,7 @@ func (x *BindProcessInstanceResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BindProcessInstanceResp.ProtoReflect.Descriptor instead.
 func (*BindProcessInstanceResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{399}
+	return file_config_service_proto_rawDescGZIP(), []int{401}
 }
 
 func (x *BindProcessInstanceResp) GetId() uint32 {
@@ -26837,7 +26935,7 @@ type PreviewBindProcessInstanceReq struct {
 
 func (x *PreviewBindProcessInstanceReq) Reset() {
 	*x = PreviewBindProcessInstanceReq{}
-	mi := &file_config_service_proto_msgTypes[400]
+	mi := &file_config_service_proto_msgTypes[402]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26849,7 +26947,7 @@ func (x *PreviewBindProcessInstanceReq) String() string {
 func (*PreviewBindProcessInstanceReq) ProtoMessage() {}
 
 func (x *PreviewBindProcessInstanceReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[400]
+	mi := &file_config_service_proto_msgTypes[402]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26862,7 +26960,7 @@ func (x *PreviewBindProcessInstanceReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewBindProcessInstanceReq.ProtoReflect.Descriptor instead.
 func (*PreviewBindProcessInstanceReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{400}
+	return file_config_service_proto_rawDescGZIP(), []int{402}
 }
 
 func (x *PreviewBindProcessInstanceReq) GetBizId() uint32 {
@@ -26890,7 +26988,7 @@ type PreviewBindProcessInstanceResp struct {
 
 func (x *PreviewBindProcessInstanceResp) Reset() {
 	*x = PreviewBindProcessInstanceResp{}
-	mi := &file_config_service_proto_msgTypes[401]
+	mi := &file_config_service_proto_msgTypes[403]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26902,7 +27000,7 @@ func (x *PreviewBindProcessInstanceResp) String() string {
 func (*PreviewBindProcessInstanceResp) ProtoMessage() {}
 
 func (x *PreviewBindProcessInstanceResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[401]
+	mi := &file_config_service_proto_msgTypes[403]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26915,7 +27013,7 @@ func (x *PreviewBindProcessInstanceResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PreviewBindProcessInstanceResp.ProtoReflect.Descriptor instead.
 func (*PreviewBindProcessInstanceResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{401}
+	return file_config_service_proto_rawDescGZIP(), []int{403}
 }
 
 func (x *PreviewBindProcessInstanceResp) GetTemplateProcesses() []*config_template.BindProcessInstance {
@@ -26943,7 +27041,7 @@ type DeleteConfigTemplateReq struct {
 
 func (x *DeleteConfigTemplateReq) Reset() {
 	*x = DeleteConfigTemplateReq{}
-	mi := &file_config_service_proto_msgTypes[402]
+	mi := &file_config_service_proto_msgTypes[404]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -26955,7 +27053,7 @@ func (x *DeleteConfigTemplateReq) String() string {
 func (*DeleteConfigTemplateReq) ProtoMessage() {}
 
 func (x *DeleteConfigTemplateReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[402]
+	mi := &file_config_service_proto_msgTypes[404]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -26968,7 +27066,7 @@ func (x *DeleteConfigTemplateReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteConfigTemplateReq.ProtoReflect.Descriptor instead.
 func (*DeleteConfigTemplateReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{402}
+	return file_config_service_proto_rawDescGZIP(), []int{404}
 }
 
 func (x *DeleteConfigTemplateReq) GetBizId() uint32 {
@@ -26993,7 +27091,7 @@ type DeleteConfigTemplateResp struct {
 
 func (x *DeleteConfigTemplateResp) Reset() {
 	*x = DeleteConfigTemplateResp{}
-	mi := &file_config_service_proto_msgTypes[403]
+	mi := &file_config_service_proto_msgTypes[405]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27005,7 +27103,7 @@ func (x *DeleteConfigTemplateResp) String() string {
 func (*DeleteConfigTemplateResp) ProtoMessage() {}
 
 func (x *DeleteConfigTemplateResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[403]
+	mi := &file_config_service_proto_msgTypes[405]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27018,7 +27116,7 @@ func (x *DeleteConfigTemplateResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteConfigTemplateResp.ProtoReflect.Descriptor instead.
 func (*DeleteConfigTemplateResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{403}
+	return file_config_service_proto_rawDescGZIP(), []int{405}
 }
 
 type OperateGenerateConfigReq struct {
@@ -27034,7 +27132,7 @@ type OperateGenerateConfigReq struct {
 
 func (x *OperateGenerateConfigReq) Reset() {
 	*x = OperateGenerateConfigReq{}
-	mi := &file_config_service_proto_msgTypes[404]
+	mi := &file_config_service_proto_msgTypes[406]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27046,7 +27144,7 @@ func (x *OperateGenerateConfigReq) String() string {
 func (*OperateGenerateConfigReq) ProtoMessage() {}
 
 func (x *OperateGenerateConfigReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[404]
+	mi := &file_config_service_proto_msgTypes[406]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27059,7 +27157,7 @@ func (x *OperateGenerateConfigReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperateGenerateConfigReq.ProtoReflect.Descriptor instead.
 func (*OperateGenerateConfigReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{404}
+	return file_config_service_proto_rawDescGZIP(), []int{406}
 }
 
 func (x *OperateGenerateConfigReq) GetBizId() uint32 {
@@ -27098,7 +27196,7 @@ type OperateGenerateConfigResp struct {
 
 func (x *OperateGenerateConfigResp) Reset() {
 	*x = OperateGenerateConfigResp{}
-	mi := &file_config_service_proto_msgTypes[405]
+	mi := &file_config_service_proto_msgTypes[407]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27110,7 +27208,7 @@ func (x *OperateGenerateConfigResp) String() string {
 func (*OperateGenerateConfigResp) ProtoMessage() {}
 
 func (x *OperateGenerateConfigResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[405]
+	mi := &file_config_service_proto_msgTypes[407]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27123,7 +27221,7 @@ func (x *OperateGenerateConfigResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperateGenerateConfigResp.ProtoReflect.Descriptor instead.
 func (*OperateGenerateConfigResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{405}
+	return file_config_service_proto_rawDescGZIP(), []int{407}
 }
 
 type GetConfigDiffReq struct {
@@ -27137,7 +27235,7 @@ type GetConfigDiffReq struct {
 
 func (x *GetConfigDiffReq) Reset() {
 	*x = GetConfigDiffReq{}
-	mi := &file_config_service_proto_msgTypes[406]
+	mi := &file_config_service_proto_msgTypes[408]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27149,7 +27247,7 @@ func (x *GetConfigDiffReq) String() string {
 func (*GetConfigDiffReq) ProtoMessage() {}
 
 func (x *GetConfigDiffReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[406]
+	mi := &file_config_service_proto_msgTypes[408]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27162,7 +27260,7 @@ func (x *GetConfigDiffReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigDiffReq.ProtoReflect.Descriptor instead.
 func (*GetConfigDiffReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{406}
+	return file_config_service_proto_rawDescGZIP(), []int{408}
 }
 
 func (x *GetConfigDiffReq) GetBizId() uint32 {
@@ -27195,7 +27293,7 @@ type GetConfigDiffResp struct {
 
 func (x *GetConfigDiffResp) Reset() {
 	*x = GetConfigDiffResp{}
-	mi := &file_config_service_proto_msgTypes[407]
+	mi := &file_config_service_proto_msgTypes[409]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27207,7 +27305,7 @@ func (x *GetConfigDiffResp) String() string {
 func (*GetConfigDiffResp) ProtoMessage() {}
 
 func (x *GetConfigDiffResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[407]
+	mi := &file_config_service_proto_msgTypes[409]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27220,7 +27318,7 @@ func (x *GetConfigDiffResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigDiffResp.ProtoReflect.Descriptor instead.
 func (*GetConfigDiffResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{407}
+	return file_config_service_proto_rawDescGZIP(), []int{409}
 }
 
 func (x *GetConfigDiffResp) GetLastDispatched() *config_instance.ConfigVersion {
@@ -27272,7 +27370,7 @@ type GetConfigViewReq struct {
 
 func (x *GetConfigViewReq) Reset() {
 	*x = GetConfigViewReq{}
-	mi := &file_config_service_proto_msgTypes[408]
+	mi := &file_config_service_proto_msgTypes[410]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27284,7 +27382,7 @@ func (x *GetConfigViewReq) String() string {
 func (*GetConfigViewReq) ProtoMessage() {}
 
 func (x *GetConfigViewReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[408]
+	mi := &file_config_service_proto_msgTypes[410]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27297,7 +27395,7 @@ func (x *GetConfigViewReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigViewReq.ProtoReflect.Descriptor instead.
 func (*GetConfigViewReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{408}
+	return file_config_service_proto_rawDescGZIP(), []int{410}
 }
 
 func (x *GetConfigViewReq) GetBizId() uint32 {
@@ -27354,7 +27452,7 @@ type GetConfigViewResp struct {
 
 func (x *GetConfigViewResp) Reset() {
 	*x = GetConfigViewResp{}
-	mi := &file_config_service_proto_msgTypes[409]
+	mi := &file_config_service_proto_msgTypes[411]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27366,7 +27464,7 @@ func (x *GetConfigViewResp) String() string {
 func (*GetConfigViewResp) ProtoMessage() {}
 
 func (x *GetConfigViewResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[409]
+	mi := &file_config_service_proto_msgTypes[411]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27379,7 +27477,7 @@ func (x *GetConfigViewResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetConfigViewResp.ProtoReflect.Descriptor instead.
 func (*GetConfigViewResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{409}
+	return file_config_service_proto_rawDescGZIP(), []int{411}
 }
 
 func (x *GetConfigViewResp) GetLastDispatched() *config_instance.ConfigVersion {
@@ -27448,7 +27546,7 @@ type GetProcessInstanceTopoReq struct {
 
 func (x *GetProcessInstanceTopoReq) Reset() {
 	*x = GetProcessInstanceTopoReq{}
-	mi := &file_config_service_proto_msgTypes[410]
+	mi := &file_config_service_proto_msgTypes[412]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27460,7 +27558,7 @@ func (x *GetProcessInstanceTopoReq) String() string {
 func (*GetProcessInstanceTopoReq) ProtoMessage() {}
 
 func (x *GetProcessInstanceTopoReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[410]
+	mi := &file_config_service_proto_msgTypes[412]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27473,7 +27571,7 @@ func (x *GetProcessInstanceTopoReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProcessInstanceTopoReq.ProtoReflect.Descriptor instead.
 func (*GetProcessInstanceTopoReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{410}
+	return file_config_service_proto_rawDescGZIP(), []int{412}
 }
 
 func (x *GetProcessInstanceTopoReq) GetBizId() uint32 {
@@ -27493,7 +27591,7 @@ type GetProcessInstanceTopoResp struct {
 
 func (x *GetProcessInstanceTopoResp) Reset() {
 	*x = GetProcessInstanceTopoResp{}
-	mi := &file_config_service_proto_msgTypes[411]
+	mi := &file_config_service_proto_msgTypes[413]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27505,7 +27603,7 @@ func (x *GetProcessInstanceTopoResp) String() string {
 func (*GetProcessInstanceTopoResp) ProtoMessage() {}
 
 func (x *GetProcessInstanceTopoResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[411]
+	mi := &file_config_service_proto_msgTypes[413]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27518,7 +27616,7 @@ func (x *GetProcessInstanceTopoResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProcessInstanceTopoResp.ProtoReflect.Descriptor instead.
 func (*GetProcessInstanceTopoResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{411}
+	return file_config_service_proto_rawDescGZIP(), []int{413}
 }
 
 func (x *GetProcessInstanceTopoResp) GetBizTopoNodes() []*config_template.BizTopoNode {
@@ -27552,7 +27650,7 @@ type ManageConfigKVReq struct {
 
 func (x *ManageConfigKVReq) Reset() {
 	*x = ManageConfigKVReq{}
-	mi := &file_config_service_proto_msgTypes[412]
+	mi := &file_config_service_proto_msgTypes[414]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27564,7 +27662,7 @@ func (x *ManageConfigKVReq) String() string {
 func (*ManageConfigKVReq) ProtoMessage() {}
 
 func (x *ManageConfigKVReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[412]
+	mi := &file_config_service_proto_msgTypes[414]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27577,7 +27675,7 @@ func (x *ManageConfigKVReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManageConfigKVReq.ProtoReflect.Descriptor instead.
 func (*ManageConfigKVReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{412}
+	return file_config_service_proto_rawDescGZIP(), []int{414}
 }
 
 func (x *ManageConfigKVReq) GetAction() string {
@@ -27620,7 +27718,7 @@ type ConfigKVItem struct {
 
 func (x *ConfigKVItem) Reset() {
 	*x = ConfigKVItem{}
-	mi := &file_config_service_proto_msgTypes[413]
+	mi := &file_config_service_proto_msgTypes[415]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27632,7 +27730,7 @@ func (x *ConfigKVItem) String() string {
 func (*ConfigKVItem) ProtoMessage() {}
 
 func (x *ConfigKVItem) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[413]
+	mi := &file_config_service_proto_msgTypes[415]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27645,7 +27743,7 @@ func (x *ConfigKVItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigKVItem.ProtoReflect.Descriptor instead.
 func (*ConfigKVItem) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{413}
+	return file_config_service_proto_rawDescGZIP(), []int{415}
 }
 
 func (x *ConfigKVItem) GetKey() string {
@@ -27673,7 +27771,7 @@ type ManageConfigKVResp struct {
 
 func (x *ManageConfigKVResp) Reset() {
 	*x = ManageConfigKVResp{}
-	mi := &file_config_service_proto_msgTypes[414]
+	mi := &file_config_service_proto_msgTypes[416]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27685,7 +27783,7 @@ func (x *ManageConfigKVResp) String() string {
 func (*ManageConfigKVResp) ProtoMessage() {}
 
 func (x *ManageConfigKVResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[414]
+	mi := &file_config_service_proto_msgTypes[416]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27698,7 +27796,7 @@ func (x *ManageConfigKVResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManageConfigKVResp.ProtoReflect.Descriptor instead.
 func (*ManageConfigKVResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{414}
+	return file_config_service_proto_rawDescGZIP(), []int{416}
 }
 
 func (x *ManageConfigKVResp) GetItems() []*ConfigKVItem {
@@ -27719,7 +27817,7 @@ type GetProcessConfigViewReq struct {
 
 func (x *GetProcessConfigViewReq) Reset() {
 	*x = GetProcessConfigViewReq{}
-	mi := &file_config_service_proto_msgTypes[415]
+	mi := &file_config_service_proto_msgTypes[417]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27731,7 +27829,7 @@ func (x *GetProcessConfigViewReq) String() string {
 func (*GetProcessConfigViewReq) ProtoMessage() {}
 
 func (x *GetProcessConfigViewReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[415]
+	mi := &file_config_service_proto_msgTypes[417]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27744,7 +27842,7 @@ func (x *GetProcessConfigViewReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProcessConfigViewReq.ProtoReflect.Descriptor instead.
 func (*GetProcessConfigViewReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{415}
+	return file_config_service_proto_rawDescGZIP(), []int{417}
 }
 
 func (x *GetProcessConfigViewReq) GetBizId() uint32 {
@@ -27765,7 +27863,7 @@ type GetProcessConfigViewResp struct {
 
 func (x *GetProcessConfigViewResp) Reset() {
 	*x = GetProcessConfigViewResp{}
-	mi := &file_config_service_proto_msgTypes[416]
+	mi := &file_config_service_proto_msgTypes[418]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27777,7 +27875,7 @@ func (x *GetProcessConfigViewResp) String() string {
 func (*GetProcessConfigViewResp) ProtoMessage() {}
 
 func (x *GetProcessConfigViewResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[416]
+	mi := &file_config_service_proto_msgTypes[418]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27790,7 +27888,7 @@ func (x *GetProcessConfigViewResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProcessConfigViewResp.ProtoReflect.Descriptor instead.
 func (*GetProcessConfigViewResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{416}
+	return file_config_service_proto_rawDescGZIP(), []int{418}
 }
 
 func (x *GetProcessConfigViewResp) GetEnabled() bool {
@@ -27814,7 +27912,7 @@ type ListProjectsReq struct {
 
 func (x *ListProjectsReq) Reset() {
 	*x = ListProjectsReq{}
-	mi := &file_config_service_proto_msgTypes[417]
+	mi := &file_config_service_proto_msgTypes[419]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27826,7 +27924,7 @@ func (x *ListProjectsReq) String() string {
 func (*ListProjectsReq) ProtoMessage() {}
 
 func (x *ListProjectsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[417]
+	mi := &file_config_service_proto_msgTypes[419]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27839,7 +27937,7 @@ func (x *ListProjectsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectsReq.ProtoReflect.Descriptor instead.
 func (*ListProjectsReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{417}
+	return file_config_service_proto_rawDescGZIP(), []int{419}
 }
 
 func (x *ListProjectsReq) GetBizId() uint32 {
@@ -27888,7 +27986,7 @@ type ListProjectsResp struct {
 
 func (x *ListProjectsResp) Reset() {
 	*x = ListProjectsResp{}
-	mi := &file_config_service_proto_msgTypes[418]
+	mi := &file_config_service_proto_msgTypes[420]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27900,7 +27998,7 @@ func (x *ListProjectsResp) String() string {
 func (*ListProjectsResp) ProtoMessage() {}
 
 func (x *ListProjectsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[418]
+	mi := &file_config_service_proto_msgTypes[420]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27913,7 +28011,7 @@ func (x *ListProjectsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProjectsResp.ProtoReflect.Descriptor instead.
 func (*ListProjectsResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{418}
+	return file_config_service_proto_rawDescGZIP(), []int{420}
 }
 
 func (x *ListProjectsResp) GetCount() uint32 {
@@ -27941,7 +28039,7 @@ type GetProjectReq struct {
 
 func (x *GetProjectReq) Reset() {
 	*x = GetProjectReq{}
-	mi := &file_config_service_proto_msgTypes[419]
+	mi := &file_config_service_proto_msgTypes[421]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -27953,7 +28051,7 @@ func (x *GetProjectReq) String() string {
 func (*GetProjectReq) ProtoMessage() {}
 
 func (x *GetProjectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[419]
+	mi := &file_config_service_proto_msgTypes[421]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -27966,7 +28064,7 @@ func (x *GetProjectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectReq.ProtoReflect.Descriptor instead.
 func (*GetProjectReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{419}
+	return file_config_service_proto_rawDescGZIP(), []int{421}
 }
 
 func (x *GetProjectReq) GetBizId() uint32 {
@@ -27995,7 +28093,7 @@ type GetProjectResp struct {
 
 func (x *GetProjectResp) Reset() {
 	*x = GetProjectResp{}
-	mi := &file_config_service_proto_msgTypes[420]
+	mi := &file_config_service_proto_msgTypes[422]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28007,7 +28105,7 @@ func (x *GetProjectResp) String() string {
 func (*GetProjectResp) ProtoMessage() {}
 
 func (x *GetProjectResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[420]
+	mi := &file_config_service_proto_msgTypes[422]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28020,7 +28118,7 @@ func (x *GetProjectResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectResp.ProtoReflect.Descriptor instead.
 func (*GetProjectResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{420}
+	return file_config_service_proto_rawDescGZIP(), []int{422}
 }
 
 func (x *GetProjectResp) GetId() uint32 {
@@ -28056,7 +28154,7 @@ type CreateProjectReq struct {
 
 func (x *CreateProjectReq) Reset() {
 	*x = CreateProjectReq{}
-	mi := &file_config_service_proto_msgTypes[421]
+	mi := &file_config_service_proto_msgTypes[423]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28068,7 +28166,7 @@ func (x *CreateProjectReq) String() string {
 func (*CreateProjectReq) ProtoMessage() {}
 
 func (x *CreateProjectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[421]
+	mi := &file_config_service_proto_msgTypes[423]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28081,7 +28179,7 @@ func (x *CreateProjectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectReq.ProtoReflect.Descriptor instead.
 func (*CreateProjectReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{421}
+	return file_config_service_proto_rawDescGZIP(), []int{423}
 }
 
 func (x *CreateProjectReq) GetBizId() uint32 {
@@ -28115,7 +28213,7 @@ type CreateProjectResp struct {
 
 func (x *CreateProjectResp) Reset() {
 	*x = CreateProjectResp{}
-	mi := &file_config_service_proto_msgTypes[422]
+	mi := &file_config_service_proto_msgTypes[424]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28127,7 +28225,7 @@ func (x *CreateProjectResp) String() string {
 func (*CreateProjectResp) ProtoMessage() {}
 
 func (x *CreateProjectResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[422]
+	mi := &file_config_service_proto_msgTypes[424]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28140,7 +28238,7 @@ func (x *CreateProjectResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateProjectResp.ProtoReflect.Descriptor instead.
 func (*CreateProjectResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{422}
+	return file_config_service_proto_rawDescGZIP(), []int{424}
 }
 
 func (x *CreateProjectResp) GetId() uint32 {
@@ -28163,7 +28261,7 @@ type UpdateProjectReq struct {
 
 func (x *UpdateProjectReq) Reset() {
 	*x = UpdateProjectReq{}
-	mi := &file_config_service_proto_msgTypes[423]
+	mi := &file_config_service_proto_msgTypes[425]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28175,7 +28273,7 @@ func (x *UpdateProjectReq) String() string {
 func (*UpdateProjectReq) ProtoMessage() {}
 
 func (x *UpdateProjectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[423]
+	mi := &file_config_service_proto_msgTypes[425]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28188,7 +28286,7 @@ func (x *UpdateProjectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProjectReq.ProtoReflect.Descriptor instead.
 func (*UpdateProjectReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{423}
+	return file_config_service_proto_rawDescGZIP(), []int{425}
 }
 
 func (x *UpdateProjectReq) GetBizId() uint32 {
@@ -28227,7 +28325,7 @@ type UpdateProjectResp struct {
 
 func (x *UpdateProjectResp) Reset() {
 	*x = UpdateProjectResp{}
-	mi := &file_config_service_proto_msgTypes[424]
+	mi := &file_config_service_proto_msgTypes[426]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28239,7 +28337,7 @@ func (x *UpdateProjectResp) String() string {
 func (*UpdateProjectResp) ProtoMessage() {}
 
 func (x *UpdateProjectResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[424]
+	mi := &file_config_service_proto_msgTypes[426]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28252,7 +28350,7 @@ func (x *UpdateProjectResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProjectResp.ProtoReflect.Descriptor instead.
 func (*UpdateProjectResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{424}
+	return file_config_service_proto_rawDescGZIP(), []int{426}
 }
 
 type DeleteProjectReq struct {
@@ -28266,7 +28364,7 @@ type DeleteProjectReq struct {
 
 func (x *DeleteProjectReq) Reset() {
 	*x = DeleteProjectReq{}
-	mi := &file_config_service_proto_msgTypes[425]
+	mi := &file_config_service_proto_msgTypes[427]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28278,7 +28376,7 @@ func (x *DeleteProjectReq) String() string {
 func (*DeleteProjectReq) ProtoMessage() {}
 
 func (x *DeleteProjectReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[425]
+	mi := &file_config_service_proto_msgTypes[427]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28291,7 +28389,7 @@ func (x *DeleteProjectReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProjectReq.ProtoReflect.Descriptor instead.
 func (*DeleteProjectReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{425}
+	return file_config_service_proto_rawDescGZIP(), []int{427}
 }
 
 func (x *DeleteProjectReq) GetBizId() uint32 {
@@ -28316,7 +28414,7 @@ type DeleteProjectResp struct {
 
 func (x *DeleteProjectResp) Reset() {
 	*x = DeleteProjectResp{}
-	mi := &file_config_service_proto_msgTypes[426]
+	mi := &file_config_service_proto_msgTypes[428]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28328,7 +28426,7 @@ func (x *DeleteProjectResp) String() string {
 func (*DeleteProjectResp) ProtoMessage() {}
 
 func (x *DeleteProjectResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[426]
+	mi := &file_config_service_proto_msgTypes[428]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28341,7 +28439,7 @@ func (x *DeleteProjectResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteProjectResp.ProtoReflect.Descriptor instead.
 func (*DeleteProjectResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{426}
+	return file_config_service_proto_rawDescGZIP(), []int{428}
 }
 
 type ListEnvironmentsReq struct {
@@ -28359,7 +28457,7 @@ type ListEnvironmentsReq struct {
 
 func (x *ListEnvironmentsReq) Reset() {
 	*x = ListEnvironmentsReq{}
-	mi := &file_config_service_proto_msgTypes[427]
+	mi := &file_config_service_proto_msgTypes[429]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28371,7 +28469,7 @@ func (x *ListEnvironmentsReq) String() string {
 func (*ListEnvironmentsReq) ProtoMessage() {}
 
 func (x *ListEnvironmentsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[427]
+	mi := &file_config_service_proto_msgTypes[429]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28384,7 +28482,7 @@ func (x *ListEnvironmentsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListEnvironmentsReq.ProtoReflect.Descriptor instead.
 func (*ListEnvironmentsReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{427}
+	return file_config_service_proto_rawDescGZIP(), []int{429}
 }
 
 func (x *ListEnvironmentsReq) GetBizId() uint32 {
@@ -28442,7 +28540,7 @@ type ListEnvironmentsResp struct {
 
 func (x *ListEnvironmentsResp) Reset() {
 	*x = ListEnvironmentsResp{}
-	mi := &file_config_service_proto_msgTypes[428]
+	mi := &file_config_service_proto_msgTypes[430]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28454,7 +28552,7 @@ func (x *ListEnvironmentsResp) String() string {
 func (*ListEnvironmentsResp) ProtoMessage() {}
 
 func (x *ListEnvironmentsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[428]
+	mi := &file_config_service_proto_msgTypes[430]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28467,7 +28565,7 @@ func (x *ListEnvironmentsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListEnvironmentsResp.ProtoReflect.Descriptor instead.
 func (*ListEnvironmentsResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{428}
+	return file_config_service_proto_rawDescGZIP(), []int{430}
 }
 
 func (x *ListEnvironmentsResp) GetProdEnvironments() []*environment.Environment {
@@ -28510,7 +28608,7 @@ type GetEnvironmentReq struct {
 
 func (x *GetEnvironmentReq) Reset() {
 	*x = GetEnvironmentReq{}
-	mi := &file_config_service_proto_msgTypes[429]
+	mi := &file_config_service_proto_msgTypes[431]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28522,7 +28620,7 @@ func (x *GetEnvironmentReq) String() string {
 func (*GetEnvironmentReq) ProtoMessage() {}
 
 func (x *GetEnvironmentReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[429]
+	mi := &file_config_service_proto_msgTypes[431]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28535,7 +28633,7 @@ func (x *GetEnvironmentReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEnvironmentReq.ProtoReflect.Descriptor instead.
 func (*GetEnvironmentReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{429}
+	return file_config_service_proto_rawDescGZIP(), []int{431}
 }
 
 func (x *GetEnvironmentReq) GetBizId() uint32 {
@@ -28571,7 +28669,7 @@ type GetEnvironmentResp struct {
 
 func (x *GetEnvironmentResp) Reset() {
 	*x = GetEnvironmentResp{}
-	mi := &file_config_service_proto_msgTypes[430]
+	mi := &file_config_service_proto_msgTypes[432]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28583,7 +28681,7 @@ func (x *GetEnvironmentResp) String() string {
 func (*GetEnvironmentResp) ProtoMessage() {}
 
 func (x *GetEnvironmentResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[430]
+	mi := &file_config_service_proto_msgTypes[432]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28596,7 +28694,7 @@ func (x *GetEnvironmentResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEnvironmentResp.ProtoReflect.Descriptor instead.
 func (*GetEnvironmentResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{430}
+	return file_config_service_proto_rawDescGZIP(), []int{432}
 }
 
 func (x *GetEnvironmentResp) GetId() uint32 {
@@ -28634,7 +28732,7 @@ type CreateEnvironmentReq struct {
 
 func (x *CreateEnvironmentReq) Reset() {
 	*x = CreateEnvironmentReq{}
-	mi := &file_config_service_proto_msgTypes[431]
+	mi := &file_config_service_proto_msgTypes[433]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28646,7 +28744,7 @@ func (x *CreateEnvironmentReq) String() string {
 func (*CreateEnvironmentReq) ProtoMessage() {}
 
 func (x *CreateEnvironmentReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[431]
+	mi := &file_config_service_proto_msgTypes[433]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28659,7 +28757,7 @@ func (x *CreateEnvironmentReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEnvironmentReq.ProtoReflect.Descriptor instead.
 func (*CreateEnvironmentReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{431}
+	return file_config_service_proto_rawDescGZIP(), []int{433}
 }
 
 func (x *CreateEnvironmentReq) GetBizId() uint32 {
@@ -28707,7 +28805,7 @@ type CreateEnvironmentResp struct {
 
 func (x *CreateEnvironmentResp) Reset() {
 	*x = CreateEnvironmentResp{}
-	mi := &file_config_service_proto_msgTypes[432]
+	mi := &file_config_service_proto_msgTypes[434]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28719,7 +28817,7 @@ func (x *CreateEnvironmentResp) String() string {
 func (*CreateEnvironmentResp) ProtoMessage() {}
 
 func (x *CreateEnvironmentResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[432]
+	mi := &file_config_service_proto_msgTypes[434]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28732,7 +28830,7 @@ func (x *CreateEnvironmentResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEnvironmentResp.ProtoReflect.Descriptor instead.
 func (*CreateEnvironmentResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{432}
+	return file_config_service_proto_rawDescGZIP(), []int{434}
 }
 
 func (x *CreateEnvironmentResp) GetId() uint32 {
@@ -28755,7 +28853,7 @@ type UpdateEnvironmentReq struct {
 
 func (x *UpdateEnvironmentReq) Reset() {
 	*x = UpdateEnvironmentReq{}
-	mi := &file_config_service_proto_msgTypes[433]
+	mi := &file_config_service_proto_msgTypes[435]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28767,7 +28865,7 @@ func (x *UpdateEnvironmentReq) String() string {
 func (*UpdateEnvironmentReq) ProtoMessage() {}
 
 func (x *UpdateEnvironmentReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[433]
+	mi := &file_config_service_proto_msgTypes[435]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28780,7 +28878,7 @@ func (x *UpdateEnvironmentReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEnvironmentReq.ProtoReflect.Descriptor instead.
 func (*UpdateEnvironmentReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{433}
+	return file_config_service_proto_rawDescGZIP(), []int{435}
 }
 
 func (x *UpdateEnvironmentReq) GetBizId() uint32 {
@@ -28819,7 +28917,7 @@ type UpdateEnvironmentResp struct {
 
 func (x *UpdateEnvironmentResp) Reset() {
 	*x = UpdateEnvironmentResp{}
-	mi := &file_config_service_proto_msgTypes[434]
+	mi := &file_config_service_proto_msgTypes[436]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28831,7 +28929,7 @@ func (x *UpdateEnvironmentResp) String() string {
 func (*UpdateEnvironmentResp) ProtoMessage() {}
 
 func (x *UpdateEnvironmentResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[434]
+	mi := &file_config_service_proto_msgTypes[436]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28844,7 +28942,7 @@ func (x *UpdateEnvironmentResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEnvironmentResp.ProtoReflect.Descriptor instead.
 func (*UpdateEnvironmentResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{434}
+	return file_config_service_proto_rawDescGZIP(), []int{436}
 }
 
 type DeleteEnvironmentReq struct {
@@ -28859,7 +28957,7 @@ type DeleteEnvironmentReq struct {
 
 func (x *DeleteEnvironmentReq) Reset() {
 	*x = DeleteEnvironmentReq{}
-	mi := &file_config_service_proto_msgTypes[435]
+	mi := &file_config_service_proto_msgTypes[437]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28871,7 +28969,7 @@ func (x *DeleteEnvironmentReq) String() string {
 func (*DeleteEnvironmentReq) ProtoMessage() {}
 
 func (x *DeleteEnvironmentReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[435]
+	mi := &file_config_service_proto_msgTypes[437]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28884,7 +28982,7 @@ func (x *DeleteEnvironmentReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteEnvironmentReq.ProtoReflect.Descriptor instead.
 func (*DeleteEnvironmentReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{435}
+	return file_config_service_proto_rawDescGZIP(), []int{437}
 }
 
 func (x *DeleteEnvironmentReq) GetBizId() uint32 {
@@ -28916,7 +29014,7 @@ type DeleteEnvironmentResp struct {
 
 func (x *DeleteEnvironmentResp) Reset() {
 	*x = DeleteEnvironmentResp{}
-	mi := &file_config_service_proto_msgTypes[436]
+	mi := &file_config_service_proto_msgTypes[438]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28928,7 +29026,7 @@ func (x *DeleteEnvironmentResp) String() string {
 func (*DeleteEnvironmentResp) ProtoMessage() {}
 
 func (x *DeleteEnvironmentResp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[436]
+	mi := &file_config_service_proto_msgTypes[438]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28941,7 +29039,7 @@ func (x *DeleteEnvironmentResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteEnvironmentResp.ProtoReflect.Descriptor instead.
 func (*DeleteEnvironmentResp) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{436}
+	return file_config_service_proto_rawDescGZIP(), []int{438}
 }
 
 type GetProjectByKeyReq struct {
@@ -28955,7 +29053,7 @@ type GetProjectByKeyReq struct {
 
 func (x *GetProjectByKeyReq) Reset() {
 	*x = GetProjectByKeyReq{}
-	mi := &file_config_service_proto_msgTypes[437]
+	mi := &file_config_service_proto_msgTypes[439]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -28967,7 +29065,7 @@ func (x *GetProjectByKeyReq) String() string {
 func (*GetProjectByKeyReq) ProtoMessage() {}
 
 func (x *GetProjectByKeyReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[437]
+	mi := &file_config_service_proto_msgTypes[439]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -28980,7 +29078,7 @@ func (x *GetProjectByKeyReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProjectByKeyReq.ProtoReflect.Descriptor instead.
 func (*GetProjectByKeyReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{437}
+	return file_config_service_proto_rawDescGZIP(), []int{439}
 }
 
 func (x *GetProjectByKeyReq) GetBizId() uint32 {
@@ -29009,7 +29107,7 @@ type GetEnvironmentByNameReq struct {
 
 func (x *GetEnvironmentByNameReq) Reset() {
 	*x = GetEnvironmentByNameReq{}
-	mi := &file_config_service_proto_msgTypes[438]
+	mi := &file_config_service_proto_msgTypes[440]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29021,7 +29119,7 @@ func (x *GetEnvironmentByNameReq) String() string {
 func (*GetEnvironmentByNameReq) ProtoMessage() {}
 
 func (x *GetEnvironmentByNameReq) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[438]
+	mi := &file_config_service_proto_msgTypes[440]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29034,7 +29132,7 @@ func (x *GetEnvironmentByNameReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEnvironmentByNameReq.ProtoReflect.Descriptor instead.
 func (*GetEnvironmentByNameReq) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{438}
+	return file_config_service_proto_rawDescGZIP(), []int{440}
 }
 
 func (x *GetEnvironmentByNameReq) GetBizId() uint32 {
@@ -29069,7 +29167,7 @@ type CredentialScopePreviewResp_Detail struct {
 
 func (x *CredentialScopePreviewResp_Detail) Reset() {
 	*x = CredentialScopePreviewResp_Detail{}
-	mi := &file_config_service_proto_msgTypes[439]
+	mi := &file_config_service_proto_msgTypes[441]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29081,7 +29179,7 @@ func (x *CredentialScopePreviewResp_Detail) String() string {
 func (*CredentialScopePreviewResp_Detail) ProtoMessage() {}
 
 func (x *CredentialScopePreviewResp_Detail) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[439]
+	mi := &file_config_service_proto_msgTypes[441]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29132,7 +29230,7 @@ type BatchUpsertConfigItemsReq_ConfigItem struct {
 
 func (x *BatchUpsertConfigItemsReq_ConfigItem) Reset() {
 	*x = BatchUpsertConfigItemsReq_ConfigItem{}
-	mi := &file_config_service_proto_msgTypes[440]
+	mi := &file_config_service_proto_msgTypes[442]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29144,7 +29242,7 @@ func (x *BatchUpsertConfigItemsReq_ConfigItem) String() string {
 func (*BatchUpsertConfigItemsReq_ConfigItem) ProtoMessage() {}
 
 func (x *BatchUpsertConfigItemsReq_ConfigItem) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[440]
+	mi := &file_config_service_proto_msgTypes[442]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29255,7 +29353,7 @@ type BatchUpsertConfigItemsReq_TemplateBinding struct {
 
 func (x *BatchUpsertConfigItemsReq_TemplateBinding) Reset() {
 	*x = BatchUpsertConfigItemsReq_TemplateBinding{}
-	mi := &file_config_service_proto_msgTypes[441]
+	mi := &file_config_service_proto_msgTypes[443]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29267,7 +29365,7 @@ func (x *BatchUpsertConfigItemsReq_TemplateBinding) String() string {
 func (*BatchUpsertConfigItemsReq_TemplateBinding) ProtoMessage() {}
 
 func (x *BatchUpsertConfigItemsReq_TemplateBinding) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[441]
+	mi := &file_config_service_proto_msgTypes[443]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29308,7 +29406,7 @@ type ListConfigItemByTupleReq_Item struct {
 
 func (x *ListConfigItemByTupleReq_Item) Reset() {
 	*x = ListConfigItemByTupleReq_Item{}
-	mi := &file_config_service_proto_msgTypes[442]
+	mi := &file_config_service_proto_msgTypes[444]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29320,7 +29418,7 @@ func (x *ListConfigItemByTupleReq_Item) String() string {
 func (*ListConfigItemByTupleReq_Item) ProtoMessage() {}
 
 func (x *ListConfigItemByTupleReq_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[442]
+	mi := &file_config_service_proto_msgTypes[444]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29361,7 +29459,7 @@ type ListAllReleasedConfigItemsResp_Item struct {
 
 func (x *ListAllReleasedConfigItemsResp_Item) Reset() {
 	*x = ListAllReleasedConfigItemsResp_Item{}
-	mi := &file_config_service_proto_msgTypes[443]
+	mi := &file_config_service_proto_msgTypes[445]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29373,7 +29471,7 @@ func (x *ListAllReleasedConfigItemsResp_Item) String() string {
 func (*ListAllReleasedConfigItemsResp_Item) ProtoMessage() {}
 
 func (x *ListAllReleasedConfigItemsResp_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[443]
+	mi := &file_config_service_proto_msgTypes[445]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29416,7 +29514,7 @@ type ListHooksResp_Detail struct {
 
 func (x *ListHooksResp_Detail) Reset() {
 	*x = ListHooksResp_Detail{}
-	mi := &file_config_service_proto_msgTypes[444]
+	mi := &file_config_service_proto_msgTypes[446]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29428,7 +29526,7 @@ func (x *ListHooksResp_Detail) String() string {
 func (*ListHooksResp_Detail) ProtoMessage() {}
 
 func (x *ListHooksResp_Detail) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[444]
+	mi := &file_config_service_proto_msgTypes[446]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29484,7 +29582,7 @@ type ListHookRevisionsResp_ListHookRevisionsData struct {
 
 func (x *ListHookRevisionsResp_ListHookRevisionsData) Reset() {
 	*x = ListHookRevisionsResp_ListHookRevisionsData{}
-	mi := &file_config_service_proto_msgTypes[445]
+	mi := &file_config_service_proto_msgTypes[447]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29496,7 +29594,7 @@ func (x *ListHookRevisionsResp_ListHookRevisionsData) String() string {
 func (*ListHookRevisionsResp_ListHookRevisionsData) ProtoMessage() {}
 
 func (x *ListHookRevisionsResp_ListHookRevisionsData) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[445]
+	mi := &file_config_service_proto_msgTypes[447]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29543,7 +29641,7 @@ type GetHookInfoSpec_Releases struct {
 
 func (x *GetHookInfoSpec_Releases) Reset() {
 	*x = GetHookInfoSpec_Releases{}
-	mi := &file_config_service_proto_msgTypes[446]
+	mi := &file_config_service_proto_msgTypes[448]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29555,7 +29653,7 @@ func (x *GetHookInfoSpec_Releases) String() string {
 func (*GetHookInfoSpec_Releases) ProtoMessage() {}
 
 func (x *GetHookInfoSpec_Releases) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[446]
+	mi := &file_config_service_proto_msgTypes[448]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29597,7 +29695,7 @@ type ListHookRevisionReferencesResp_Detail struct {
 
 func (x *ListHookRevisionReferencesResp_Detail) Reset() {
 	*x = ListHookRevisionReferencesResp_Detail{}
-	mi := &file_config_service_proto_msgTypes[447]
+	mi := &file_config_service_proto_msgTypes[449]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29609,7 +29707,7 @@ func (x *ListHookRevisionReferencesResp_Detail) String() string {
 func (*ListHookRevisionReferencesResp_Detail) ProtoMessage() {}
 
 func (x *ListHookRevisionReferencesResp_Detail) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[447]
+	mi := &file_config_service_proto_msgTypes[449]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29714,7 +29812,7 @@ type ListHookReferencesResp_Detail struct {
 
 func (x *ListHookReferencesResp_Detail) Reset() {
 	*x = ListHookReferencesResp_Detail{}
-	mi := &file_config_service_proto_msgTypes[448]
+	mi := &file_config_service_proto_msgTypes[450]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29726,7 +29824,7 @@ func (x *ListHookReferencesResp_Detail) String() string {
 func (*ListHookReferencesResp_Detail) ProtoMessage() {}
 
 func (x *ListHookReferencesResp_Detail) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[448]
+	mi := &file_config_service_proto_msgTypes[450]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29827,7 +29925,7 @@ type GetReleaseHookResp_Hook struct {
 
 func (x *GetReleaseHookResp_Hook) Reset() {
 	*x = GetReleaseHookResp_Hook{}
-	mi := &file_config_service_proto_msgTypes[449]
+	mi := &file_config_service_proto_msgTypes[451]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29839,7 +29937,7 @@ func (x *GetReleaseHookResp_Hook) String() string {
 func (*GetReleaseHookResp_Hook) ProtoMessage() {}
 
 func (x *GetReleaseHookResp_Hook) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[449]
+	mi := &file_config_service_proto_msgTypes[451]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -29919,7 +30017,7 @@ type BatchUpsertTemplatesReq_Item struct {
 
 func (x *BatchUpsertTemplatesReq_Item) Reset() {
 	*x = BatchUpsertTemplatesReq_Item{}
-	mi := &file_config_service_proto_msgTypes[450]
+	mi := &file_config_service_proto_msgTypes[452]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -29931,7 +30029,7 @@ func (x *BatchUpsertTemplatesReq_Item) String() string {
 func (*BatchUpsertTemplatesReq_Item) ProtoMessage() {}
 
 func (x *BatchUpsertTemplatesReq_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[450]
+	mi := &file_config_service_proto_msgTypes[452]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30049,7 +30147,7 @@ type ListTemplateByTupleReq_Item struct {
 
 func (x *ListTemplateByTupleReq_Item) Reset() {
 	*x = ListTemplateByTupleReq_Item{}
-	mi := &file_config_service_proto_msgTypes[451]
+	mi := &file_config_service_proto_msgTypes[453]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30061,7 +30159,7 @@ func (x *ListTemplateByTupleReq_Item) String() string {
 func (*ListTemplateByTupleReq_Item) ProtoMessage() {}
 
 func (x *ListTemplateByTupleReq_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[451]
+	mi := &file_config_service_proto_msgTypes[453]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30102,7 +30200,7 @@ type ListTemplateByTupleResp_Item struct {
 
 func (x *ListTemplateByTupleResp_Item) Reset() {
 	*x = ListTemplateByTupleResp_Item{}
-	mi := &file_config_service_proto_msgTypes[452]
+	mi := &file_config_service_proto_msgTypes[454]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30114,7 +30212,7 @@ func (x *ListTemplateByTupleResp_Item) String() string {
 func (*ListTemplateByTupleResp_Item) ProtoMessage() {}
 
 func (x *ListTemplateByTupleResp_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[452]
+	mi := &file_config_service_proto_msgTypes[454]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30155,7 +30253,7 @@ type ListTemplateSetsAndRevisionsResp_Detail struct {
 
 func (x *ListTemplateSetsAndRevisionsResp_Detail) Reset() {
 	*x = ListTemplateSetsAndRevisionsResp_Detail{}
-	mi := &file_config_service_proto_msgTypes[453]
+	mi := &file_config_service_proto_msgTypes[455]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30167,7 +30265,7 @@ func (x *ListTemplateSetsAndRevisionsResp_Detail) String() string {
 func (*ListTemplateSetsAndRevisionsResp_Detail) ProtoMessage() {}
 
 func (x *ListTemplateSetsAndRevisionsResp_Detail) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[453]
+	mi := &file_config_service_proto_msgTypes[455]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30224,7 +30322,7 @@ type GetTemplateRevisionResp_TemplateRevision struct {
 
 func (x *GetTemplateRevisionResp_TemplateRevision) Reset() {
 	*x = GetTemplateRevisionResp_TemplateRevision{}
-	mi := &file_config_service_proto_msgTypes[454]
+	mi := &file_config_service_proto_msgTypes[456]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30236,7 +30334,7 @@ func (x *GetTemplateRevisionResp_TemplateRevision) String() string {
 func (*GetTemplateRevisionResp_TemplateRevision) ProtoMessage() {}
 
 func (x *GetTemplateRevisionResp_TemplateRevision) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[454]
+	mi := &file_config_service_proto_msgTypes[456]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30392,7 +30490,7 @@ type ImportFromTemplateSetToAppReq_Binding struct {
 
 func (x *ImportFromTemplateSetToAppReq_Binding) Reset() {
 	*x = ImportFromTemplateSetToAppReq_Binding{}
-	mi := &file_config_service_proto_msgTypes[455]
+	mi := &file_config_service_proto_msgTypes[457]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30404,7 +30502,7 @@ func (x *ImportFromTemplateSetToAppReq_Binding) String() string {
 func (*ImportFromTemplateSetToAppReq_Binding) ProtoMessage() {}
 
 func (x *ImportFromTemplateSetToAppReq_Binding) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[455]
+	mi := &file_config_service_proto_msgTypes[457]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30469,7 +30567,7 @@ type ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding struct {
 
 func (x *ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding) Reset() {
 	*x = ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding{}
-	mi := &file_config_service_proto_msgTypes[456]
+	mi := &file_config_service_proto_msgTypes[458]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30481,7 +30579,7 @@ func (x *ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding) String()
 func (*ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding) ProtoMessage() {}
 
 func (x *ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[456]
+	mi := &file_config_service_proto_msgTypes[458]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30543,7 +30641,7 @@ type CheckTemplateSetReferencesAppsReq_Item struct {
 
 func (x *CheckTemplateSetReferencesAppsReq_Item) Reset() {
 	*x = CheckTemplateSetReferencesAppsReq_Item{}
-	mi := &file_config_service_proto_msgTypes[457]
+	mi := &file_config_service_proto_msgTypes[459]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30555,7 +30653,7 @@ func (x *CheckTemplateSetReferencesAppsReq_Item) String() string {
 func (*CheckTemplateSetReferencesAppsReq_Item) ProtoMessage() {}
 
 func (x *CheckTemplateSetReferencesAppsReq_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[457]
+	mi := &file_config_service_proto_msgTypes[459]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30602,7 +30700,7 @@ type CheckTemplateSetReferencesAppsResp_Item struct {
 
 func (x *CheckTemplateSetReferencesAppsResp_Item) Reset() {
 	*x = CheckTemplateSetReferencesAppsResp_Item{}
-	mi := &file_config_service_proto_msgTypes[458]
+	mi := &file_config_service_proto_msgTypes[460]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30614,7 +30712,7 @@ func (x *CheckTemplateSetReferencesAppsResp_Item) String() string {
 func (*CheckTemplateSetReferencesAppsResp_Item) ProtoMessage() {}
 
 func (x *CheckTemplateSetReferencesAppsResp_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[458]
+	mi := &file_config_service_proto_msgTypes[460]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30703,7 +30801,7 @@ type ListAllGroupsResp_ListAllGroupsData struct {
 
 func (x *ListAllGroupsResp_ListAllGroupsData) Reset() {
 	*x = ListAllGroupsResp_ListAllGroupsData{}
-	mi := &file_config_service_proto_msgTypes[459]
+	mi := &file_config_service_proto_msgTypes[461]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30715,7 +30813,7 @@ func (x *ListAllGroupsResp_ListAllGroupsData) String() string {
 func (*ListAllGroupsResp_ListAllGroupsData) ProtoMessage() {}
 
 func (x *ListAllGroupsResp_ListAllGroupsData) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[459]
+	mi := &file_config_service_proto_msgTypes[461]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30798,7 +30896,7 @@ type ListAllGroupsResp_ListAllGroupsData_BindApp struct {
 
 func (x *ListAllGroupsResp_ListAllGroupsData_BindApp) Reset() {
 	*x = ListAllGroupsResp_ListAllGroupsData_BindApp{}
-	mi := &file_config_service_proto_msgTypes[460]
+	mi := &file_config_service_proto_msgTypes[462]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30810,7 +30908,7 @@ func (x *ListAllGroupsResp_ListAllGroupsData_BindApp) String() string {
 func (*ListAllGroupsResp_ListAllGroupsData_BindApp) ProtoMessage() {}
 
 func (x *ListAllGroupsResp_ListAllGroupsData_BindApp) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[460]
+	mi := &file_config_service_proto_msgTypes[462]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30856,7 +30954,7 @@ type ListAppGroupsResp_ListAppGroupsData struct {
 
 func (x *ListAppGroupsResp_ListAppGroupsData) Reset() {
 	*x = ListAppGroupsResp_ListAppGroupsData{}
-	mi := &file_config_service_proto_msgTypes[461]
+	mi := &file_config_service_proto_msgTypes[463]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30868,7 +30966,7 @@ func (x *ListAppGroupsResp_ListAppGroupsData) String() string {
 func (*ListAppGroupsResp_ListAppGroupsData) ProtoMessage() {}
 
 func (x *ListAppGroupsResp_ListAppGroupsData) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[461]
+	mi := &file_config_service_proto_msgTypes[463]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -30950,7 +31048,7 @@ type ListGroupReleasedAppsResp_ListGroupReleasedAppsData struct {
 
 func (x *ListGroupReleasedAppsResp_ListGroupReleasedAppsData) Reset() {
 	*x = ListGroupReleasedAppsResp_ListGroupReleasedAppsData{}
-	mi := &file_config_service_proto_msgTypes[462]
+	mi := &file_config_service_proto_msgTypes[464]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -30962,7 +31060,7 @@ func (x *ListGroupReleasedAppsResp_ListGroupReleasedAppsData) String() string {
 func (*ListGroupReleasedAppsResp_ListGroupReleasedAppsData) ProtoMessage() {}
 
 func (x *ListGroupReleasedAppsResp_ListGroupReleasedAppsData) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[462]
+	mi := &file_config_service_proto_msgTypes[464]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31050,7 +31148,7 @@ type BatchUpsertKvsReq_Kv struct {
 
 func (x *BatchUpsertKvsReq_Kv) Reset() {
 	*x = BatchUpsertKvsReq_Kv{}
-	mi := &file_config_service_proto_msgTypes[463]
+	mi := &file_config_service_proto_msgTypes[465]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31062,7 +31160,7 @@ func (x *BatchUpsertKvsReq_Kv) String() string {
 func (*BatchUpsertKvsReq_Kv) ProtoMessage() {}
 
 func (x *BatchUpsertKvsReq_Kv) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[463]
+	mi := &file_config_service_proto_msgTypes[465]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31138,7 +31236,7 @@ type ListClientsReq_Order struct {
 
 func (x *ListClientsReq_Order) Reset() {
 	*x = ListClientsReq_Order{}
-	mi := &file_config_service_proto_msgTypes[464]
+	mi := &file_config_service_proto_msgTypes[466]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31150,7 +31248,7 @@ func (x *ListClientsReq_Order) String() string {
 func (*ListClientsReq_Order) ProtoMessage() {}
 
 func (x *ListClientsReq_Order) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[464]
+	mi := &file_config_service_proto_msgTypes[466]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31194,7 +31292,7 @@ type ListClientsResp_Item struct {
 
 func (x *ListClientsResp_Item) Reset() {
 	*x = ListClientsResp_Item{}
-	mi := &file_config_service_proto_msgTypes[465]
+	mi := &file_config_service_proto_msgTypes[467]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31206,7 +31304,7 @@ func (x *ListClientsResp_Item) String() string {
 func (*ListClientsResp_Item) ProtoMessage() {}
 
 func (x *ListClientsResp_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[465]
+	mi := &file_config_service_proto_msgTypes[467]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31268,7 +31366,7 @@ type ListClientEventsReq_Order struct {
 
 func (x *ListClientEventsReq_Order) Reset() {
 	*x = ListClientEventsReq_Order{}
-	mi := &file_config_service_proto_msgTypes[466]
+	mi := &file_config_service_proto_msgTypes[468]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31280,7 +31378,7 @@ func (x *ListClientEventsReq_Order) String() string {
 func (*ListClientEventsReq_Order) ProtoMessage() {}
 
 func (x *ListClientEventsReq_Order) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[466]
+	mi := &file_config_service_proto_msgTypes[468]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31326,7 +31424,7 @@ type CompareConfigItemConflictsResp_NonTemplateConfig struct {
 
 func (x *CompareConfigItemConflictsResp_NonTemplateConfig) Reset() {
 	*x = CompareConfigItemConflictsResp_NonTemplateConfig{}
-	mi := &file_config_service_proto_msgTypes[467]
+	mi := &file_config_service_proto_msgTypes[469]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31338,7 +31436,7 @@ func (x *CompareConfigItemConflictsResp_NonTemplateConfig) String() string {
 func (*CompareConfigItemConflictsResp_NonTemplateConfig) ProtoMessage() {}
 
 func (x *CompareConfigItemConflictsResp_NonTemplateConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[467]
+	mi := &file_config_service_proto_msgTypes[469]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31421,7 +31519,7 @@ type CompareConfigItemConflictsResp_TemplateConfig struct {
 
 func (x *CompareConfigItemConflictsResp_TemplateConfig) Reset() {
 	*x = CompareConfigItemConflictsResp_TemplateConfig{}
-	mi := &file_config_service_proto_msgTypes[468]
+	mi := &file_config_service_proto_msgTypes[470]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31433,7 +31531,7 @@ func (x *CompareConfigItemConflictsResp_TemplateConfig) String() string {
 func (*CompareConfigItemConflictsResp_TemplateConfig) ProtoMessage() {}
 
 func (x *CompareConfigItemConflictsResp_TemplateConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[468]
+	mi := &file_config_service_proto_msgTypes[470]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31525,7 +31623,7 @@ type CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail struct
 
 func (x *CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail) Reset() {
 	*x = CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail{}
-	mi := &file_config_service_proto_msgTypes[469]
+	mi := &file_config_service_proto_msgTypes[471]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31537,7 +31635,7 @@ func (x *CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail) S
 func (*CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail) ProtoMessage() {}
 
 func (x *CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[469]
+	mi := &file_config_service_proto_msgTypes[471]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31596,7 +31694,7 @@ type CompareKvConflictsResp_Kv struct {
 
 func (x *CompareKvConflictsResp_Kv) Reset() {
 	*x = CompareKvConflictsResp_Kv{}
-	mi := &file_config_service_proto_msgTypes[470]
+	mi := &file_config_service_proto_msgTypes[472]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31608,7 +31706,7 @@ func (x *CompareKvConflictsResp_Kv) String() string {
 func (*CompareKvConflictsResp_Kv) ProtoMessage() {}
 
 func (x *CompareKvConflictsResp_Kv) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[470]
+	mi := &file_config_service_proto_msgTypes[472]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31677,7 +31775,7 @@ type GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec struct {
 
 func (x *GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec) Reset() {
 	*x = GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec{}
-	mi := &file_config_service_proto_msgTypes[471]
+	mi := &file_config_service_proto_msgTypes[473]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31689,7 +31787,7 @@ func (x *GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec) String() string {
 func (*GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec) ProtoMessage() {}
 
 func (x *GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[471]
+	mi := &file_config_service_proto_msgTypes[473]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31740,7 +31838,7 @@ type CloneAppReq_ConfigItem struct {
 
 func (x *CloneAppReq_ConfigItem) Reset() {
 	*x = CloneAppReq_ConfigItem{}
-	mi := &file_config_service_proto_msgTypes[472]
+	mi := &file_config_service_proto_msgTypes[474]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31752,7 +31850,7 @@ func (x *CloneAppReq_ConfigItem) String() string {
 func (*CloneAppReq_ConfigItem) ProtoMessage() {}
 
 func (x *CloneAppReq_ConfigItem) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[472]
+	mi := &file_config_service_proto_msgTypes[474]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31868,7 +31966,7 @@ type CloneAppReq_Kv struct {
 
 func (x *CloneAppReq_Kv) Reset() {
 	*x = CloneAppReq_Kv{}
-	mi := &file_config_service_proto_msgTypes[473]
+	mi := &file_config_service_proto_msgTypes[475]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31880,7 +31978,7 @@ func (x *CloneAppReq_Kv) String() string {
 func (*CloneAppReq_Kv) ProtoMessage() {}
 
 func (x *CloneAppReq_Kv) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[473]
+	mi := &file_config_service_proto_msgTypes[475]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -31956,7 +32054,7 @@ type CloneAppReq_TemplateBinding struct {
 
 func (x *CloneAppReq_TemplateBinding) Reset() {
 	*x = CloneAppReq_TemplateBinding{}
-	mi := &file_config_service_proto_msgTypes[474]
+	mi := &file_config_service_proto_msgTypes[476]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -31968,7 +32066,7 @@ func (x *CloneAppReq_TemplateBinding) String() string {
 func (*CloneAppReq_TemplateBinding) ProtoMessage() {}
 
 func (x *CloneAppReq_TemplateBinding) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[474]
+	mi := &file_config_service_proto_msgTypes[476]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -32009,7 +32107,7 @@ type CompareConfigResp_ConfigContent struct {
 
 func (x *CompareConfigResp_ConfigContent) Reset() {
 	*x = CompareConfigResp_ConfigContent{}
-	mi := &file_config_service_proto_msgTypes[475]
+	mi := &file_config_service_proto_msgTypes[477]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -32021,7 +32119,7 @@ func (x *CompareConfigResp_ConfigContent) String() string {
 func (*CompareConfigResp_ConfigContent) ProtoMessage() {}
 
 func (x *CompareConfigResp_ConfigContent) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[475]
+	mi := &file_config_service_proto_msgTypes[477]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -32034,7 +32132,7 @@ func (x *CompareConfigResp_ConfigContent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompareConfigResp_ConfigContent.ProtoReflect.Descriptor instead.
 func (*CompareConfigResp_ConfigContent) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{369, 0}
+	return file_config_service_proto_rawDescGZIP(), []int{371, 0}
 }
 
 func (x *CompareConfigResp_ConfigContent) GetContent() string {
@@ -32062,7 +32160,7 @@ type ListConfigTemplateResp_Item struct {
 
 func (x *ListConfigTemplateResp_Item) Reset() {
 	*x = ListConfigTemplateResp_Item{}
-	mi := &file_config_service_proto_msgTypes[476]
+	mi := &file_config_service_proto_msgTypes[478]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -32074,7 +32172,7 @@ func (x *ListConfigTemplateResp_Item) String() string {
 func (*ListConfigTemplateResp_Item) ProtoMessage() {}
 
 func (x *ListConfigTemplateResp_Item) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[476]
+	mi := &file_config_service_proto_msgTypes[478]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -32087,7 +32185,7 @@ func (x *ListConfigTemplateResp_Item) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigTemplateResp_Item.ProtoReflect.Descriptor instead.
 func (*ListConfigTemplateResp_Item) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{379, 0}
+	return file_config_service_proto_rawDescGZIP(), []int{381, 0}
 }
 
 func (x *ListConfigTemplateResp_Item) GetId() uint32 {
@@ -32117,7 +32215,7 @@ type ConfigGenerateStatusResp_ConfigGenerateStatus struct {
 
 func (x *ConfigGenerateStatusResp_ConfigGenerateStatus) Reset() {
 	*x = ConfigGenerateStatusResp_ConfigGenerateStatus{}
-	mi := &file_config_service_proto_msgTypes[477]
+	mi := &file_config_service_proto_msgTypes[479]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -32129,7 +32227,7 @@ func (x *ConfigGenerateStatusResp_ConfigGenerateStatus) String() string {
 func (*ConfigGenerateStatusResp_ConfigGenerateStatus) ProtoMessage() {}
 
 func (x *ConfigGenerateStatusResp_ConfigGenerateStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_config_service_proto_msgTypes[477]
+	mi := &file_config_service_proto_msgTypes[479]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -32142,7 +32240,7 @@ func (x *ConfigGenerateStatusResp_ConfigGenerateStatus) ProtoReflect() protorefl
 
 // Deprecated: Use ConfigGenerateStatusResp_ConfigGenerateStatus.ProtoReflect.Descriptor instead.
 func (*ConfigGenerateStatusResp_ConfigGenerateStatus) Descriptor() ([]byte, []int) {
-	return file_config_service_proto_rawDescGZIP(), []int{383, 0}
+	return file_config_service_proto_rawDescGZIP(), []int{385, 0}
 }
 
 func (x *ConfigGenerateStatusResp_ConfigGenerateStatus) GetConfigInstanceKey() string {
@@ -37752,41 +37850,46 @@ var file_config_service_proto_rawDesc = []byte{
 	0x52, 0x65, 0x73, 0x70, 0x12, 0x31, 0x0a, 0x03, 0x69, 0x70, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28,
 	0x09, 0x42, 0x1f, 0x92, 0x41, 0x1c, 0x32, 0x1a, 0xe5, 0x8e, 0xbb, 0xe9, 0x87, 0x8d, 0xe5, 0x90,
 	0x8e, 0xe7, 0x9a, 0x84, 0xe5, 0x86, 0x85, 0xe7, 0xbd, 0x91, 0x49, 0x50, 0xe5, 0x88, 0x97, 0xe8,
-	0xa1, 0xa8, 0x52, 0x03, 0x69, 0x70, 0x73, 0x22, 0x9e, 0x04, 0x0a, 0x11, 0x4f, 0x70, 0x65, 0x72,
+	0xa1, 0xa8, 0x52, 0x03, 0x69, 0x70, 0x73, 0x22, 0xa7, 0x02, 0x0a, 0x11, 0x4f, 0x70, 0x65, 0x72,
 	0x61, 0x74, 0x65, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x52, 0x65, 0x71, 0x12, 0x24, 0x0a,
 	0x06, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x42, 0x0d, 0x92,
 	0x41, 0x0a, 0x32, 0x08, 0xe4, 0xb8, 0x9a, 0xe5, 0x8a, 0xa1, 0x49, 0x44, 0x52, 0x05, 0x62, 0x69,
 	0x7a, 0x49, 0x64, 0x12, 0x2e, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x5f, 0x69,
 	0x64, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0d, 0x42, 0x0d, 0x92, 0x41, 0x0a, 0x32, 0x08, 0xe8,
 	0xbf, 0x9b, 0xe7, 0xa8, 0x8b, 0x49, 0x44, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73,
-	0x49, 0x64, 0x73, 0x12, 0x45, 0x0a, 0x14, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x5f, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28,
-	0x0d, 0x42, 0x13, 0x92, 0x41, 0x10, 0x32, 0x0e, 0xe8, 0xbf, 0x9b, 0xe7, 0xa8, 0x8b, 0xe5, 0xae,
-	0x9e, 0xe4, 0xbe, 0x8b, 0x49, 0x44, 0x52, 0x12, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x49,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x73, 0x12, 0x9f, 0x01, 0x0a, 0x0c, 0x6f,
-	0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x09, 0x42, 0x7c, 0x92, 0x41, 0x79, 0x32, 0x77, 0xe6, 0x93, 0x8d, 0xe4, 0xbd, 0x9c, 0xe7, 0xb1,
-	0xbb, 0xe5, 0x9e, 0x8b, 0xef, 0xbc, 0x9a, 0x73, 0x74, 0x61, 0x72, 0x74, 0xe3, 0x80, 0x81, 0x73,
-	0x74, 0x6f, 0x70, 0xe3, 0x80, 0x81, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x73, 0x74, 0x61, 0x74,
-	0x75, 0x73, 0xe3, 0x80, 0x81, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0xe3, 0x80, 0x81,
-	0x75, 0x6e, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0xe3, 0x80, 0x81, 0x72, 0x65, 0x73,
-	0x74, 0x61, 0x72, 0x74, 0xe3, 0x80, 0x81, 0x72, 0x65, 0x6c, 0x6f, 0x61, 0x64, 0xe3, 0x80, 0x81,
-	0x6b, 0x69, 0x6c, 0x6c, 0xe3, 0x80, 0x81, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x72, 0x65,
-	0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0xe3, 0x80, 0x81, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x52,
-	0x0b, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x8e, 0x01, 0x0a,
-	0x16, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x5f,
-	0x72, 0x65, 0x73, 0x74, 0x61, 0x72, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x42, 0x58, 0x92,
-	0x41, 0x55, 0x32, 0x53, 0xe6, 0x98, 0xaf, 0xe5, 0x90, 0xa6, 0xe5, 0x90, 0xaf, 0xe5, 0x81, 0x9c,
-	0xe8, 0xbf, 0x9b, 0xe7, 0xa8, 0x8b, 0xef, 0xbc, 0x9a, 0xe9, 0xbb, 0x98, 0xe8, 0xae, 0xa4, 0xe4,
-	0xb8, 0xba, 0x66, 0x61, 0x6c, 0x73, 0x65, 0xef, 0xbc, 0x8c, 0xe5, 0x8f, 0xaa, 0xe6, 0x9c, 0x89,
-	0xe6, 0x93, 0x8d, 0xe4, 0xbd, 0x9c, 0xe7, 0xb1, 0xbb, 0xe5, 0x9e, 0x8b, 0xe6, 0x98, 0xaf, 0x75,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0xe6, 0x89,
-	0x8d, 0xe6, 0x9c, 0x89, 0xe6, 0x95, 0x88, 0x52, 0x14, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x50,
-	0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x74, 0x61, 0x72, 0x74, 0x12, 0x39, 0x0a,
-	0x0d, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x72, 0x61, 0x6e, 0x67, 0x65, 0x18, 0x06,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x70, 0x62, 0x70, 0x72, 0x6f, 0x63, 0x2e, 0x4f, 0x70,
-	0x65, 0x72, 0x61, 0x74, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x0c, 0x6f, 0x70, 0x65, 0x72,
-	0x61, 0x74, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x22, 0x40, 0x0a, 0x12, 0x4f, 0x70, 0x65, 0x72,
+	0x49, 0x64, 0x73, 0x12, 0x75, 0x0a, 0x0c, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x74,
+	0x79, 0x70, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x42, 0x52, 0x92, 0x41, 0x4f, 0x32, 0x4d,
+	0xe6, 0x93, 0x8d, 0xe4, 0xbd, 0x9c, 0xe7, 0xb1, 0xbb, 0xe5, 0x9e, 0x8b, 0xef, 0xbc, 0x9a, 0x73,
+	0x74, 0x61, 0x72, 0x74, 0xe3, 0x80, 0x81, 0x73, 0x74, 0x6f, 0x70, 0xe3, 0x80, 0x81, 0x72, 0x65,
+	0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0xe3, 0x80, 0x81, 0x75, 0x6e, 0x72, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x65, 0x72, 0xe3, 0x80, 0x81, 0x72, 0x65, 0x73, 0x74, 0x61, 0x72, 0x74, 0xe3, 0x80, 0x81,
+	0x72, 0x65, 0x6c, 0x6f, 0x61, 0x64, 0xe3, 0x80, 0x81, 0x6b, 0x69, 0x6c, 0x6c, 0x52, 0x0b, 0x6f,
+	0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x39, 0x0a, 0x0d, 0x6f, 0x70,
+	0x65, 0x72, 0x61, 0x74, 0x65, 0x5f, 0x72, 0x61, 0x6e, 0x67, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x14, 0x2e, 0x70, 0x62, 0x70, 0x72, 0x6f, 0x63, 0x2e, 0x4f, 0x70, 0x65, 0x72, 0x61,
+	0x74, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x52, 0x0c, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65,
+	0x52, 0x61, 0x6e, 0x67, 0x65, 0x4a, 0x04, 0x08, 0x03, 0x10, 0x04, 0x4a, 0x04, 0x08, 0x05, 0x10,
+	0x06, 0x22, 0xd5, 0x01, 0x0a, 0x1f, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x55, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x63, 0x65,
+	0x73, 0x73, 0x52, 0x65, 0x71, 0x12, 0x24, 0x0a, 0x06, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0d, 0x42, 0x0d, 0x92, 0x41, 0x0a, 0x32, 0x08, 0xe4, 0xb8, 0x9a, 0xe5,
+	0x8a, 0xa1, 0x49, 0x44, 0x52, 0x05, 0x62, 0x69, 0x7a, 0x49, 0x64, 0x12, 0x2c, 0x0a, 0x0a, 0x70,
+	0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x42,
+	0x0d, 0x92, 0x41, 0x0a, 0x32, 0x08, 0xe8, 0xbf, 0x9b, 0xe7, 0xa8, 0x8b, 0x49, 0x44, 0x52, 0x09,
+	0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x49, 0x64, 0x12, 0x5e, 0x0a, 0x16, 0x65, 0x6e, 0x61,
+	0x62, 0x6c, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x5f, 0x72, 0x65, 0x73, 0x74,
+	0x61, 0x72, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x42, 0x28, 0x92, 0x41, 0x25, 0x32, 0x23,
+	0xe6, 0x98, 0xaf, 0xe5, 0x90, 0xa6, 0xe5, 0x90, 0xaf, 0xe5, 0x81, 0x9c, 0xe8, 0xbf, 0x9b, 0xe7,
+	0xa8, 0x8b, 0xef, 0xbc, 0x9a, 0xe9, 0xbb, 0x98, 0xe8, 0xae, 0xa4, 0xe4, 0xb8, 0xba, 0x66, 0x61,
+	0x6c, 0x73, 0x65, 0x52, 0x14, 0x65, 0x6e, 0x61, 0x62, 0x6c, 0x65, 0x50, 0x72, 0x6f, 0x63, 0x65,
+	0x73, 0x73, 0x52, 0x65, 0x73, 0x74, 0x61, 0x72, 0x74, 0x22, 0x6d, 0x0a, 0x17, 0x4f, 0x70, 0x65,
+	0x72, 0x61, 0x74, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73,
+	0x73, 0x52, 0x65, 0x71, 0x12, 0x24, 0x0a, 0x06, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0d, 0x42, 0x0d, 0x92, 0x41, 0x0a, 0x32, 0x08, 0xe4, 0xb8, 0x9a, 0xe5, 0x8a,
+	0xa1, 0x49, 0x44, 0x52, 0x05, 0x62, 0x69, 0x7a, 0x49, 0x64, 0x12, 0x2c, 0x0a, 0x0a, 0x70, 0x72,
+	0x6f, 0x63, 0x65, 0x73, 0x73, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x42, 0x0d,
+	0x92, 0x41, 0x0a, 0x32, 0x08, 0xe8, 0xbf, 0x9b, 0xe7, 0xa8, 0x8b, 0x49, 0x44, 0x52, 0x09, 0x70,
+	0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x49, 0x64, 0x22, 0x40, 0x0a, 0x12, 0x4f, 0x70, 0x65, 0x72,
 	0x61, 0x74, 0x65, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x12, 0x2a,
 	0x0a, 0x07, 0x62, 0x61, 0x74, 0x63, 0x68, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x42,
 	0x10, 0x92, 0x41, 0x0d, 0x32, 0x0b, 0xe6, 0x89, 0xb9, 0xe4, 0xbb, 0xbb, 0xe5, 0x8a, 0xa1, 0x49,
@@ -38885,7 +38988,7 @@ var file_config_service_proto_rawDesc = []byte{
 	0xae, 0x49, 0x44, 0x52, 0x09, 0x70, 0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x49, 0x64, 0x12, 0x2c,
 	0x0a, 0x08, 0x65, 0x6e, 0x76, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
 	0x42, 0x11, 0x92, 0x41, 0x0e, 0x32, 0x0c, 0xe7, 0x8e, 0xaf, 0xe5, 0xa2, 0x83, 0xe5, 0x90, 0x8d,
-	0xe7, 0xa7, 0xb0, 0x52, 0x07, 0x65, 0x6e, 0x76, 0x4e, 0x61, 0x6d, 0x65, 0x32, 0xa2, 0xeb, 0x03,
+	0xe7, 0xa7, 0xb0, 0x52, 0x07, 0x65, 0x6e, 0x76, 0x4e, 0x61, 0x6d, 0x65, 0x32, 0x82, 0xef, 0x03,
 	0x0a, 0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0xca, 0x01, 0x0a, 0x09, 0x43, 0x72, 0x65,
 	0x61, 0x74, 0x65, 0x41, 0x70, 0x70, 0x12, 0x12, 0x2e, 0x70, 0x62, 0x63, 0x73, 0x2e, 0x43, 0x72,
 	0x65, 0x61, 0x74, 0x65, 0x41, 0x70, 0x70, 0x52, 0x65, 0x71, 0x1a, 0x13, 0x2e, 0x70, 0x62, 0x63,
@@ -42298,7 +42401,37 @@ var file_config_service_proto_rawDesc = []byte{
 	0x73, 0x73, 0x2f, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x22, 0x2e, 0x2f, 0x61, 0x70, 0x69,
 	0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x62, 0x69, 0x7a, 0x5f, 0x69,
 	0x64, 0x2f, 0x7b, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x70, 0x72, 0x6f, 0x63, 0x65,
-	0x73, 0x73, 0x2f, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x12, 0xa4, 0x01, 0x0a, 0x14, 0x50,
+	0x73, 0x73, 0x2f, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x12, 0xfe, 0x01, 0x0a, 0x1c, 0x4f,
+	0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x67, 0x69,
+	0x73, 0x74, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x12, 0x25, 0x2e, 0x70, 0x62,
+	0x63, 0x73, 0x2e, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65,
+	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x52,
+	0x65, 0x71, 0x1a, 0x18, 0x2e, 0x70, 0x62, 0x63, 0x73, 0x2e, 0x4f, 0x70, 0x65, 0x72, 0x61, 0x74,
+	0x65, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x22, 0x9c, 0x01, 0xfa,
+	0xd2, 0xe4, 0x93, 0x02, 0x12, 0x12, 0x10, 0x49, 0x4e, 0x54, 0x45, 0x52, 0x4e, 0x41, 0x4c, 0x2c,
+	0x42, 0x4b, 0x41, 0x50, 0x49, 0x47, 0x57, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x7e, 0x3a, 0x01, 0x2a,
+	0x5a, 0x41, 0x3a, 0x01, 0x2a, 0x22, 0x3c, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x69,
+	0x6e, 0x6e, 0x65, 0x72, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x62, 0x69, 0x7a, 0x5f,
+	0x69, 0x64, 0x2f, 0x7b, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x70, 0x72, 0x6f, 0x63,
+	0x65, 0x73, 0x73, 0x2f, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x72, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x65, 0x72, 0x22, 0x36, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x2f, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x2f, 0x7b, 0x62, 0x69, 0x7a, 0x5f,
+	0x69, 0x64, 0x7d, 0x2f, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x2f, 0x75, 0x70, 0x64, 0x61,
+	0x74, 0x65, 0x5f, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x12, 0xdc, 0x01, 0x0a, 0x14,
+	0x4f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x50, 0x72, 0x6f,
+	0x63, 0x65, 0x73, 0x73, 0x12, 0x1d, 0x2e, 0x70, 0x62, 0x63, 0x73, 0x2e, 0x4f, 0x70, 0x65, 0x72,
+	0x61, 0x74, 0x65, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73,
+	0x52, 0x65, 0x71, 0x1a, 0x18, 0x2e, 0x70, 0x62, 0x63, 0x73, 0x2e, 0x4f, 0x70, 0x65, 0x72, 0x61,
+	0x74, 0x65, 0x50, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x52, 0x65, 0x73, 0x70, 0x22, 0x8a, 0x01,
+	0xfa, 0xd2, 0xe4, 0x93, 0x02, 0x12, 0x12, 0x10, 0x49, 0x4e, 0x54, 0x45, 0x52, 0x4e, 0x41, 0x4c,
+	0x2c, 0x42, 0x4b, 0x41, 0x50, 0x49, 0x47, 0x57, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x6c, 0x3a, 0x01,
+	0x2a, 0x5a, 0x38, 0x3a, 0x01, 0x2a, 0x22, 0x33, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f,
+	0x69, 0x6e, 0x6e, 0x65, 0x72, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x62, 0x69, 0x7a,
+	0x5f, 0x69, 0x64, 0x2f, 0x7b, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x70, 0x72, 0x6f,
+	0x63, 0x65, 0x73, 0x73, 0x2f, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x22, 0x2d, 0x2f, 0x61, 0x70,
+	0x69, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x62, 0x69, 0x7a, 0x5f,
+	0x69, 0x64, 0x2f, 0x7b, 0x62, 0x69, 0x7a, 0x5f, 0x69, 0x64, 0x7d, 0x2f, 0x70, 0x72, 0x6f, 0x63,
+	0x65, 0x73, 0x73, 0x2f, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x12, 0xa4, 0x01, 0x0a, 0x14, 0x50,
 	0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x4f, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x73, 0x12, 0x1d, 0x2e, 0x70, 0x62, 0x63, 0x73, 0x2e, 0x50, 0x72, 0x6f, 0x63, 0x65,
 	0x73, 0x73, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52,
@@ -42835,7 +42968,7 @@ func file_config_service_proto_rawDescGZIP() []byte {
 	return file_config_service_proto_rawDescData
 }
 
-var file_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 478)
+var file_config_service_proto_msgTypes = make([]protoimpl.MessageInfo, 480)
 var file_config_service_proto_goTypes = []any{
 	(*EnsureDefaultProjectEnvReq)(nil),                                    // 0: pbcs.EnsureDefaultProjectEnvReq
 	(*EnsureDefaultProjectEnvResp)(nil),                                   // 1: pbcs.EnsureDefaultProjectEnvResp
@@ -43183,449 +43316,451 @@ var file_config_service_proto_goTypes = []any{
 	(*ListProcessInnerIPsReq)(nil),                                        // 343: pbcs.ListProcessInnerIPsReq
 	(*ListProcessInnerIPsResp)(nil),                                       // 344: pbcs.ListProcessInnerIPsResp
 	(*OperateProcessReq)(nil),                                             // 345: pbcs.OperateProcessReq
-	(*OperateProcessResp)(nil),                                            // 346: pbcs.OperateProcessResp
-	(*SyncCmdbGseStatusReq)(nil),                                          // 347: pbcs.SyncCmdbGseStatusReq
-	(*SyncCmdbGseStatusResp)(nil),                                         // 348: pbcs.SyncCmdbGseStatusResp
-	(*SortRule)(nil),                                                      // 349: pbcs.SortRule
-	(*ListTaskBatchReq)(nil),                                              // 350: pbcs.ListTaskBatchReq
-	(*ListTaskBatchResp)(nil),                                             // 351: pbcs.ListTaskBatchResp
-	(*GetTaskBatchDetailReq)(nil),                                         // 352: pbcs.GetTaskBatchDetailReq
-	(*GetTaskBatchDetailResp)(nil),                                        // 353: pbcs.GetTaskBatchDetailResp
-	(*RetryTasksReq)(nil),                                                 // 354: pbcs.RetryTasksReq
-	(*RetryTasksResp)(nil),                                                // 355: pbcs.RetryTasksResp
-	(*CmdbGseStatusReq)(nil),                                              // 356: pbcs.CmdbGseStatusReq
-	(*CmdbGseStatusResp)(nil),                                             // 357: pbcs.CmdbGseStatusResp
-	(*ProcessFilterOptionsReq)(nil),                                       // 358: pbcs.ProcessFilterOptionsReq
-	(*ProcessFilterOptionsResp)(nil),                                      // 359: pbcs.ProcessFilterOptionsResp
-	(*BizTopoReq)(nil),                                                    // 360: pbcs.BizTopoReq
-	(*BizTopoResp)(nil),                                                   // 361: pbcs.BizTopoResp
-	(*ServiceTemplateReq)(nil),                                            // 362: pbcs.ServiceTemplateReq
-	(*ServiceTemplateResp)(nil),                                           // 363: pbcs.ServiceTemplateResp
-	(*ProcessTemplateReq)(nil),                                            // 364: pbcs.ProcessTemplateReq
-	(*ProcessTemplateResp)(nil),                                           // 365: pbcs.ProcessTemplateResp
-	(*ListConfigInstancesReq)(nil),                                        // 366: pbcs.ListConfigInstancesReq
-	(*ListConfigInstancesResp)(nil),                                       // 367: pbcs.ListConfigInstancesResp
-	(*CompareConfigReq)(nil),                                              // 368: pbcs.CompareConfigReq
-	(*CompareConfigResp)(nil),                                             // 369: pbcs.CompareConfigResp
-	(*GenerateConfigReq)(nil),                                             // 370: pbcs.GenerateConfigReq
-	(*GenerateConfigResp)(nil),                                            // 371: pbcs.GenerateConfigResp
-	(*CheckConfigReq)(nil),                                                // 372: pbcs.CheckConfigReq
-	(*CheckConfigResp)(nil),                                               // 373: pbcs.CheckConfigResp
-	(*PushConfigReq)(nil),                                                 // 374: pbcs.PushConfigReq
-	(*PushConfigResp)(nil),                                                // 375: pbcs.PushConfigResp
-	(*GetConfigRenderResultReq)(nil),                                      // 376: pbcs.GetConfigRenderResultReq
-	(*GetConfigRenderResultResp)(nil),                                     // 377: pbcs.GetConfigRenderResultResp
-	(*ListConfigTemplateReq)(nil),                                         // 378: pbcs.ListConfigTemplateReq
-	(*ListConfigTemplateResp)(nil),                                        // 379: pbcs.ListConfigTemplateResp
-	(*ListConfigTemplateRevisionsReq)(nil),                                // 380: pbcs.ListConfigTemplateRevisionsReq
-	(*ListConfigTemplateRevisionsResp)(nil),                               // 381: pbcs.ListConfigTemplateRevisionsResp
-	(*ConfigGenerateStatusReq)(nil),                                       // 382: pbcs.ConfigGenerateStatusReq
-	(*ConfigGenerateStatusResp)(nil),                                      // 383: pbcs.ConfigGenerateStatusResp
-	(*PreviewConfigReq)(nil),                                              // 384: pbcs.PreviewConfigReq
-	(*PreviewConfigResp)(nil),                                             // 385: pbcs.PreviewConfigResp
-	(*ProcessInstanceReq)(nil),                                            // 386: pbcs.ProcessInstanceReq
-	(*ProcessInstanceResp)(nil),                                           // 387: pbcs.ProcessInstanceResp
-	(*ServiceInstanceReq)(nil),                                            // 388: pbcs.ServiceInstanceReq
-	(*ServiceInstanceResp)(nil),                                           // 389: pbcs.ServiceInstanceResp
-	(*CreateConfigTemplateReq)(nil),                                       // 390: pbcs.CreateConfigTemplateReq
-	(*CreateConfigTemplateResp)(nil),                                      // 391: pbcs.CreateConfigTemplateResp
-	(*UpdateConfigTemplateReq)(nil),                                       // 392: pbcs.UpdateConfigTemplateReq
-	(*UpdateConfigTemplateResp)(nil),                                      // 393: pbcs.UpdateConfigTemplateResp
-	(*GetConfigTemplateReq)(nil),                                          // 394: pbcs.GetConfigTemplateReq
-	(*GetConfigTemplateResp)(nil),                                         // 395: pbcs.GetConfigTemplateResp
-	(*ConfigTemplateVariableReq)(nil),                                     // 396: pbcs.ConfigTemplateVariableReq
-	(*ConfigTemplateVariableResp)(nil),                                    // 397: pbcs.ConfigTemplateVariableResp
-	(*BindProcessInstanceReq)(nil),                                        // 398: pbcs.BindProcessInstanceReq
-	(*BindProcessInstanceResp)(nil),                                       // 399: pbcs.BindProcessInstanceResp
-	(*PreviewBindProcessInstanceReq)(nil),                                 // 400: pbcs.PreviewBindProcessInstanceReq
-	(*PreviewBindProcessInstanceResp)(nil),                                // 401: pbcs.PreviewBindProcessInstanceResp
-	(*DeleteConfigTemplateReq)(nil),                                       // 402: pbcs.DeleteConfigTemplateReq
-	(*DeleteConfigTemplateResp)(nil),                                      // 403: pbcs.DeleteConfigTemplateResp
-	(*OperateGenerateConfigReq)(nil),                                      // 404: pbcs.OperateGenerateConfigReq
-	(*OperateGenerateConfigResp)(nil),                                     // 405: pbcs.OperateGenerateConfigResp
-	(*GetConfigDiffReq)(nil),                                              // 406: pbcs.GetConfigDiffReq
-	(*GetConfigDiffResp)(nil),                                             // 407: pbcs.GetConfigDiffResp
-	(*GetConfigViewReq)(nil),                                              // 408: pbcs.GetConfigViewReq
-	(*GetConfigViewResp)(nil),                                             // 409: pbcs.GetConfigViewResp
-	(*GetProcessInstanceTopoReq)(nil),                                     // 410: pbcs.GetProcessInstanceTopoReq
-	(*GetProcessInstanceTopoResp)(nil),                                    // 411: pbcs.GetProcessInstanceTopoResp
-	(*ManageConfigKVReq)(nil),                                             // 412: pbcs.ManageConfigKVReq
-	(*ConfigKVItem)(nil),                                                  // 413: pbcs.ConfigKVItem
-	(*ManageConfigKVResp)(nil),                                            // 414: pbcs.ManageConfigKVResp
-	(*GetProcessConfigViewReq)(nil),                                       // 415: pbcs.GetProcessConfigViewReq
-	(*GetProcessConfigViewResp)(nil),                                      // 416: pbcs.GetProcessConfigViewResp
-	(*ListProjectsReq)(nil),                                               // 417: pbcs.ListProjectsReq
-	(*ListProjectsResp)(nil),                                              // 418: pbcs.ListProjectsResp
-	(*GetProjectReq)(nil),                                                 // 419: pbcs.GetProjectReq
-	(*GetProjectResp)(nil),                                                // 420: pbcs.GetProjectResp
-	(*CreateProjectReq)(nil),                                              // 421: pbcs.CreateProjectReq
-	(*CreateProjectResp)(nil),                                             // 422: pbcs.CreateProjectResp
-	(*UpdateProjectReq)(nil),                                              // 423: pbcs.UpdateProjectReq
-	(*UpdateProjectResp)(nil),                                             // 424: pbcs.UpdateProjectResp
-	(*DeleteProjectReq)(nil),                                              // 425: pbcs.DeleteProjectReq
-	(*DeleteProjectResp)(nil),                                             // 426: pbcs.DeleteProjectResp
-	(*ListEnvironmentsReq)(nil),                                           // 427: pbcs.ListEnvironmentsReq
-	(*ListEnvironmentsResp)(nil),                                          // 428: pbcs.ListEnvironmentsResp
-	(*GetEnvironmentReq)(nil),                                             // 429: pbcs.GetEnvironmentReq
-	(*GetEnvironmentResp)(nil),                                            // 430: pbcs.GetEnvironmentResp
-	(*CreateEnvironmentReq)(nil),                                          // 431: pbcs.CreateEnvironmentReq
-	(*CreateEnvironmentResp)(nil),                                         // 432: pbcs.CreateEnvironmentResp
-	(*UpdateEnvironmentReq)(nil),                                          // 433: pbcs.UpdateEnvironmentReq
-	(*UpdateEnvironmentResp)(nil),                                         // 434: pbcs.UpdateEnvironmentResp
-	(*DeleteEnvironmentReq)(nil),                                          // 435: pbcs.DeleteEnvironmentReq
-	(*DeleteEnvironmentResp)(nil),                                         // 436: pbcs.DeleteEnvironmentResp
-	(*GetProjectByKeyReq)(nil),                                            // 437: pbcs.GetProjectByKeyReq
-	(*GetEnvironmentByNameReq)(nil),                                       // 438: pbcs.GetEnvironmentByNameReq
-	(*CredentialScopePreviewResp_Detail)(nil),                             // 439: pbcs.CredentialScopePreviewResp.Detail
-	(*BatchUpsertConfigItemsReq_ConfigItem)(nil),                          // 440: pbcs.BatchUpsertConfigItemsReq.ConfigItem
-	(*BatchUpsertConfigItemsReq_TemplateBinding)(nil),                     // 441: pbcs.BatchUpsertConfigItemsReq.TemplateBinding
-	(*ListConfigItemByTupleReq_Item)(nil),                                 // 442: pbcs.ListConfigItemByTupleReq.Item
-	(*ListAllReleasedConfigItemsResp_Item)(nil),                           // 443: pbcs.ListAllReleasedConfigItemsResp.Item
-	(*ListHooksResp_Detail)(nil),                                          // 444: pbcs.ListHooksResp.Detail
-	(*ListHookRevisionsResp_ListHookRevisionsData)(nil),                   // 445: pbcs.ListHookRevisionsResp.ListHookRevisionsData
-	(*GetHookInfoSpec_Releases)(nil),                                      // 446: pbcs.GetHookInfoSpec.Releases
-	(*ListHookRevisionReferencesResp_Detail)(nil),                         // 447: pbcs.ListHookRevisionReferencesResp.Detail
-	(*ListHookReferencesResp_Detail)(nil),                                 // 448: pbcs.ListHookReferencesResp.Detail
-	(*GetReleaseHookResp_Hook)(nil),                                       // 449: pbcs.GetReleaseHookResp.Hook
-	(*BatchUpsertTemplatesReq_Item)(nil),                                  // 450: pbcs.BatchUpsertTemplatesReq.Item
-	(*ListTemplateByTupleReq_Item)(nil),                                   // 451: pbcs.ListTemplateByTupleReq.Item
-	(*ListTemplateByTupleResp_Item)(nil),                                  // 452: pbcs.ListTemplateByTupleResp.Item
-	(*ListTemplateSetsAndRevisionsResp_Detail)(nil),                       // 453: pbcs.ListTemplateSetsAndRevisionsResp.Detail
-	(*GetTemplateRevisionResp_TemplateRevision)(nil),                      // 454: pbcs.GetTemplateRevisionResp.TemplateRevision
-	(*ImportFromTemplateSetToAppReq_Binding)(nil),                         // 455: pbcs.ImportFromTemplateSetToAppReq.Binding
-	(*ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding)(nil), // 456: pbcs.ImportFromTemplateSetToAppReq.Binding.TemplateRevisionBinding
-	(*CheckTemplateSetReferencesAppsReq_Item)(nil),                        // 457: pbcs.CheckTemplateSetReferencesAppsReq.Item
-	(*CheckTemplateSetReferencesAppsResp_Item)(nil),                       // 458: pbcs.CheckTemplateSetReferencesAppsResp.Item
-	(*ListAllGroupsResp_ListAllGroupsData)(nil),                           // 459: pbcs.ListAllGroupsResp.ListAllGroupsData
-	(*ListAllGroupsResp_ListAllGroupsData_BindApp)(nil),                   // 460: pbcs.ListAllGroupsResp.ListAllGroupsData.BindApp
-	(*ListAppGroupsResp_ListAppGroupsData)(nil),                           // 461: pbcs.ListAppGroupsResp.ListAppGroupsData
-	(*ListGroupReleasedAppsResp_ListGroupReleasedAppsData)(nil),           // 462: pbcs.ListGroupReleasedAppsResp.ListGroupReleasedAppsData
-	(*BatchUpsertKvsReq_Kv)(nil),                                          // 463: pbcs.BatchUpsertKvsReq.Kv
-	(*ListClientsReq_Order)(nil),                                          // 464: pbcs.ListClientsReq.Order
-	(*ListClientsResp_Item)(nil),                                          // 465: pbcs.ListClientsResp.Item
-	(*ListClientEventsReq_Order)(nil),                                     // 466: pbcs.ListClientEventsReq.Order
-	(*CompareConfigItemConflictsResp_NonTemplateConfig)(nil),              // 467: pbcs.CompareConfigItemConflictsResp.NonTemplateConfig
-	(*CompareConfigItemConflictsResp_TemplateConfig)(nil),                 // 468: pbcs.CompareConfigItemConflictsResp.TemplateConfig
-	(*CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail)(nil), // 469: pbcs.CompareConfigItemConflictsResp.TemplateConfig.TemplateRevisionDetail
-	(*CompareKvConflictsResp_Kv)(nil),                                            // 470: pbcs.CompareKvConflictsResp.Kv
-	(*GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec)(nil),                 // 471: pbcs.GetLatestTemplateVersionsInSpaceResp.TemplateSetSpec
-	(*CloneAppReq_ConfigItem)(nil),                                               // 472: pbcs.CloneAppReq.ConfigItem
-	(*CloneAppReq_Kv)(nil),                                                       // 473: pbcs.CloneAppReq.Kv
-	(*CloneAppReq_TemplateBinding)(nil),                                          // 474: pbcs.CloneAppReq.TemplateBinding
-	(*CompareConfigResp_ConfigContent)(nil),                                      // 475: pbcs.CompareConfigResp.ConfigContent
-	(*ListConfigTemplateResp_Item)(nil),                                          // 476: pbcs.ListConfigTemplateResp.Item
-	(*ConfigGenerateStatusResp_ConfigGenerateStatus)(nil),                        // 477: pbcs.ConfigGenerateStatusResp.ConfigGenerateStatus
-	(*credential_scope.CredentialScopeSpec)(nil),                                 // 478: pbcrs.CredentialScopeSpec
-	(*credential_scope.UpdateScopeSpec)(nil),                                     // 479: pbcrs.UpdateScopeSpec
-	(*credential_scope.CredentialScopeList)(nil),                                 // 480: pbcrs.CredentialScopeList
-	(*credential.CredentialList)(nil),                                            // 481: pbcredential.CredentialList
-	(*structpb.Struct)(nil),                                                      // 482: google.protobuf.Struct
-	(*app.App)(nil),                                                              // 483: pbapp.App
-	(*template_variable.TemplateVariableSpec)(nil),                               // 484: pbtv.TemplateVariableSpec
-	(*config_item.ConfigItem)(nil),                                               // 485: pbci.ConfigItem
-	(*content.ContentSpec)(nil),                                                  // 486: pbcontent.ContentSpec
-	(*released_ci.ReleasedConfigItem)(nil),                                       // 487: pbrci.ReleasedConfigItem
-	(*config_item.ListConfigItemCounts)(nil),                                     // 488: pbci.ListConfigItemCounts
-	(*released_kv.ReleasedKv)(nil),                                               // 489: pbrkv.ReleasedKv
-	(*release.Release)(nil),                                                      // 490: pbrelease.Release
-	(*hook.CountHookTags)(nil),                                                   // 491: pbhook.CountHookTags
-	(*hook.HookAttachment)(nil),                                                  // 492: pbhook.HookAttachment
-	(*base.Revision)(nil),                                                        // 493: pbbase.Revision
-	(*template_space.TemplateSpace)(nil),                                         // 494: pbts.TemplateSpace
-	(*template.Template)(nil),                                                    // 495: pbtemplate.Template
-	(*template_revision.TemplateRevision)(nil),                                   // 496: pbtr.TemplateRevision
-	(*template_revision.TemplateRevisionNamesDetail)(nil),                        // 497: pbtr.TemplateRevisionNamesDetail
-	(*template_set.TemplateSet)(nil),                                             // 498: pbtset.TemplateSet
-	(*template_set.TemplateSetOfBizDetail)(nil),                                  // 499: pbtset.TemplateSetOfBizDetail
-	(*app_template_binding.TemplateBinding)(nil),                                 // 500: pbatb.TemplateBinding
-	(*app_template_binding.AppTemplateBinding)(nil),                              // 501: pbatb.AppTemplateBinding
-	(*app_template_binding.AppBoundTmplRevisionGroupBySet)(nil),                  // 502: pbatb.AppBoundTmplRevisionGroupBySet
-	(*app_template_binding.ReleasedAppBoundTmplRevisionGroupBySet)(nil),          // 503: pbatb.ReleasedAppBoundTmplRevisionGroupBySet
-	(*app_template_binding.ReleasedAppBoundTmplRevision)(nil),                    // 504: pbatb.ReleasedAppBoundTmplRevision
-	(*app_template_binding.Conflict)(nil),                                        // 505: pbatb.Conflict
-	(*template_binding_relation.TemplateBoundCounts)(nil),                        // 506: pbtbr.TemplateBoundCounts
-	(*template_binding_relation.TemplateRevisionBoundCounts)(nil),                // 507: pbtbr.TemplateRevisionBoundCounts
-	(*template_binding_relation.TemplateSetBoundCounts)(nil),                     // 508: pbtbr.TemplateSetBoundCounts
-	(*template_binding_relation.TemplateBoundUnnamedAppDetail)(nil),              // 509: pbtbr.TemplateBoundUnnamedAppDetail
-	(*template_binding_relation.TemplateBoundNamedAppDetail)(nil),                // 510: pbtbr.TemplateBoundNamedAppDetail
-	(*template_binding_relation.TemplateBoundTemplateSetDetail)(nil),             // 511: pbtbr.TemplateBoundTemplateSetDetail
-	(*template_binding_relation.MultiTemplateBoundTemplateSetDetail)(nil),        // 512: pbtbr.MultiTemplateBoundTemplateSetDetail
-	(*template_binding_relation.TemplateRevisionBoundUnnamedAppDetail)(nil),      // 513: pbtbr.TemplateRevisionBoundUnnamedAppDetail
-	(*template_binding_relation.TemplateRevisionBoundNamedAppDetail)(nil),        // 514: pbtbr.TemplateRevisionBoundNamedAppDetail
-	(*template_binding_relation.TemplateSetBoundUnnamedAppDetail)(nil),           // 515: pbtbr.TemplateSetBoundUnnamedAppDetail
-	(*template_binding_relation.MultiTemplateSetBoundUnnamedAppDetail)(nil),      // 516: pbtbr.MultiTemplateSetBoundUnnamedAppDetail
-	(*template_binding_relation.TemplateSetBoundNamedAppDetail)(nil),             // 517: pbtbr.TemplateSetBoundNamedAppDetail
-	(*template_binding_relation.LatestTemplateBoundUnnamedAppDetail)(nil),        // 518: pbtbr.LatestTemplateBoundUnnamedAppDetail
-	(*template_variable.TemplateVariable)(nil),                                   // 519: pbtv.TemplateVariable
-	(*app_template_variable.AppTemplateVariableReference)(nil),                   // 520: pbatv.AppTemplateVariableReference
-	(*group.Group)(nil),                                                          // 521: pbgroup.Group
-	(*release.PublishRecord)(nil),                                                // 522: pbrelease.PublishRecord
-	(*audit.ListAuditsAppStrategy)(nil),                                          // 523: pbaudit.ListAuditsAppStrategy
-	(*kv.Kv)(nil),                                                                // 524: pbkv.Kv
-	(*client.ClientQueryCondition)(nil),                                          // 525: pbclient.ClientQueryCondition
-	(*client.Client)(nil),                                                        // 526: pbclient.Client
-	(*client_event.ClientEvent)(nil),                                             // 527: pbce.ClientEvent
-	(*client_query.ClientQuery)(nil),                                             // 528: pbcq.ClientQuery
-	(*template_space.TemplateSpaceSpec)(nil),                                     // 529: pbts.TemplateSpaceSpec
-	(*release.Ticket)(nil),                                                       // 530: pbrelease.Ticket
-	(*process.ProcessSearchCondition)(nil),                                       // 531: pbproc.ProcessSearchCondition
-	(*process.Process)(nil),                                                      // 532: pbproc.Process
-	(*process.FilterOptions)(nil),                                                // 533: pbproc.FilterOptions
-	(*process.OperateRange)(nil),                                                 // 534: pbproc.OperateRange
-	(*task_batch.TaskBatch)(nil),                                                 // 535: pbtb.TaskBatch
-	(*task_batch.FilterOptions)(nil),                                             // 536: pbtb.FilterOptions
-	(*task_batch.TaskDetail)(nil),                                                // 537: pbtb.TaskDetail
-	(*task_batch.TaskStatusStatItem)(nil),                                        // 538: pbtb.TaskStatusStatItem
-	(*task_batch.TaskDetailFilterOptions)(nil),                                   // 539: pbtb.TaskDetailFilterOptions
-	(*timestamppb.Timestamp)(nil),                                                // 540: google.protobuf.Timestamp
-	(*process.ProcessFilterOption)(nil),                                          // 541: pbproc.ProcessFilterOption
-	(*config_template.BizTopoNode)(nil),                                          // 542: pbct.BizTopoNode
-	(*config_template.ServiceTemplate)(nil),                                      // 543: pbct.ServiceTemplate
-	(*config_template.ProcTemplate)(nil),                                         // 544: pbct.ProcTemplate
-	(*config_instance.ConfigInstanceSearchCondition)(nil),                        // 545: pbcin.ConfigInstanceSearchCondition
-	(*config_instance.ConfigInstance)(nil),                                       // 546: pbcin.ConfigInstance
-	(*config_instance.ConfigInstanceFilterOptions)(nil),                          // 547: pbcin.ConfigInstanceFilterOptions
-	(*config_instance.ConfigTemplateGroup)(nil),                                  // 548: pbcin.ConfigTemplateGroup
-	(*config_template.TemplateSearchCond)(nil),                                   // 549: pbct.TemplateSearchCond
-	(*config_template.ConfigTemplate)(nil),                                       // 550: pbct.ConfigTemplate
-	(*config_template.ListProcessInstance)(nil),                                  // 551: pbct.ListProcessInstance
-	(*config_template.ServiceInstanceInfo)(nil),                                  // 552: pbct.ServiceInstanceInfo
-	(*config_template.BindTemplate)(nil),                                         // 553: pbct.BindTemplate
-	(*config_template.ConfigTemplateVariable)(nil),                               // 554: pbct.ConfigTemplateVariable
-	(*config_template.BindProcessInstance)(nil),                                  // 555: pbct.BindProcessInstance
-	(*config_instance.ConfigVersion)(nil),                                        // 556: pbcin.ConfigVersion
-	(*project.Project)(nil),                                                      // 557: pbproject.Project
-	(*project.ProjectSpec)(nil),                                                  // 558: pbproject.ProjectSpec
-	(*project.ProjectAttachment)(nil),                                            // 559: pbproject.ProjectAttachment
-	(*environment.Environment)(nil),                                              // 560: pbenvironment.Environment
-	(*environment.EnvironmentSpec)(nil),                                          // 561: pbenvironment.EnvironmentSpec
-	(*environment.EnvironmentAttachment)(nil),                                    // 562: pbenvironment.EnvironmentAttachment
-	(*hook.Hook)(nil),                                                            // 563: pbhook.Hook
-	(*hook_revision.HookRevision)(nil),                                           // 564: pbhr.HookRevision
-	(*template_set.EnvApps)(nil),                                                 // 565: pbtset.EnvApps
-	(*config_item.ConfigItemSpec)(nil),                                           // 566: pbci.ConfigItemSpec
-	(*template_revision.TemplateRevisionSpec)(nil),                               // 567: pbtr.TemplateRevisionSpec
-	(*base.EmptyReq)(nil),                                                        // 568: pbbase.EmptyReq
-	(*client.ClientCommonReq)(nil),                                               // 569: pbclient.ClientCommonReq
-	(*strategy.Strategy)(nil),                                                    // 570: pbstrategy.Strategy
+	(*OperateUpdateRegisterProcessReq)(nil),                               // 346: pbcs.OperateUpdateRegisterProcessReq
+	(*OperateDeleteProcessReq)(nil),                                       // 347: pbcs.OperateDeleteProcessReq
+	(*OperateProcessResp)(nil),                                            // 348: pbcs.OperateProcessResp
+	(*SyncCmdbGseStatusReq)(nil),                                          // 349: pbcs.SyncCmdbGseStatusReq
+	(*SyncCmdbGseStatusResp)(nil),                                         // 350: pbcs.SyncCmdbGseStatusResp
+	(*SortRule)(nil),                                                      // 351: pbcs.SortRule
+	(*ListTaskBatchReq)(nil),                                              // 352: pbcs.ListTaskBatchReq
+	(*ListTaskBatchResp)(nil),                                             // 353: pbcs.ListTaskBatchResp
+	(*GetTaskBatchDetailReq)(nil),                                         // 354: pbcs.GetTaskBatchDetailReq
+	(*GetTaskBatchDetailResp)(nil),                                        // 355: pbcs.GetTaskBatchDetailResp
+	(*RetryTasksReq)(nil),                                                 // 356: pbcs.RetryTasksReq
+	(*RetryTasksResp)(nil),                                                // 357: pbcs.RetryTasksResp
+	(*CmdbGseStatusReq)(nil),                                              // 358: pbcs.CmdbGseStatusReq
+	(*CmdbGseStatusResp)(nil),                                             // 359: pbcs.CmdbGseStatusResp
+	(*ProcessFilterOptionsReq)(nil),                                       // 360: pbcs.ProcessFilterOptionsReq
+	(*ProcessFilterOptionsResp)(nil),                                      // 361: pbcs.ProcessFilterOptionsResp
+	(*BizTopoReq)(nil),                                                    // 362: pbcs.BizTopoReq
+	(*BizTopoResp)(nil),                                                   // 363: pbcs.BizTopoResp
+	(*ServiceTemplateReq)(nil),                                            // 364: pbcs.ServiceTemplateReq
+	(*ServiceTemplateResp)(nil),                                           // 365: pbcs.ServiceTemplateResp
+	(*ProcessTemplateReq)(nil),                                            // 366: pbcs.ProcessTemplateReq
+	(*ProcessTemplateResp)(nil),                                           // 367: pbcs.ProcessTemplateResp
+	(*ListConfigInstancesReq)(nil),                                        // 368: pbcs.ListConfigInstancesReq
+	(*ListConfigInstancesResp)(nil),                                       // 369: pbcs.ListConfigInstancesResp
+	(*CompareConfigReq)(nil),                                              // 370: pbcs.CompareConfigReq
+	(*CompareConfigResp)(nil),                                             // 371: pbcs.CompareConfigResp
+	(*GenerateConfigReq)(nil),                                             // 372: pbcs.GenerateConfigReq
+	(*GenerateConfigResp)(nil),                                            // 373: pbcs.GenerateConfigResp
+	(*CheckConfigReq)(nil),                                                // 374: pbcs.CheckConfigReq
+	(*CheckConfigResp)(nil),                                               // 375: pbcs.CheckConfigResp
+	(*PushConfigReq)(nil),                                                 // 376: pbcs.PushConfigReq
+	(*PushConfigResp)(nil),                                                // 377: pbcs.PushConfigResp
+	(*GetConfigRenderResultReq)(nil),                                      // 378: pbcs.GetConfigRenderResultReq
+	(*GetConfigRenderResultResp)(nil),                                     // 379: pbcs.GetConfigRenderResultResp
+	(*ListConfigTemplateReq)(nil),                                         // 380: pbcs.ListConfigTemplateReq
+	(*ListConfigTemplateResp)(nil),                                        // 381: pbcs.ListConfigTemplateResp
+	(*ListConfigTemplateRevisionsReq)(nil),                                // 382: pbcs.ListConfigTemplateRevisionsReq
+	(*ListConfigTemplateRevisionsResp)(nil),                               // 383: pbcs.ListConfigTemplateRevisionsResp
+	(*ConfigGenerateStatusReq)(nil),                                       // 384: pbcs.ConfigGenerateStatusReq
+	(*ConfigGenerateStatusResp)(nil),                                      // 385: pbcs.ConfigGenerateStatusResp
+	(*PreviewConfigReq)(nil),                                              // 386: pbcs.PreviewConfigReq
+	(*PreviewConfigResp)(nil),                                             // 387: pbcs.PreviewConfigResp
+	(*ProcessInstanceReq)(nil),                                            // 388: pbcs.ProcessInstanceReq
+	(*ProcessInstanceResp)(nil),                                           // 389: pbcs.ProcessInstanceResp
+	(*ServiceInstanceReq)(nil),                                            // 390: pbcs.ServiceInstanceReq
+	(*ServiceInstanceResp)(nil),                                           // 391: pbcs.ServiceInstanceResp
+	(*CreateConfigTemplateReq)(nil),                                       // 392: pbcs.CreateConfigTemplateReq
+	(*CreateConfigTemplateResp)(nil),                                      // 393: pbcs.CreateConfigTemplateResp
+	(*UpdateConfigTemplateReq)(nil),                                       // 394: pbcs.UpdateConfigTemplateReq
+	(*UpdateConfigTemplateResp)(nil),                                      // 395: pbcs.UpdateConfigTemplateResp
+	(*GetConfigTemplateReq)(nil),                                          // 396: pbcs.GetConfigTemplateReq
+	(*GetConfigTemplateResp)(nil),                                         // 397: pbcs.GetConfigTemplateResp
+	(*ConfigTemplateVariableReq)(nil),                                     // 398: pbcs.ConfigTemplateVariableReq
+	(*ConfigTemplateVariableResp)(nil),                                    // 399: pbcs.ConfigTemplateVariableResp
+	(*BindProcessInstanceReq)(nil),                                        // 400: pbcs.BindProcessInstanceReq
+	(*BindProcessInstanceResp)(nil),                                       // 401: pbcs.BindProcessInstanceResp
+	(*PreviewBindProcessInstanceReq)(nil),                                 // 402: pbcs.PreviewBindProcessInstanceReq
+	(*PreviewBindProcessInstanceResp)(nil),                                // 403: pbcs.PreviewBindProcessInstanceResp
+	(*DeleteConfigTemplateReq)(nil),                                       // 404: pbcs.DeleteConfigTemplateReq
+	(*DeleteConfigTemplateResp)(nil),                                      // 405: pbcs.DeleteConfigTemplateResp
+	(*OperateGenerateConfigReq)(nil),                                      // 406: pbcs.OperateGenerateConfigReq
+	(*OperateGenerateConfigResp)(nil),                                     // 407: pbcs.OperateGenerateConfigResp
+	(*GetConfigDiffReq)(nil),                                              // 408: pbcs.GetConfigDiffReq
+	(*GetConfigDiffResp)(nil),                                             // 409: pbcs.GetConfigDiffResp
+	(*GetConfigViewReq)(nil),                                              // 410: pbcs.GetConfigViewReq
+	(*GetConfigViewResp)(nil),                                             // 411: pbcs.GetConfigViewResp
+	(*GetProcessInstanceTopoReq)(nil),                                     // 412: pbcs.GetProcessInstanceTopoReq
+	(*GetProcessInstanceTopoResp)(nil),                                    // 413: pbcs.GetProcessInstanceTopoResp
+	(*ManageConfigKVReq)(nil),                                             // 414: pbcs.ManageConfigKVReq
+	(*ConfigKVItem)(nil),                                                  // 415: pbcs.ConfigKVItem
+	(*ManageConfigKVResp)(nil),                                            // 416: pbcs.ManageConfigKVResp
+	(*GetProcessConfigViewReq)(nil),                                       // 417: pbcs.GetProcessConfigViewReq
+	(*GetProcessConfigViewResp)(nil),                                      // 418: pbcs.GetProcessConfigViewResp
+	(*ListProjectsReq)(nil),                                               // 419: pbcs.ListProjectsReq
+	(*ListProjectsResp)(nil),                                              // 420: pbcs.ListProjectsResp
+	(*GetProjectReq)(nil),                                                 // 421: pbcs.GetProjectReq
+	(*GetProjectResp)(nil),                                                // 422: pbcs.GetProjectResp
+	(*CreateProjectReq)(nil),                                              // 423: pbcs.CreateProjectReq
+	(*CreateProjectResp)(nil),                                             // 424: pbcs.CreateProjectResp
+	(*UpdateProjectReq)(nil),                                              // 425: pbcs.UpdateProjectReq
+	(*UpdateProjectResp)(nil),                                             // 426: pbcs.UpdateProjectResp
+	(*DeleteProjectReq)(nil),                                              // 427: pbcs.DeleteProjectReq
+	(*DeleteProjectResp)(nil),                                             // 428: pbcs.DeleteProjectResp
+	(*ListEnvironmentsReq)(nil),                                           // 429: pbcs.ListEnvironmentsReq
+	(*ListEnvironmentsResp)(nil),                                          // 430: pbcs.ListEnvironmentsResp
+	(*GetEnvironmentReq)(nil),                                             // 431: pbcs.GetEnvironmentReq
+	(*GetEnvironmentResp)(nil),                                            // 432: pbcs.GetEnvironmentResp
+	(*CreateEnvironmentReq)(nil),                                          // 433: pbcs.CreateEnvironmentReq
+	(*CreateEnvironmentResp)(nil),                                         // 434: pbcs.CreateEnvironmentResp
+	(*UpdateEnvironmentReq)(nil),                                          // 435: pbcs.UpdateEnvironmentReq
+	(*UpdateEnvironmentResp)(nil),                                         // 436: pbcs.UpdateEnvironmentResp
+	(*DeleteEnvironmentReq)(nil),                                          // 437: pbcs.DeleteEnvironmentReq
+	(*DeleteEnvironmentResp)(nil),                                         // 438: pbcs.DeleteEnvironmentResp
+	(*GetProjectByKeyReq)(nil),                                            // 439: pbcs.GetProjectByKeyReq
+	(*GetEnvironmentByNameReq)(nil),                                       // 440: pbcs.GetEnvironmentByNameReq
+	(*CredentialScopePreviewResp_Detail)(nil),                             // 441: pbcs.CredentialScopePreviewResp.Detail
+	(*BatchUpsertConfigItemsReq_ConfigItem)(nil),                          // 442: pbcs.BatchUpsertConfigItemsReq.ConfigItem
+	(*BatchUpsertConfigItemsReq_TemplateBinding)(nil),                     // 443: pbcs.BatchUpsertConfigItemsReq.TemplateBinding
+	(*ListConfigItemByTupleReq_Item)(nil),                                 // 444: pbcs.ListConfigItemByTupleReq.Item
+	(*ListAllReleasedConfigItemsResp_Item)(nil),                           // 445: pbcs.ListAllReleasedConfigItemsResp.Item
+	(*ListHooksResp_Detail)(nil),                                          // 446: pbcs.ListHooksResp.Detail
+	(*ListHookRevisionsResp_ListHookRevisionsData)(nil),                   // 447: pbcs.ListHookRevisionsResp.ListHookRevisionsData
+	(*GetHookInfoSpec_Releases)(nil),                                      // 448: pbcs.GetHookInfoSpec.Releases
+	(*ListHookRevisionReferencesResp_Detail)(nil),                         // 449: pbcs.ListHookRevisionReferencesResp.Detail
+	(*ListHookReferencesResp_Detail)(nil),                                 // 450: pbcs.ListHookReferencesResp.Detail
+	(*GetReleaseHookResp_Hook)(nil),                                       // 451: pbcs.GetReleaseHookResp.Hook
+	(*BatchUpsertTemplatesReq_Item)(nil),                                  // 452: pbcs.BatchUpsertTemplatesReq.Item
+	(*ListTemplateByTupleReq_Item)(nil),                                   // 453: pbcs.ListTemplateByTupleReq.Item
+	(*ListTemplateByTupleResp_Item)(nil),                                  // 454: pbcs.ListTemplateByTupleResp.Item
+	(*ListTemplateSetsAndRevisionsResp_Detail)(nil),                       // 455: pbcs.ListTemplateSetsAndRevisionsResp.Detail
+	(*GetTemplateRevisionResp_TemplateRevision)(nil),                      // 456: pbcs.GetTemplateRevisionResp.TemplateRevision
+	(*ImportFromTemplateSetToAppReq_Binding)(nil),                         // 457: pbcs.ImportFromTemplateSetToAppReq.Binding
+	(*ImportFromTemplateSetToAppReq_Binding_TemplateRevisionBinding)(nil), // 458: pbcs.ImportFromTemplateSetToAppReq.Binding.TemplateRevisionBinding
+	(*CheckTemplateSetReferencesAppsReq_Item)(nil),                        // 459: pbcs.CheckTemplateSetReferencesAppsReq.Item
+	(*CheckTemplateSetReferencesAppsResp_Item)(nil),                       // 460: pbcs.CheckTemplateSetReferencesAppsResp.Item
+	(*ListAllGroupsResp_ListAllGroupsData)(nil),                           // 461: pbcs.ListAllGroupsResp.ListAllGroupsData
+	(*ListAllGroupsResp_ListAllGroupsData_BindApp)(nil),                   // 462: pbcs.ListAllGroupsResp.ListAllGroupsData.BindApp
+	(*ListAppGroupsResp_ListAppGroupsData)(nil),                           // 463: pbcs.ListAppGroupsResp.ListAppGroupsData
+	(*ListGroupReleasedAppsResp_ListGroupReleasedAppsData)(nil),           // 464: pbcs.ListGroupReleasedAppsResp.ListGroupReleasedAppsData
+	(*BatchUpsertKvsReq_Kv)(nil),                                          // 465: pbcs.BatchUpsertKvsReq.Kv
+	(*ListClientsReq_Order)(nil),                                          // 466: pbcs.ListClientsReq.Order
+	(*ListClientsResp_Item)(nil),                                          // 467: pbcs.ListClientsResp.Item
+	(*ListClientEventsReq_Order)(nil),                                     // 468: pbcs.ListClientEventsReq.Order
+	(*CompareConfigItemConflictsResp_NonTemplateConfig)(nil),              // 469: pbcs.CompareConfigItemConflictsResp.NonTemplateConfig
+	(*CompareConfigItemConflictsResp_TemplateConfig)(nil),                 // 470: pbcs.CompareConfigItemConflictsResp.TemplateConfig
+	(*CompareConfigItemConflictsResp_TemplateConfig_TemplateRevisionDetail)(nil), // 471: pbcs.CompareConfigItemConflictsResp.TemplateConfig.TemplateRevisionDetail
+	(*CompareKvConflictsResp_Kv)(nil),                                            // 472: pbcs.CompareKvConflictsResp.Kv
+	(*GetLatestTemplateVersionsInSpaceResp_TemplateSetSpec)(nil),                 // 473: pbcs.GetLatestTemplateVersionsInSpaceResp.TemplateSetSpec
+	(*CloneAppReq_ConfigItem)(nil),                                               // 474: pbcs.CloneAppReq.ConfigItem
+	(*CloneAppReq_Kv)(nil),                                                       // 475: pbcs.CloneAppReq.Kv
+	(*CloneAppReq_TemplateBinding)(nil),                                          // 476: pbcs.CloneAppReq.TemplateBinding
+	(*CompareConfigResp_ConfigContent)(nil),                                      // 477: pbcs.CompareConfigResp.ConfigContent
+	(*ListConfigTemplateResp_Item)(nil),                                          // 478: pbcs.ListConfigTemplateResp.Item
+	(*ConfigGenerateStatusResp_ConfigGenerateStatus)(nil),                        // 479: pbcs.ConfigGenerateStatusResp.ConfigGenerateStatus
+	(*credential_scope.CredentialScopeSpec)(nil),                                 // 480: pbcrs.CredentialScopeSpec
+	(*credential_scope.UpdateScopeSpec)(nil),                                     // 481: pbcrs.UpdateScopeSpec
+	(*credential_scope.CredentialScopeList)(nil),                                 // 482: pbcrs.CredentialScopeList
+	(*credential.CredentialList)(nil),                                            // 483: pbcredential.CredentialList
+	(*structpb.Struct)(nil),                                                      // 484: google.protobuf.Struct
+	(*app.App)(nil),                                                              // 485: pbapp.App
+	(*template_variable.TemplateVariableSpec)(nil),                               // 486: pbtv.TemplateVariableSpec
+	(*config_item.ConfigItem)(nil),                                               // 487: pbci.ConfigItem
+	(*content.ContentSpec)(nil),                                                  // 488: pbcontent.ContentSpec
+	(*released_ci.ReleasedConfigItem)(nil),                                       // 489: pbrci.ReleasedConfigItem
+	(*config_item.ListConfigItemCounts)(nil),                                     // 490: pbci.ListConfigItemCounts
+	(*released_kv.ReleasedKv)(nil),                                               // 491: pbrkv.ReleasedKv
+	(*release.Release)(nil),                                                      // 492: pbrelease.Release
+	(*hook.CountHookTags)(nil),                                                   // 493: pbhook.CountHookTags
+	(*hook.HookAttachment)(nil),                                                  // 494: pbhook.HookAttachment
+	(*base.Revision)(nil),                                                        // 495: pbbase.Revision
+	(*template_space.TemplateSpace)(nil),                                         // 496: pbts.TemplateSpace
+	(*template.Template)(nil),                                                    // 497: pbtemplate.Template
+	(*template_revision.TemplateRevision)(nil),                                   // 498: pbtr.TemplateRevision
+	(*template_revision.TemplateRevisionNamesDetail)(nil),                        // 499: pbtr.TemplateRevisionNamesDetail
+	(*template_set.TemplateSet)(nil),                                             // 500: pbtset.TemplateSet
+	(*template_set.TemplateSetOfBizDetail)(nil),                                  // 501: pbtset.TemplateSetOfBizDetail
+	(*app_template_binding.TemplateBinding)(nil),                                 // 502: pbatb.TemplateBinding
+	(*app_template_binding.AppTemplateBinding)(nil),                              // 503: pbatb.AppTemplateBinding
+	(*app_template_binding.AppBoundTmplRevisionGroupBySet)(nil),                  // 504: pbatb.AppBoundTmplRevisionGroupBySet
+	(*app_template_binding.ReleasedAppBoundTmplRevisionGroupBySet)(nil),          // 505: pbatb.ReleasedAppBoundTmplRevisionGroupBySet
+	(*app_template_binding.ReleasedAppBoundTmplRevision)(nil),                    // 506: pbatb.ReleasedAppBoundTmplRevision
+	(*app_template_binding.Conflict)(nil),                                        // 507: pbatb.Conflict
+	(*template_binding_relation.TemplateBoundCounts)(nil),                        // 508: pbtbr.TemplateBoundCounts
+	(*template_binding_relation.TemplateRevisionBoundCounts)(nil),                // 509: pbtbr.TemplateRevisionBoundCounts
+	(*template_binding_relation.TemplateSetBoundCounts)(nil),                     // 510: pbtbr.TemplateSetBoundCounts
+	(*template_binding_relation.TemplateBoundUnnamedAppDetail)(nil),              // 511: pbtbr.TemplateBoundUnnamedAppDetail
+	(*template_binding_relation.TemplateBoundNamedAppDetail)(nil),                // 512: pbtbr.TemplateBoundNamedAppDetail
+	(*template_binding_relation.TemplateBoundTemplateSetDetail)(nil),             // 513: pbtbr.TemplateBoundTemplateSetDetail
+	(*template_binding_relation.MultiTemplateBoundTemplateSetDetail)(nil),        // 514: pbtbr.MultiTemplateBoundTemplateSetDetail
+	(*template_binding_relation.TemplateRevisionBoundUnnamedAppDetail)(nil),      // 515: pbtbr.TemplateRevisionBoundUnnamedAppDetail
+	(*template_binding_relation.TemplateRevisionBoundNamedAppDetail)(nil),        // 516: pbtbr.TemplateRevisionBoundNamedAppDetail
+	(*template_binding_relation.TemplateSetBoundUnnamedAppDetail)(nil),           // 517: pbtbr.TemplateSetBoundUnnamedAppDetail
+	(*template_binding_relation.MultiTemplateSetBoundUnnamedAppDetail)(nil),      // 518: pbtbr.MultiTemplateSetBoundUnnamedAppDetail
+	(*template_binding_relation.TemplateSetBoundNamedAppDetail)(nil),             // 519: pbtbr.TemplateSetBoundNamedAppDetail
+	(*template_binding_relation.LatestTemplateBoundUnnamedAppDetail)(nil),        // 520: pbtbr.LatestTemplateBoundUnnamedAppDetail
+	(*template_variable.TemplateVariable)(nil),                                   // 521: pbtv.TemplateVariable
+	(*app_template_variable.AppTemplateVariableReference)(nil),                   // 522: pbatv.AppTemplateVariableReference
+	(*group.Group)(nil),                                                          // 523: pbgroup.Group
+	(*release.PublishRecord)(nil),                                                // 524: pbrelease.PublishRecord
+	(*audit.ListAuditsAppStrategy)(nil),                                          // 525: pbaudit.ListAuditsAppStrategy
+	(*kv.Kv)(nil),                                                                // 526: pbkv.Kv
+	(*client.ClientQueryCondition)(nil),                                          // 527: pbclient.ClientQueryCondition
+	(*client.Client)(nil),                                                        // 528: pbclient.Client
+	(*client_event.ClientEvent)(nil),                                             // 529: pbce.ClientEvent
+	(*client_query.ClientQuery)(nil),                                             // 530: pbcq.ClientQuery
+	(*template_space.TemplateSpaceSpec)(nil),                                     // 531: pbts.TemplateSpaceSpec
+	(*release.Ticket)(nil),                                                       // 532: pbrelease.Ticket
+	(*process.ProcessSearchCondition)(nil),                                       // 533: pbproc.ProcessSearchCondition
+	(*process.Process)(nil),                                                      // 534: pbproc.Process
+	(*process.FilterOptions)(nil),                                                // 535: pbproc.FilterOptions
+	(*process.OperateRange)(nil),                                                 // 536: pbproc.OperateRange
+	(*task_batch.TaskBatch)(nil),                                                 // 537: pbtb.TaskBatch
+	(*task_batch.FilterOptions)(nil),                                             // 538: pbtb.FilterOptions
+	(*task_batch.TaskDetail)(nil),                                                // 539: pbtb.TaskDetail
+	(*task_batch.TaskStatusStatItem)(nil),                                        // 540: pbtb.TaskStatusStatItem
+	(*task_batch.TaskDetailFilterOptions)(nil),                                   // 541: pbtb.TaskDetailFilterOptions
+	(*timestamppb.Timestamp)(nil),                                                // 542: google.protobuf.Timestamp
+	(*process.ProcessFilterOption)(nil),                                          // 543: pbproc.ProcessFilterOption
+	(*config_template.BizTopoNode)(nil),                                          // 544: pbct.BizTopoNode
+	(*config_template.ServiceTemplate)(nil),                                      // 545: pbct.ServiceTemplate
+	(*config_template.ProcTemplate)(nil),                                         // 546: pbct.ProcTemplate
+	(*config_instance.ConfigInstanceSearchCondition)(nil),                        // 547: pbcin.ConfigInstanceSearchCondition
+	(*config_instance.ConfigInstance)(nil),                                       // 548: pbcin.ConfigInstance
+	(*config_instance.ConfigInstanceFilterOptions)(nil),                          // 549: pbcin.ConfigInstanceFilterOptions
+	(*config_instance.ConfigTemplateGroup)(nil),                                  // 550: pbcin.ConfigTemplateGroup
+	(*config_template.TemplateSearchCond)(nil),                                   // 551: pbct.TemplateSearchCond
+	(*config_template.ConfigTemplate)(nil),                                       // 552: pbct.ConfigTemplate
+	(*config_template.ListProcessInstance)(nil),                                  // 553: pbct.ListProcessInstance
+	(*config_template.ServiceInstanceInfo)(nil),                                  // 554: pbct.ServiceInstanceInfo
+	(*config_template.BindTemplate)(nil),                                         // 555: pbct.BindTemplate
+	(*config_template.ConfigTemplateVariable)(nil),                               // 556: pbct.ConfigTemplateVariable
+	(*config_template.BindProcessInstance)(nil),                                  // 557: pbct.BindProcessInstance
+	(*config_instance.ConfigVersion)(nil),                                        // 558: pbcin.ConfigVersion
+	(*project.Project)(nil),                                                      // 559: pbproject.Project
+	(*project.ProjectSpec)(nil),                                                  // 560: pbproject.ProjectSpec
+	(*project.ProjectAttachment)(nil),                                            // 561: pbproject.ProjectAttachment
+	(*environment.Environment)(nil),                                              // 562: pbenvironment.Environment
+	(*environment.EnvironmentSpec)(nil),                                          // 563: pbenvironment.EnvironmentSpec
+	(*environment.EnvironmentAttachment)(nil),                                    // 564: pbenvironment.EnvironmentAttachment
+	(*hook.Hook)(nil),                                                            // 565: pbhook.Hook
+	(*hook_revision.HookRevision)(nil),                                           // 566: pbhr.HookRevision
+	(*template_set.EnvApps)(nil),                                                 // 567: pbtset.EnvApps
+	(*config_item.ConfigItemSpec)(nil),                                           // 568: pbci.ConfigItemSpec
+	(*template_revision.TemplateRevisionSpec)(nil),                               // 569: pbtr.TemplateRevisionSpec
+	(*base.EmptyReq)(nil),                                                        // 570: pbbase.EmptyReq
+	(*client.ClientCommonReq)(nil),                                               // 571: pbclient.ClientCommonReq
+	(*strategy.Strategy)(nil),                                                    // 572: pbstrategy.Strategy
 }
 var file_config_service_proto_depIdxs = []int32{
-	478, // 0: pbcs.UpdateCredentialScopeReq.add_scope:type_name -> pbcrs.CredentialScopeSpec
-	479, // 1: pbcs.UpdateCredentialScopeReq.alter_scope:type_name -> pbcrs.UpdateScopeSpec
-	439, // 2: pbcs.CredentialScopePreviewResp.details:type_name -> pbcs.CredentialScopePreviewResp.Detail
-	480, // 3: pbcs.ListCredentialScopesResp.details:type_name -> pbcrs.CredentialScopeList
-	481, // 4: pbcs.ListCredentialsResp.details:type_name -> pbcredential.CredentialList
-	482, // 5: pbcs.ListAppsRestReq.search:type_name -> google.protobuf.Struct
-	482, // 6: pbcs.ListAppsBySpaceRestReq.search:type_name -> google.protobuf.Struct
-	483, // 7: pbcs.ListAppsResp.details:type_name -> pbapp.App
-	440, // 8: pbcs.BatchUpsertConfigItemsReq.items:type_name -> pbcs.BatchUpsertConfigItemsReq.ConfigItem
-	484, // 9: pbcs.BatchUpsertConfigItemsReq.variables:type_name -> pbtv.TemplateVariableSpec
-	441, // 10: pbcs.BatchUpsertConfigItemsReq.bindings:type_name -> pbcs.BatchUpsertConfigItemsReq.TemplateBinding
-	485, // 11: pbcs.GetConfigItemResp.config_item:type_name -> pbci.ConfigItem
-	486, // 12: pbcs.GetConfigItemResp.content:type_name -> pbcontent.ContentSpec
-	487, // 13: pbcs.GetReleasedConfigItemResp.config_item:type_name -> pbrci.ReleasedConfigItem
-	482, // 14: pbcs.ListConfigItemsReq.search:type_name -> google.protobuf.Struct
-	485, // 15: pbcs.ListConfigItemsResp.details:type_name -> pbci.ConfigItem
-	482, // 16: pbcs.ListReleasedConfigItemsReq.search:type_name -> google.protobuf.Struct
-	487, // 17: pbcs.ListReleasedConfigItemsResp.details:type_name -> pbrci.ReleasedConfigItem
-	488, // 18: pbcs.ListConfigItemCountResp.details:type_name -> pbci.ListConfigItemCounts
-	442, // 19: pbcs.ListConfigItemByTupleReq.items:type_name -> pbcs.ListConfigItemByTupleReq.Item
-	485, // 20: pbcs.ListConfigItemByTupleResp.details:type_name -> pbci.ConfigItem
-	489, // 21: pbcs.GetReleasedKvResp.kv:type_name -> pbrkv.ReleasedKv
-	482, // 22: pbcs.ListReleasedKvsReq.search:type_name -> google.protobuf.Struct
-	489, // 23: pbcs.ListReleasedKvsResp.details:type_name -> pbrkv.ReleasedKv
-	443, // 24: pbcs.ListAllReleasedConfigItemsResp.items:type_name -> pbcs.ListAllReleasedConfigItemsResp.Item
-	484, // 25: pbcs.CreateReleaseReq.variables:type_name -> pbtv.TemplateVariableSpec
-	490, // 26: pbcs.ListReleasesResp.details:type_name -> pbrelease.Release
-	444, // 27: pbcs.ListHooksResp.details:type_name -> pbcs.ListHooksResp.Detail
-	491, // 28: pbcs.ListHookTagsResp.details:type_name -> pbhook.CountHookTags
-	482, // 29: pbcs.ListHookRevisionsReq.search:type_name -> google.protobuf.Struct
-	445, // 30: pbcs.ListHookRevisionsResp.details:type_name -> pbcs.ListHookRevisionsResp.ListHookRevisionsData
+	480, // 0: pbcs.UpdateCredentialScopeReq.add_scope:type_name -> pbcrs.CredentialScopeSpec
+	481, // 1: pbcs.UpdateCredentialScopeReq.alter_scope:type_name -> pbcrs.UpdateScopeSpec
+	441, // 2: pbcs.CredentialScopePreviewResp.details:type_name -> pbcs.CredentialScopePreviewResp.Detail
+	482, // 3: pbcs.ListCredentialScopesResp.details:type_name -> pbcrs.CredentialScopeList
+	483, // 4: pbcs.ListCredentialsResp.details:type_name -> pbcredential.CredentialList
+	484, // 5: pbcs.ListAppsRestReq.search:type_name -> google.protobuf.Struct
+	484, // 6: pbcs.ListAppsBySpaceRestReq.search:type_name -> google.protobuf.Struct
+	485, // 7: pbcs.ListAppsResp.details:type_name -> pbapp.App
+	442, // 8: pbcs.BatchUpsertConfigItemsReq.items:type_name -> pbcs.BatchUpsertConfigItemsReq.ConfigItem
+	486, // 9: pbcs.BatchUpsertConfigItemsReq.variables:type_name -> pbtv.TemplateVariableSpec
+	443, // 10: pbcs.BatchUpsertConfigItemsReq.bindings:type_name -> pbcs.BatchUpsertConfigItemsReq.TemplateBinding
+	487, // 11: pbcs.GetConfigItemResp.config_item:type_name -> pbci.ConfigItem
+	488, // 12: pbcs.GetConfigItemResp.content:type_name -> pbcontent.ContentSpec
+	489, // 13: pbcs.GetReleasedConfigItemResp.config_item:type_name -> pbrci.ReleasedConfigItem
+	484, // 14: pbcs.ListConfigItemsReq.search:type_name -> google.protobuf.Struct
+	487, // 15: pbcs.ListConfigItemsResp.details:type_name -> pbci.ConfigItem
+	484, // 16: pbcs.ListReleasedConfigItemsReq.search:type_name -> google.protobuf.Struct
+	489, // 17: pbcs.ListReleasedConfigItemsResp.details:type_name -> pbrci.ReleasedConfigItem
+	490, // 18: pbcs.ListConfigItemCountResp.details:type_name -> pbci.ListConfigItemCounts
+	444, // 19: pbcs.ListConfigItemByTupleReq.items:type_name -> pbcs.ListConfigItemByTupleReq.Item
+	487, // 20: pbcs.ListConfigItemByTupleResp.details:type_name -> pbci.ConfigItem
+	491, // 21: pbcs.GetReleasedKvResp.kv:type_name -> pbrkv.ReleasedKv
+	484, // 22: pbcs.ListReleasedKvsReq.search:type_name -> google.protobuf.Struct
+	491, // 23: pbcs.ListReleasedKvsResp.details:type_name -> pbrkv.ReleasedKv
+	445, // 24: pbcs.ListAllReleasedConfigItemsResp.items:type_name -> pbcs.ListAllReleasedConfigItemsResp.Item
+	486, // 25: pbcs.CreateReleaseReq.variables:type_name -> pbtv.TemplateVariableSpec
+	492, // 26: pbcs.ListReleasesResp.details:type_name -> pbrelease.Release
+	446, // 27: pbcs.ListHooksResp.details:type_name -> pbcs.ListHooksResp.Detail
+	493, // 28: pbcs.ListHookTagsResp.details:type_name -> pbhook.CountHookTags
+	484, // 29: pbcs.ListHookRevisionsReq.search:type_name -> google.protobuf.Struct
+	447, // 30: pbcs.ListHookRevisionsResp.details:type_name -> pbcs.ListHookRevisionsResp.ListHookRevisionsData
 	99,  // 31: pbcs.GetHookResp.spec:type_name -> pbcs.GetHookInfoSpec
-	492, // 32: pbcs.GetHookResp.attachment:type_name -> pbhook.HookAttachment
-	493, // 33: pbcs.GetHookResp.revision:type_name -> pbbase.Revision
-	446, // 34: pbcs.GetHookInfoSpec.releases:type_name -> pbcs.GetHookInfoSpec.Releases
-	447, // 35: pbcs.ListHookRevisionReferencesResp.details:type_name -> pbcs.ListHookRevisionReferencesResp.Detail
-	448, // 36: pbcs.ListHookReferencesResp.details:type_name -> pbcs.ListHookReferencesResp.Detail
-	449, // 37: pbcs.GetReleaseHookResp.pre_hook:type_name -> pbcs.GetReleaseHookResp.Hook
-	449, // 38: pbcs.GetReleaseHookResp.post_hook:type_name -> pbcs.GetReleaseHookResp.Hook
-	494, // 39: pbcs.ListTemplateSpacesResp.details:type_name -> pbts.TemplateSpace
-	494, // 40: pbcs.ListTmplSpacesByIDsResp.details:type_name -> pbts.TemplateSpace
-	494, // 41: pbcs.GetTemplateSpaceResp.data:type_name -> pbts.TemplateSpace
-	482, // 42: pbcs.ListTemplatesReq.search:type_name -> google.protobuf.Struct
-	495, // 43: pbcs.ListTemplatesResp.details:type_name -> pbtemplate.Template
-	450, // 44: pbcs.BatchUpsertTemplatesReq.items:type_name -> pbcs.BatchUpsertTemplatesReq.Item
-	495, // 45: pbcs.ListTemplatesByIDsResp.details:type_name -> pbtemplate.Template
-	482, // 46: pbcs.ListTemplatesNotBoundReq.search:type_name -> google.protobuf.Struct
-	451, // 47: pbcs.ListTemplateByTupleReq.items:type_name -> pbcs.ListTemplateByTupleReq.Item
-	452, // 48: pbcs.ListTemplateByTupleResp.items:type_name -> pbcs.ListTemplateByTupleResp.Item
-	495, // 49: pbcs.ListTemplatesNotBoundResp.details:type_name -> pbtemplate.Template
-	482, // 50: pbcs.ListTmplsOfTmplSetReq.search:type_name -> google.protobuf.Struct
-	495, // 51: pbcs.ListTmplsOfTmplSetResp.details:type_name -> pbtemplate.Template
-	453, // 52: pbcs.ListTemplateSetsAndRevisionsResp.details:type_name -> pbcs.ListTemplateSetsAndRevisionsResp.Detail
-	482, // 53: pbcs.ListTemplateRevisionsReq.search:type_name -> google.protobuf.Struct
-	496, // 54: pbcs.ListTemplateRevisionsResp.details:type_name -> pbtr.TemplateRevision
-	454, // 55: pbcs.GetTemplateRevisionResp.detail:type_name -> pbcs.GetTemplateRevisionResp.TemplateRevision
-	496, // 56: pbcs.ListTemplateRevisionsByIDsResp.details:type_name -> pbtr.TemplateRevision
-	497, // 57: pbcs.ListTmplRevisionNamesByTmplIDsResp.details:type_name -> pbtr.TemplateRevisionNamesDetail
-	498, // 58: pbcs.ListTemplateSetsResp.details:type_name -> pbtset.TemplateSet
-	498, // 59: pbcs.ListAppTemplateSetsResp.details:type_name -> pbtset.TemplateSet
-	498, // 60: pbcs.ListTemplateSetsByIDsResp.details:type_name -> pbtset.TemplateSet
-	499, // 61: pbcs.ListTmplSetsOfBizResp.details:type_name -> pbtset.TemplateSetOfBizDetail
-	500, // 62: pbcs.CreateAppTemplateBindingReq.bindings:type_name -> pbatb.TemplateBinding
-	500, // 63: pbcs.UpdateAppTemplateBindingReq.bindings:type_name -> pbatb.TemplateBinding
-	501, // 64: pbcs.ListAppTemplateBindingsResp.details:type_name -> pbatb.AppTemplateBinding
-	482, // 65: pbcs.ListAppBoundTmplRevisionsReq.search:type_name -> google.protobuf.Struct
-	502, // 66: pbcs.ListAppBoundTmplRevisionsResp.details:type_name -> pbatb.AppBoundTmplRevisionGroupBySet
-	482, // 67: pbcs.ListReleasedAppBoundTmplRevisionsReq.search:type_name -> google.protobuf.Struct
-	503, // 68: pbcs.ListReleasedAppBoundTmplRevisionsResp.details:type_name -> pbatb.ReleasedAppBoundTmplRevisionGroupBySet
-	504, // 69: pbcs.GetReleasedAppBoundTmplRevisionResp.detail:type_name -> pbatb.ReleasedAppBoundTmplRevision
-	500, // 70: pbcs.UpdateAppBoundTmplRevisionsReq.bindings:type_name -> pbatb.TemplateBinding
-	500, // 71: pbcs.CheckAppTemplateBindingReq.bindings:type_name -> pbatb.TemplateBinding
-	505, // 72: pbcs.CheckAppTemplateBindingResp.details:type_name -> pbatb.Conflict
-	455, // 73: pbcs.ImportFromTemplateSetToAppReq.bindings:type_name -> pbcs.ImportFromTemplateSetToAppReq.Binding
-	506, // 74: pbcs.ListTmplBoundCountsResp.details:type_name -> pbtbr.TemplateBoundCounts
-	507, // 75: pbcs.ListTmplRevisionBoundCountsResp.details:type_name -> pbtbr.TemplateRevisionBoundCounts
-	508, // 76: pbcs.ListTmplSetBoundCountsResp.details:type_name -> pbtbr.TemplateSetBoundCounts
-	509, // 77: pbcs.ListTmplBoundUnnamedAppsResp.details:type_name -> pbtbr.TemplateBoundUnnamedAppDetail
-	510, // 78: pbcs.ListTmplBoundNamedAppsResp.details:type_name -> pbtbr.TemplateBoundNamedAppDetail
-	511, // 79: pbcs.ListTmplBoundTmplSetsResp.details:type_name -> pbtbr.TemplateBoundTemplateSetDetail
-	512, // 80: pbcs.ListMultiTmplBoundTmplSetsResp.details:type_name -> pbtbr.MultiTemplateBoundTemplateSetDetail
-	513, // 81: pbcs.ListTmplRevisionBoundUnnamedAppsResp.details:type_name -> pbtbr.TemplateRevisionBoundUnnamedAppDetail
-	514, // 82: pbcs.ListTmplRevisionBoundNamedAppsResp.details:type_name -> pbtbr.TemplateRevisionBoundNamedAppDetail
-	515, // 83: pbcs.ListTmplSetBoundUnnamedAppsResp.details:type_name -> pbtbr.TemplateSetBoundUnnamedAppDetail
-	516, // 84: pbcs.ListMultiTmplSetBoundUnnamedAppsResp.details:type_name -> pbtbr.MultiTemplateSetBoundUnnamedAppDetail
-	457, // 85: pbcs.CheckTemplateSetReferencesAppsReq.items:type_name -> pbcs.CheckTemplateSetReferencesAppsReq.Item
-	458, // 86: pbcs.CheckTemplateSetReferencesAppsResp.items:type_name -> pbcs.CheckTemplateSetReferencesAppsResp.Item
-	517, // 87: pbcs.ListTmplSetBoundNamedAppsResp.details:type_name -> pbtbr.TemplateSetBoundNamedAppDetail
-	518, // 88: pbcs.ListLatestTmplBoundUnnamedAppsResp.details:type_name -> pbtbr.LatestTemplateBoundUnnamedAppDetail
-	519, // 89: pbcs.ListTemplateVariablesResp.details:type_name -> pbtv.TemplateVariable
-	519, // 90: pbcs.GetTemplateVariableResp.data:type_name -> pbtv.TemplateVariable
-	520, // 91: pbcs.GetAppTmplVariableRefsResp.details:type_name -> pbatv.AppTemplateVariableReference
-	520, // 92: pbcs.GetReleasedAppTmplVariableRefsResp.details:type_name -> pbatv.AppTemplateVariableReference
-	484, // 93: pbcs.UpdateAppTmplVariablesReq.variables:type_name -> pbtv.TemplateVariableSpec
-	484, // 94: pbcs.ListAppTmplVariablesResp.details:type_name -> pbtv.TemplateVariableSpec
-	484, // 95: pbcs.ListReleasedAppTmplVariablesResp.details:type_name -> pbtv.TemplateVariableSpec
-	482, // 96: pbcs.CreateGroupReq.selector:type_name -> google.protobuf.Struct
-	482, // 97: pbcs.UpdateGroupReq.selector:type_name -> google.protobuf.Struct
-	459, // 98: pbcs.ListAllGroupsResp.details:type_name -> pbcs.ListAllGroupsResp.ListAllGroupsData
-	461, // 99: pbcs.ListAppGroupsResp.details:type_name -> pbcs.ListAppGroupsResp.ListAppGroupsData
-	462, // 100: pbcs.ListGroupReleasedAppsResp.details:type_name -> pbcs.ListGroupReleasedAppsResp.ListGroupReleasedAppsData
-	521, // 101: pbcs.GetGroupResp.data:type_name -> pbgroup.Group
-	482, // 102: pbcs.PublishReq.labels:type_name -> google.protobuf.Struct
-	484, // 103: pbcs.GenerateReleaseAndPublishReq.variables:type_name -> pbtv.TemplateVariableSpec
-	482, // 104: pbcs.GenerateReleaseAndPublishReq.labels:type_name -> google.protobuf.Struct
-	482, // 105: pbcs.SubmitPublishApproveReq.labels:type_name -> google.protobuf.Struct
-	522, // 106: pbcs.GetLastPublishResp.publish_record:type_name -> pbrelease.PublishRecord
-	523, // 107: pbcs.ListAuditsResp.details:type_name -> pbaudit.ListAuditsAppStrategy
-	482, // 108: pbcs.ListKvsReq.search:type_name -> google.protobuf.Struct
-	524, // 109: pbcs.ListKvsResp.details:type_name -> pbkv.Kv
-	463, // 110: pbcs.BatchUpsertKvsReq.kvs:type_name -> pbcs.BatchUpsertKvsReq.Kv
-	464, // 111: pbcs.ListClientsReq.order:type_name -> pbcs.ListClientsReq.Order
-	525, // 112: pbcs.ListClientsReq.search:type_name -> pbclient.ClientQueryCondition
-	524, // 113: pbcs.FindNearExpiryCertKvsResp.details:type_name -> pbkv.Kv
-	465, // 114: pbcs.ListClientsResp.details:type_name -> pbcs.ListClientsResp.Item
-	526, // 115: pbcs.GetClientResp.data:type_name -> pbclient.Client
-	466, // 116: pbcs.ListClientEventsReq.order:type_name -> pbcs.ListClientEventsReq.Order
-	527, // 117: pbcs.ListClientEventsResp.details:type_name -> pbce.ClientEvent
-	528, // 118: pbcs.ListClientQuerysResp.details:type_name -> pbcq.ClientQuery
-	482, // 119: pbcs.CreateClientQueryReq.search_condition:type_name -> google.protobuf.Struct
-	482, // 120: pbcs.UpdateClientQueryReq.search_condition:type_name -> google.protobuf.Struct
-	467, // 121: pbcs.CompareConfigItemConflictsResp.non_template_configs:type_name -> pbcs.CompareConfigItemConflictsResp.NonTemplateConfig
-	468, // 122: pbcs.CompareConfigItemConflictsResp.template_configs:type_name -> pbcs.CompareConfigItemConflictsResp.TemplateConfig
-	470, // 123: pbcs.CompareKvConflictsResp.exist:type_name -> pbcs.CompareKvConflictsResp.Kv
-	470, // 124: pbcs.CompareKvConflictsResp.non_exist:type_name -> pbcs.CompareKvConflictsResp.Kv
-	529, // 125: pbcs.GetLatestTemplateVersionsInSpaceResp.template_space:type_name -> pbts.TemplateSpaceSpec
-	471, // 126: pbcs.GetLatestTemplateVersionsInSpaceResp.template_set:type_name -> pbcs.GetLatestTemplateVersionsInSpaceResp.TemplateSetSpec
-	530, // 127: pbcs.ApprovalCallbackReq.ticket:type_name -> pbrelease.Ticket
-	472, // 128: pbcs.CloneAppReq.config_items:type_name -> pbcs.CloneAppReq.ConfigItem
-	473, // 129: pbcs.CloneAppReq.kv_items:type_name -> pbcs.CloneAppReq.Kv
-	484, // 130: pbcs.CloneAppReq.variables:type_name -> pbtv.TemplateVariableSpec
-	474, // 131: pbcs.CloneAppReq.bindings:type_name -> pbcs.CloneAppReq.TemplateBinding
-	531, // 132: pbcs.ListProcessReq.search:type_name -> pbproc.ProcessSearchCondition
-	532, // 133: pbcs.ListProcessResp.process:type_name -> pbproc.Process
-	533, // 134: pbcs.ListProcessResp.filter_options:type_name -> pbproc.FilterOptions
-	531, // 135: pbcs.ListProcessInnerIPsReq.search:type_name -> pbproc.ProcessSearchCondition
-	534, // 136: pbcs.OperateProcessReq.operate_range:type_name -> pbproc.OperateRange
-	349, // 137: pbcs.ListTaskBatchReq.sort:type_name -> pbcs.SortRule
-	535, // 138: pbcs.ListTaskBatchResp.list:type_name -> pbtb.TaskBatch
-	536, // 139: pbcs.ListTaskBatchResp.filter_options:type_name -> pbtb.FilterOptions
-	537, // 140: pbcs.GetTaskBatchDetailResp.tasks:type_name -> pbtb.TaskDetail
-	538, // 141: pbcs.GetTaskBatchDetailResp.statistics:type_name -> pbtb.TaskStatusStatItem
-	539, // 142: pbcs.GetTaskBatchDetailResp.filter_options:type_name -> pbtb.TaskDetailFilterOptions
-	535, // 143: pbcs.GetTaskBatchDetailResp.task_batch:type_name -> pbtb.TaskBatch
-	540, // 144: pbcs.CmdbGseStatusResp.last_sync_time:type_name -> google.protobuf.Timestamp
-	541, // 145: pbcs.ProcessFilterOptionsResp.sets:type_name -> pbproc.ProcessFilterOption
-	541, // 146: pbcs.ProcessFilterOptionsResp.modules:type_name -> pbproc.ProcessFilterOption
-	541, // 147: pbcs.ProcessFilterOptionsResp.service_instances:type_name -> pbproc.ProcessFilterOption
-	541, // 148: pbcs.ProcessFilterOptionsResp.process_aliases:type_name -> pbproc.ProcessFilterOption
-	541, // 149: pbcs.ProcessFilterOptionsResp.cc_process_ids:type_name -> pbproc.ProcessFilterOption
-	542, // 150: pbcs.BizTopoResp.biz_topo_nodes:type_name -> pbct.BizTopoNode
-	543, // 151: pbcs.ServiceTemplateResp.service_templates:type_name -> pbct.ServiceTemplate
-	544, // 152: pbcs.ProcessTemplateResp.process_templates:type_name -> pbct.ProcTemplate
-	545, // 153: pbcs.ListConfigInstancesReq.search:type_name -> pbcin.ConfigInstanceSearchCondition
-	546, // 154: pbcs.ListConfigInstancesResp.config_instances:type_name -> pbcin.ConfigInstance
-	547, // 155: pbcs.ListConfigInstancesResp.filter_options:type_name -> pbcin.ConfigInstanceFilterOptions
-	475, // 156: pbcs.CompareConfigResp.old_config_content:type_name -> pbcs.CompareConfigResp.ConfigContent
-	475, // 157: pbcs.CompareConfigResp.new_config_content:type_name -> pbcs.CompareConfigResp.ConfigContent
-	548, // 158: pbcs.GenerateConfigReq.config_template_groups:type_name -> pbcin.ConfigTemplateGroup
-	534, // 159: pbcs.GenerateConfigReq.operate_range:type_name -> pbproc.OperateRange
-	548, // 160: pbcs.CheckConfigReq.config_template_groups:type_name -> pbcin.ConfigTemplateGroup
-	534, // 161: pbcs.CheckConfigReq.operate_range:type_name -> pbproc.OperateRange
-	549, // 162: pbcs.ListConfigTemplateReq.search:type_name -> pbct.TemplateSearchCond
-	550, // 163: pbcs.ListConfigTemplateResp.details:type_name -> pbct.ConfigTemplate
-	476, // 164: pbcs.ListConfigTemplateResp.template_space:type_name -> pbcs.ListConfigTemplateResp.Item
-	476, // 165: pbcs.ListConfigTemplateResp.template_set:type_name -> pbcs.ListConfigTemplateResp.Item
-	482, // 166: pbcs.ListConfigTemplateRevisionsReq.search:type_name -> google.protobuf.Struct
-	496, // 167: pbcs.ListConfigTemplateRevisionsResp.details:type_name -> pbtr.TemplateRevision
-	477, // 168: pbcs.ConfigGenerateStatusResp.config_generate_statuses:type_name -> pbcs.ConfigGenerateStatusResp.ConfigGenerateStatus
-	551, // 169: pbcs.ProcessInstanceResp.process_instances:type_name -> pbct.ListProcessInstance
-	552, // 170: pbcs.ServiceInstanceResp.service_instances:type_name -> pbct.ServiceInstanceInfo
-	553, // 171: pbcs.GetConfigTemplateResp.bind_template:type_name -> pbct.BindTemplate
-	554, // 172: pbcs.ConfigTemplateVariableResp.config_template_variables:type_name -> pbct.ConfigTemplateVariable
-	555, // 173: pbcs.PreviewBindProcessInstanceResp.template_processes:type_name -> pbct.BindProcessInstance
-	555, // 174: pbcs.PreviewBindProcessInstanceResp.instance_processes:type_name -> pbct.BindProcessInstance
-	556, // 175: pbcs.GetConfigDiffResp.last_dispatched:type_name -> pbcin.ConfigVersion
-	556, // 176: pbcs.GetConfigDiffResp.current_online:type_name -> pbcin.ConfigVersion
-	556, // 177: pbcs.GetConfigViewResp.last_dispatched:type_name -> pbcin.ConfigVersion
-	556, // 178: pbcs.GetConfigViewResp.preview_config:type_name -> pbcin.ConfigVersion
-	542, // 179: pbcs.GetProcessInstanceTopoResp.biz_topo_nodes:type_name -> pbct.BizTopoNode
-	413, // 180: pbcs.ManageConfigKVReq.kvs:type_name -> pbcs.ConfigKVItem
-	413, // 181: pbcs.ManageConfigKVResp.items:type_name -> pbcs.ConfigKVItem
-	482, // 182: pbcs.ListProjectsReq.search_condition:type_name -> google.protobuf.Struct
-	557, // 183: pbcs.ListProjectsResp.projects:type_name -> pbproject.Project
-	558, // 184: pbcs.GetProjectResp.spec:type_name -> pbproject.ProjectSpec
-	559, // 185: pbcs.GetProjectResp.attachment:type_name -> pbproject.ProjectAttachment
-	482, // 186: pbcs.ListEnvironmentsReq.search_condition:type_name -> google.protobuf.Struct
-	560, // 187: pbcs.ListEnvironmentsResp.prod_environments:type_name -> pbenvironment.Environment
-	560, // 188: pbcs.ListEnvironmentsResp.staging_environments:type_name -> pbenvironment.Environment
-	560, // 189: pbcs.ListEnvironmentsResp.test_environments:type_name -> pbenvironment.Environment
-	560, // 190: pbcs.ListEnvironmentsResp.dev_environments:type_name -> pbenvironment.Environment
-	561, // 191: pbcs.GetEnvironmentResp.spec:type_name -> pbenvironment.EnvironmentSpec
-	562, // 192: pbcs.GetEnvironmentResp.attachment:type_name -> pbenvironment.EnvironmentAttachment
-	500, // 193: pbcs.BatchUpsertConfigItemsReq.TemplateBinding.template_binding:type_name -> pbatb.TemplateBinding
-	563, // 194: pbcs.ListHooksResp.Detail.hook:type_name -> pbhook.Hook
-	564, // 195: pbcs.ListHookRevisionsResp.ListHookRevisionsData.hook_revision:type_name -> pbhr.HookRevision
-	495, // 196: pbcs.ListTemplateByTupleResp.Item.template:type_name -> pbtemplate.Template
-	496, // 197: pbcs.ListTemplateByTupleResp.Item.template_revision:type_name -> pbtr.TemplateRevision
-	495, // 198: pbcs.ListTemplateSetsAndRevisionsResp.Detail.template:type_name -> pbtemplate.Template
-	496, // 199: pbcs.ListTemplateSetsAndRevisionsResp.Detail.template_revision:type_name -> pbtr.TemplateRevision
-	456, // 200: pbcs.ImportFromTemplateSetToAppReq.Binding.template_revisions:type_name -> pbcs.ImportFromTemplateSetToAppReq.Binding.TemplateRevisionBinding
-	460, // 201: pbcs.ListAllGroupsResp.ListAllGroupsData.bind_apps:type_name -> pbcs.ListAllGroupsResp.ListAllGroupsData.BindApp
-	482, // 202: pbcs.ListAllGroupsResp.ListAllGroupsData.selector:type_name -> google.protobuf.Struct
-	565, // 203: pbcs.ListAllGroupsResp.ListAllGroupsData.env_apps:type_name -> pbtset.EnvApps
-	482, // 204: pbcs.ListAppGroupsResp.ListAppGroupsData.old_selector:type_name -> google.protobuf.Struct
-	482, // 205: pbcs.ListAppGroupsResp.ListAppGroupsData.new_selector:type_name -> google.protobuf.Struct
-	540, // 206: pbcs.ListGroupReleasedAppsResp.ListGroupReleasedAppsData.release_time:type_name -> google.protobuf.Timestamp
-	526, // 207: pbcs.ListClientsResp.Item.client:type_name -> pbclient.Client
-	566, // 208: pbcs.CompareConfigItemConflictsResp.NonTemplateConfig.config_item_spec:type_name -> pbci.ConfigItemSpec
-	484, // 209: pbcs.CompareConfigItemConflictsResp.NonTemplateConfig.variables:type_name -> pbtv.TemplateVariableSpec
-	469, // 210: pbcs.CompareConfigItemConflictsResp.TemplateConfig.template_revisions:type_name -> pbcs.CompareConfigItemConflictsResp.TemplateConfig.TemplateRevisionDetail
-	484, // 211: pbcs.CompareConfigItemConflictsResp.TemplateConfig.TemplateRevisionDetail.variables:type_name -> pbtv.TemplateVariableSpec
-	567, // 212: pbcs.GetLatestTemplateVersionsInSpaceResp.TemplateSetSpec.template_revision:type_name -> pbtr.TemplateRevisionSpec
-	500, // 213: pbcs.CloneAppReq.TemplateBinding.template_binding:type_name -> pbatb.TemplateBinding
-	540, // 214: pbcs.CompareConfigResp.ConfigContent.create_time:type_name -> google.protobuf.Timestamp
-	540, // 215: pbcs.ConfigGenerateStatusResp.ConfigGenerateStatus.generation_time:type_name -> google.protobuf.Timestamp
+	494, // 32: pbcs.GetHookResp.attachment:type_name -> pbhook.HookAttachment
+	495, // 33: pbcs.GetHookResp.revision:type_name -> pbbase.Revision
+	448, // 34: pbcs.GetHookInfoSpec.releases:type_name -> pbcs.GetHookInfoSpec.Releases
+	449, // 35: pbcs.ListHookRevisionReferencesResp.details:type_name -> pbcs.ListHookRevisionReferencesResp.Detail
+	450, // 36: pbcs.ListHookReferencesResp.details:type_name -> pbcs.ListHookReferencesResp.Detail
+	451, // 37: pbcs.GetReleaseHookResp.pre_hook:type_name -> pbcs.GetReleaseHookResp.Hook
+	451, // 38: pbcs.GetReleaseHookResp.post_hook:type_name -> pbcs.GetReleaseHookResp.Hook
+	496, // 39: pbcs.ListTemplateSpacesResp.details:type_name -> pbts.TemplateSpace
+	496, // 40: pbcs.ListTmplSpacesByIDsResp.details:type_name -> pbts.TemplateSpace
+	496, // 41: pbcs.GetTemplateSpaceResp.data:type_name -> pbts.TemplateSpace
+	484, // 42: pbcs.ListTemplatesReq.search:type_name -> google.protobuf.Struct
+	497, // 43: pbcs.ListTemplatesResp.details:type_name -> pbtemplate.Template
+	452, // 44: pbcs.BatchUpsertTemplatesReq.items:type_name -> pbcs.BatchUpsertTemplatesReq.Item
+	497, // 45: pbcs.ListTemplatesByIDsResp.details:type_name -> pbtemplate.Template
+	484, // 46: pbcs.ListTemplatesNotBoundReq.search:type_name -> google.protobuf.Struct
+	453, // 47: pbcs.ListTemplateByTupleReq.items:type_name -> pbcs.ListTemplateByTupleReq.Item
+	454, // 48: pbcs.ListTemplateByTupleResp.items:type_name -> pbcs.ListTemplateByTupleResp.Item
+	497, // 49: pbcs.ListTemplatesNotBoundResp.details:type_name -> pbtemplate.Template
+	484, // 50: pbcs.ListTmplsOfTmplSetReq.search:type_name -> google.protobuf.Struct
+	497, // 51: pbcs.ListTmplsOfTmplSetResp.details:type_name -> pbtemplate.Template
+	455, // 52: pbcs.ListTemplateSetsAndRevisionsResp.details:type_name -> pbcs.ListTemplateSetsAndRevisionsResp.Detail
+	484, // 53: pbcs.ListTemplateRevisionsReq.search:type_name -> google.protobuf.Struct
+	498, // 54: pbcs.ListTemplateRevisionsResp.details:type_name -> pbtr.TemplateRevision
+	456, // 55: pbcs.GetTemplateRevisionResp.detail:type_name -> pbcs.GetTemplateRevisionResp.TemplateRevision
+	498, // 56: pbcs.ListTemplateRevisionsByIDsResp.details:type_name -> pbtr.TemplateRevision
+	499, // 57: pbcs.ListTmplRevisionNamesByTmplIDsResp.details:type_name -> pbtr.TemplateRevisionNamesDetail
+	500, // 58: pbcs.ListTemplateSetsResp.details:type_name -> pbtset.TemplateSet
+	500, // 59: pbcs.ListAppTemplateSetsResp.details:type_name -> pbtset.TemplateSet
+	500, // 60: pbcs.ListTemplateSetsByIDsResp.details:type_name -> pbtset.TemplateSet
+	501, // 61: pbcs.ListTmplSetsOfBizResp.details:type_name -> pbtset.TemplateSetOfBizDetail
+	502, // 62: pbcs.CreateAppTemplateBindingReq.bindings:type_name -> pbatb.TemplateBinding
+	502, // 63: pbcs.UpdateAppTemplateBindingReq.bindings:type_name -> pbatb.TemplateBinding
+	503, // 64: pbcs.ListAppTemplateBindingsResp.details:type_name -> pbatb.AppTemplateBinding
+	484, // 65: pbcs.ListAppBoundTmplRevisionsReq.search:type_name -> google.protobuf.Struct
+	504, // 66: pbcs.ListAppBoundTmplRevisionsResp.details:type_name -> pbatb.AppBoundTmplRevisionGroupBySet
+	484, // 67: pbcs.ListReleasedAppBoundTmplRevisionsReq.search:type_name -> google.protobuf.Struct
+	505, // 68: pbcs.ListReleasedAppBoundTmplRevisionsResp.details:type_name -> pbatb.ReleasedAppBoundTmplRevisionGroupBySet
+	506, // 69: pbcs.GetReleasedAppBoundTmplRevisionResp.detail:type_name -> pbatb.ReleasedAppBoundTmplRevision
+	502, // 70: pbcs.UpdateAppBoundTmplRevisionsReq.bindings:type_name -> pbatb.TemplateBinding
+	502, // 71: pbcs.CheckAppTemplateBindingReq.bindings:type_name -> pbatb.TemplateBinding
+	507, // 72: pbcs.CheckAppTemplateBindingResp.details:type_name -> pbatb.Conflict
+	457, // 73: pbcs.ImportFromTemplateSetToAppReq.bindings:type_name -> pbcs.ImportFromTemplateSetToAppReq.Binding
+	508, // 74: pbcs.ListTmplBoundCountsResp.details:type_name -> pbtbr.TemplateBoundCounts
+	509, // 75: pbcs.ListTmplRevisionBoundCountsResp.details:type_name -> pbtbr.TemplateRevisionBoundCounts
+	510, // 76: pbcs.ListTmplSetBoundCountsResp.details:type_name -> pbtbr.TemplateSetBoundCounts
+	511, // 77: pbcs.ListTmplBoundUnnamedAppsResp.details:type_name -> pbtbr.TemplateBoundUnnamedAppDetail
+	512, // 78: pbcs.ListTmplBoundNamedAppsResp.details:type_name -> pbtbr.TemplateBoundNamedAppDetail
+	513, // 79: pbcs.ListTmplBoundTmplSetsResp.details:type_name -> pbtbr.TemplateBoundTemplateSetDetail
+	514, // 80: pbcs.ListMultiTmplBoundTmplSetsResp.details:type_name -> pbtbr.MultiTemplateBoundTemplateSetDetail
+	515, // 81: pbcs.ListTmplRevisionBoundUnnamedAppsResp.details:type_name -> pbtbr.TemplateRevisionBoundUnnamedAppDetail
+	516, // 82: pbcs.ListTmplRevisionBoundNamedAppsResp.details:type_name -> pbtbr.TemplateRevisionBoundNamedAppDetail
+	517, // 83: pbcs.ListTmplSetBoundUnnamedAppsResp.details:type_name -> pbtbr.TemplateSetBoundUnnamedAppDetail
+	518, // 84: pbcs.ListMultiTmplSetBoundUnnamedAppsResp.details:type_name -> pbtbr.MultiTemplateSetBoundUnnamedAppDetail
+	459, // 85: pbcs.CheckTemplateSetReferencesAppsReq.items:type_name -> pbcs.CheckTemplateSetReferencesAppsReq.Item
+	460, // 86: pbcs.CheckTemplateSetReferencesAppsResp.items:type_name -> pbcs.CheckTemplateSetReferencesAppsResp.Item
+	519, // 87: pbcs.ListTmplSetBoundNamedAppsResp.details:type_name -> pbtbr.TemplateSetBoundNamedAppDetail
+	520, // 88: pbcs.ListLatestTmplBoundUnnamedAppsResp.details:type_name -> pbtbr.LatestTemplateBoundUnnamedAppDetail
+	521, // 89: pbcs.ListTemplateVariablesResp.details:type_name -> pbtv.TemplateVariable
+	521, // 90: pbcs.GetTemplateVariableResp.data:type_name -> pbtv.TemplateVariable
+	522, // 91: pbcs.GetAppTmplVariableRefsResp.details:type_name -> pbatv.AppTemplateVariableReference
+	522, // 92: pbcs.GetReleasedAppTmplVariableRefsResp.details:type_name -> pbatv.AppTemplateVariableReference
+	486, // 93: pbcs.UpdateAppTmplVariablesReq.variables:type_name -> pbtv.TemplateVariableSpec
+	486, // 94: pbcs.ListAppTmplVariablesResp.details:type_name -> pbtv.TemplateVariableSpec
+	486, // 95: pbcs.ListReleasedAppTmplVariablesResp.details:type_name -> pbtv.TemplateVariableSpec
+	484, // 96: pbcs.CreateGroupReq.selector:type_name -> google.protobuf.Struct
+	484, // 97: pbcs.UpdateGroupReq.selector:type_name -> google.protobuf.Struct
+	461, // 98: pbcs.ListAllGroupsResp.details:type_name -> pbcs.ListAllGroupsResp.ListAllGroupsData
+	463, // 99: pbcs.ListAppGroupsResp.details:type_name -> pbcs.ListAppGroupsResp.ListAppGroupsData
+	464, // 100: pbcs.ListGroupReleasedAppsResp.details:type_name -> pbcs.ListGroupReleasedAppsResp.ListGroupReleasedAppsData
+	523, // 101: pbcs.GetGroupResp.data:type_name -> pbgroup.Group
+	484, // 102: pbcs.PublishReq.labels:type_name -> google.protobuf.Struct
+	486, // 103: pbcs.GenerateReleaseAndPublishReq.variables:type_name -> pbtv.TemplateVariableSpec
+	484, // 104: pbcs.GenerateReleaseAndPublishReq.labels:type_name -> google.protobuf.Struct
+	484, // 105: pbcs.SubmitPublishApproveReq.labels:type_name -> google.protobuf.Struct
+	524, // 106: pbcs.GetLastPublishResp.publish_record:type_name -> pbrelease.PublishRecord
+	525, // 107: pbcs.ListAuditsResp.details:type_name -> pbaudit.ListAuditsAppStrategy
+	484, // 108: pbcs.ListKvsReq.search:type_name -> google.protobuf.Struct
+	526, // 109: pbcs.ListKvsResp.details:type_name -> pbkv.Kv
+	465, // 110: pbcs.BatchUpsertKvsReq.kvs:type_name -> pbcs.BatchUpsertKvsReq.Kv
+	466, // 111: pbcs.ListClientsReq.order:type_name -> pbcs.ListClientsReq.Order
+	527, // 112: pbcs.ListClientsReq.search:type_name -> pbclient.ClientQueryCondition
+	526, // 113: pbcs.FindNearExpiryCertKvsResp.details:type_name -> pbkv.Kv
+	467, // 114: pbcs.ListClientsResp.details:type_name -> pbcs.ListClientsResp.Item
+	528, // 115: pbcs.GetClientResp.data:type_name -> pbclient.Client
+	468, // 116: pbcs.ListClientEventsReq.order:type_name -> pbcs.ListClientEventsReq.Order
+	529, // 117: pbcs.ListClientEventsResp.details:type_name -> pbce.ClientEvent
+	530, // 118: pbcs.ListClientQuerysResp.details:type_name -> pbcq.ClientQuery
+	484, // 119: pbcs.CreateClientQueryReq.search_condition:type_name -> google.protobuf.Struct
+	484, // 120: pbcs.UpdateClientQueryReq.search_condition:type_name -> google.protobuf.Struct
+	469, // 121: pbcs.CompareConfigItemConflictsResp.non_template_configs:type_name -> pbcs.CompareConfigItemConflictsResp.NonTemplateConfig
+	470, // 122: pbcs.CompareConfigItemConflictsResp.template_configs:type_name -> pbcs.CompareConfigItemConflictsResp.TemplateConfig
+	472, // 123: pbcs.CompareKvConflictsResp.exist:type_name -> pbcs.CompareKvConflictsResp.Kv
+	472, // 124: pbcs.CompareKvConflictsResp.non_exist:type_name -> pbcs.CompareKvConflictsResp.Kv
+	531, // 125: pbcs.GetLatestTemplateVersionsInSpaceResp.template_space:type_name -> pbts.TemplateSpaceSpec
+	473, // 126: pbcs.GetLatestTemplateVersionsInSpaceResp.template_set:type_name -> pbcs.GetLatestTemplateVersionsInSpaceResp.TemplateSetSpec
+	532, // 127: pbcs.ApprovalCallbackReq.ticket:type_name -> pbrelease.Ticket
+	474, // 128: pbcs.CloneAppReq.config_items:type_name -> pbcs.CloneAppReq.ConfigItem
+	475, // 129: pbcs.CloneAppReq.kv_items:type_name -> pbcs.CloneAppReq.Kv
+	486, // 130: pbcs.CloneAppReq.variables:type_name -> pbtv.TemplateVariableSpec
+	476, // 131: pbcs.CloneAppReq.bindings:type_name -> pbcs.CloneAppReq.TemplateBinding
+	533, // 132: pbcs.ListProcessReq.search:type_name -> pbproc.ProcessSearchCondition
+	534, // 133: pbcs.ListProcessResp.process:type_name -> pbproc.Process
+	535, // 134: pbcs.ListProcessResp.filter_options:type_name -> pbproc.FilterOptions
+	533, // 135: pbcs.ListProcessInnerIPsReq.search:type_name -> pbproc.ProcessSearchCondition
+	536, // 136: pbcs.OperateProcessReq.operate_range:type_name -> pbproc.OperateRange
+	351, // 137: pbcs.ListTaskBatchReq.sort:type_name -> pbcs.SortRule
+	537, // 138: pbcs.ListTaskBatchResp.list:type_name -> pbtb.TaskBatch
+	538, // 139: pbcs.ListTaskBatchResp.filter_options:type_name -> pbtb.FilterOptions
+	539, // 140: pbcs.GetTaskBatchDetailResp.tasks:type_name -> pbtb.TaskDetail
+	540, // 141: pbcs.GetTaskBatchDetailResp.statistics:type_name -> pbtb.TaskStatusStatItem
+	541, // 142: pbcs.GetTaskBatchDetailResp.filter_options:type_name -> pbtb.TaskDetailFilterOptions
+	537, // 143: pbcs.GetTaskBatchDetailResp.task_batch:type_name -> pbtb.TaskBatch
+	542, // 144: pbcs.CmdbGseStatusResp.last_sync_time:type_name -> google.protobuf.Timestamp
+	543, // 145: pbcs.ProcessFilterOptionsResp.sets:type_name -> pbproc.ProcessFilterOption
+	543, // 146: pbcs.ProcessFilterOptionsResp.modules:type_name -> pbproc.ProcessFilterOption
+	543, // 147: pbcs.ProcessFilterOptionsResp.service_instances:type_name -> pbproc.ProcessFilterOption
+	543, // 148: pbcs.ProcessFilterOptionsResp.process_aliases:type_name -> pbproc.ProcessFilterOption
+	543, // 149: pbcs.ProcessFilterOptionsResp.cc_process_ids:type_name -> pbproc.ProcessFilterOption
+	544, // 150: pbcs.BizTopoResp.biz_topo_nodes:type_name -> pbct.BizTopoNode
+	545, // 151: pbcs.ServiceTemplateResp.service_templates:type_name -> pbct.ServiceTemplate
+	546, // 152: pbcs.ProcessTemplateResp.process_templates:type_name -> pbct.ProcTemplate
+	547, // 153: pbcs.ListConfigInstancesReq.search:type_name -> pbcin.ConfigInstanceSearchCondition
+	548, // 154: pbcs.ListConfigInstancesResp.config_instances:type_name -> pbcin.ConfigInstance
+	549, // 155: pbcs.ListConfigInstancesResp.filter_options:type_name -> pbcin.ConfigInstanceFilterOptions
+	477, // 156: pbcs.CompareConfigResp.old_config_content:type_name -> pbcs.CompareConfigResp.ConfigContent
+	477, // 157: pbcs.CompareConfigResp.new_config_content:type_name -> pbcs.CompareConfigResp.ConfigContent
+	550, // 158: pbcs.GenerateConfigReq.config_template_groups:type_name -> pbcin.ConfigTemplateGroup
+	536, // 159: pbcs.GenerateConfigReq.operate_range:type_name -> pbproc.OperateRange
+	550, // 160: pbcs.CheckConfigReq.config_template_groups:type_name -> pbcin.ConfigTemplateGroup
+	536, // 161: pbcs.CheckConfigReq.operate_range:type_name -> pbproc.OperateRange
+	551, // 162: pbcs.ListConfigTemplateReq.search:type_name -> pbct.TemplateSearchCond
+	552, // 163: pbcs.ListConfigTemplateResp.details:type_name -> pbct.ConfigTemplate
+	478, // 164: pbcs.ListConfigTemplateResp.template_space:type_name -> pbcs.ListConfigTemplateResp.Item
+	478, // 165: pbcs.ListConfigTemplateResp.template_set:type_name -> pbcs.ListConfigTemplateResp.Item
+	484, // 166: pbcs.ListConfigTemplateRevisionsReq.search:type_name -> google.protobuf.Struct
+	498, // 167: pbcs.ListConfigTemplateRevisionsResp.details:type_name -> pbtr.TemplateRevision
+	479, // 168: pbcs.ConfigGenerateStatusResp.config_generate_statuses:type_name -> pbcs.ConfigGenerateStatusResp.ConfigGenerateStatus
+	553, // 169: pbcs.ProcessInstanceResp.process_instances:type_name -> pbct.ListProcessInstance
+	554, // 170: pbcs.ServiceInstanceResp.service_instances:type_name -> pbct.ServiceInstanceInfo
+	555, // 171: pbcs.GetConfigTemplateResp.bind_template:type_name -> pbct.BindTemplate
+	556, // 172: pbcs.ConfigTemplateVariableResp.config_template_variables:type_name -> pbct.ConfigTemplateVariable
+	557, // 173: pbcs.PreviewBindProcessInstanceResp.template_processes:type_name -> pbct.BindProcessInstance
+	557, // 174: pbcs.PreviewBindProcessInstanceResp.instance_processes:type_name -> pbct.BindProcessInstance
+	558, // 175: pbcs.GetConfigDiffResp.last_dispatched:type_name -> pbcin.ConfigVersion
+	558, // 176: pbcs.GetConfigDiffResp.current_online:type_name -> pbcin.ConfigVersion
+	558, // 177: pbcs.GetConfigViewResp.last_dispatched:type_name -> pbcin.ConfigVersion
+	558, // 178: pbcs.GetConfigViewResp.preview_config:type_name -> pbcin.ConfigVersion
+	544, // 179: pbcs.GetProcessInstanceTopoResp.biz_topo_nodes:type_name -> pbct.BizTopoNode
+	415, // 180: pbcs.ManageConfigKVReq.kvs:type_name -> pbcs.ConfigKVItem
+	415, // 181: pbcs.ManageConfigKVResp.items:type_name -> pbcs.ConfigKVItem
+	484, // 182: pbcs.ListProjectsReq.search_condition:type_name -> google.protobuf.Struct
+	559, // 183: pbcs.ListProjectsResp.projects:type_name -> pbproject.Project
+	560, // 184: pbcs.GetProjectResp.spec:type_name -> pbproject.ProjectSpec
+	561, // 185: pbcs.GetProjectResp.attachment:type_name -> pbproject.ProjectAttachment
+	484, // 186: pbcs.ListEnvironmentsReq.search_condition:type_name -> google.protobuf.Struct
+	562, // 187: pbcs.ListEnvironmentsResp.prod_environments:type_name -> pbenvironment.Environment
+	562, // 188: pbcs.ListEnvironmentsResp.staging_environments:type_name -> pbenvironment.Environment
+	562, // 189: pbcs.ListEnvironmentsResp.test_environments:type_name -> pbenvironment.Environment
+	562, // 190: pbcs.ListEnvironmentsResp.dev_environments:type_name -> pbenvironment.Environment
+	563, // 191: pbcs.GetEnvironmentResp.spec:type_name -> pbenvironment.EnvironmentSpec
+	564, // 192: pbcs.GetEnvironmentResp.attachment:type_name -> pbenvironment.EnvironmentAttachment
+	502, // 193: pbcs.BatchUpsertConfigItemsReq.TemplateBinding.template_binding:type_name -> pbatb.TemplateBinding
+	565, // 194: pbcs.ListHooksResp.Detail.hook:type_name -> pbhook.Hook
+	566, // 195: pbcs.ListHookRevisionsResp.ListHookRevisionsData.hook_revision:type_name -> pbhr.HookRevision
+	497, // 196: pbcs.ListTemplateByTupleResp.Item.template:type_name -> pbtemplate.Template
+	498, // 197: pbcs.ListTemplateByTupleResp.Item.template_revision:type_name -> pbtr.TemplateRevision
+	497, // 198: pbcs.ListTemplateSetsAndRevisionsResp.Detail.template:type_name -> pbtemplate.Template
+	498, // 199: pbcs.ListTemplateSetsAndRevisionsResp.Detail.template_revision:type_name -> pbtr.TemplateRevision
+	458, // 200: pbcs.ImportFromTemplateSetToAppReq.Binding.template_revisions:type_name -> pbcs.ImportFromTemplateSetToAppReq.Binding.TemplateRevisionBinding
+	462, // 201: pbcs.ListAllGroupsResp.ListAllGroupsData.bind_apps:type_name -> pbcs.ListAllGroupsResp.ListAllGroupsData.BindApp
+	484, // 202: pbcs.ListAllGroupsResp.ListAllGroupsData.selector:type_name -> google.protobuf.Struct
+	567, // 203: pbcs.ListAllGroupsResp.ListAllGroupsData.env_apps:type_name -> pbtset.EnvApps
+	484, // 204: pbcs.ListAppGroupsResp.ListAppGroupsData.old_selector:type_name -> google.protobuf.Struct
+	484, // 205: pbcs.ListAppGroupsResp.ListAppGroupsData.new_selector:type_name -> google.protobuf.Struct
+	542, // 206: pbcs.ListGroupReleasedAppsResp.ListGroupReleasedAppsData.release_time:type_name -> google.protobuf.Timestamp
+	528, // 207: pbcs.ListClientsResp.Item.client:type_name -> pbclient.Client
+	568, // 208: pbcs.CompareConfigItemConflictsResp.NonTemplateConfig.config_item_spec:type_name -> pbci.ConfigItemSpec
+	486, // 209: pbcs.CompareConfigItemConflictsResp.NonTemplateConfig.variables:type_name -> pbtv.TemplateVariableSpec
+	471, // 210: pbcs.CompareConfigItemConflictsResp.TemplateConfig.template_revisions:type_name -> pbcs.CompareConfigItemConflictsResp.TemplateConfig.TemplateRevisionDetail
+	486, // 211: pbcs.CompareConfigItemConflictsResp.TemplateConfig.TemplateRevisionDetail.variables:type_name -> pbtv.TemplateVariableSpec
+	569, // 212: pbcs.GetLatestTemplateVersionsInSpaceResp.TemplateSetSpec.template_revision:type_name -> pbtr.TemplateRevisionSpec
+	502, // 213: pbcs.CloneAppReq.TemplateBinding.template_binding:type_name -> pbatb.TemplateBinding
+	542, // 214: pbcs.CompareConfigResp.ConfigContent.create_time:type_name -> google.protobuf.Timestamp
+	542, // 215: pbcs.ConfigGenerateStatusResp.ConfigGenerateStatus.generation_time:type_name -> google.protobuf.Timestamp
 	20,  // 216: pbcs.Config.CreateApp:input_type -> pbcs.CreateAppReq
 	22,  // 217: pbcs.Config.UpdateApp:input_type -> pbcs.UpdateAppReq
 	23,  // 218: pbcs.Config.DeleteApp:input_type -> pbcs.DeleteAppReq
@@ -43680,7 +43815,7 @@ var file_config_service_proto_depIdxs = []int32{
 	113, // 267: pbcs.Config.DeleteTemplateSpace:input_type -> pbcs.DeleteTemplateSpaceReq
 	111, // 268: pbcs.Config.UpdateTemplateSpace:input_type -> pbcs.UpdateTemplateSpaceReq
 	115, // 269: pbcs.Config.ListTemplateSpaces:input_type -> pbcs.ListTemplateSpacesReq
-	568, // 270: pbcs.Config.GetAllBizsOfTmplSpaces:input_type -> pbbase.EmptyReq
+	570, // 270: pbcs.Config.GetAllBizsOfTmplSpaces:input_type -> pbbase.EmptyReq
 	118, // 271: pbcs.Config.CreateDefaultTmplSpace:input_type -> pbcs.CreateDefaultTmplSpaceReq
 	120, // 272: pbcs.Config.ListTmplSpacesByIDs:input_type -> pbcs.ListTmplSpacesByIDsReq
 	122, // 273: pbcs.Config.GetTemplateSpace:input_type -> pbcs.GetTemplateSpaceReq
@@ -43799,303 +43934,307 @@ var file_config_service_proto_depIdxs = []int32{
 	323, // 386: pbcs.Config.UpdateClientQuery:input_type -> pbcs.UpdateClientQueryReq
 	325, // 387: pbcs.Config.DeleteClientQuery:input_type -> pbcs.DeleteClientQueryReq
 	327, // 388: pbcs.Config.CheckClientQueryName:input_type -> pbcs.CheckClientQueryNameReq
-	569, // 389: pbcs.Config.ClientConfigVersionStatistics:input_type -> pbclient.ClientCommonReq
-	569, // 390: pbcs.Config.ClientPullTrendStatistics:input_type -> pbclient.ClientCommonReq
-	569, // 391: pbcs.Config.ClientPullStatistics:input_type -> pbclient.ClientCommonReq
-	569, // 392: pbcs.Config.ClientLabelStatistics:input_type -> pbclient.ClientCommonReq
-	569, // 393: pbcs.Config.ClientAnnotationStatistics:input_type -> pbclient.ClientCommonReq
-	569, // 394: pbcs.Config.ClientVersionStatistics:input_type -> pbclient.ClientCommonReq
+	571, // 389: pbcs.Config.ClientConfigVersionStatistics:input_type -> pbclient.ClientCommonReq
+	571, // 390: pbcs.Config.ClientPullTrendStatistics:input_type -> pbclient.ClientCommonReq
+	571, // 391: pbcs.Config.ClientPullStatistics:input_type -> pbclient.ClientCommonReq
+	571, // 392: pbcs.Config.ClientLabelStatistics:input_type -> pbclient.ClientCommonReq
+	571, // 393: pbcs.Config.ClientAnnotationStatistics:input_type -> pbclient.ClientCommonReq
+	571, // 394: pbcs.Config.ClientVersionStatistics:input_type -> pbclient.ClientCommonReq
 	329, // 395: pbcs.Config.ListClientLabelAndAnnotation:input_type -> pbcs.ListClientLabelAndAnnotationReq
-	569, // 396: pbcs.Config.ClientSpecificFailedReason:input_type -> pbclient.ClientCommonReq
+	571, // 396: pbcs.Config.ClientSpecificFailedReason:input_type -> pbclient.ClientCommonReq
 	330, // 397: pbcs.Config.CompareConfigItemConflicts:input_type -> pbcs.CompareConfigItemConflictsReq
 	332, // 398: pbcs.Config.CompareKvConflicts:input_type -> pbcs.CompareKvConflictsReq
 	334, // 399: pbcs.Config.GetTemplateAndNonTemplateCICount:input_type -> pbcs.GetTemplateAndNonTemplateCICountReq
 	341, // 400: pbcs.Config.ListProcess:input_type -> pbcs.ListProcessReq
 	343, // 401: pbcs.Config.ListProcessInnerIPs:input_type -> pbcs.ListProcessInnerIPsReq
 	345, // 402: pbcs.Config.OperateProcess:input_type -> pbcs.OperateProcessReq
-	358, // 403: pbcs.Config.ProcessFilterOptions:input_type -> pbcs.ProcessFilterOptionsReq
-	350, // 404: pbcs.Config.ListTaskBatch:input_type -> pbcs.ListTaskBatchReq
-	352, // 405: pbcs.Config.GetTaskBatchDetail:input_type -> pbcs.GetTaskBatchDetailReq
-	347, // 406: pbcs.Config.SyncCmdbGseStatus:input_type -> pbcs.SyncCmdbGseStatusReq
-	356, // 407: pbcs.Config.CmdbGseStatus:input_type -> pbcs.CmdbGseStatusReq
-	354, // 408: pbcs.Config.RetryTasks:input_type -> pbcs.RetryTasksReq
-	360, // 409: pbcs.Config.BizTopo:input_type -> pbcs.BizTopoReq
-	362, // 410: pbcs.Config.ServiceTemplate:input_type -> pbcs.ServiceTemplateReq
-	364, // 411: pbcs.Config.ProcessTemplate:input_type -> pbcs.ProcessTemplateReq
-	366, // 412: pbcs.Config.ListConfigInstances:input_type -> pbcs.ListConfigInstancesReq
-	382, // 413: pbcs.Config.ConfigGenerateStatus:input_type -> pbcs.ConfigGenerateStatusReq
-	384, // 414: pbcs.Config.PreviewConfig:input_type -> pbcs.PreviewConfigReq
-	368, // 415: pbcs.Config.CompareConfig:input_type -> pbcs.CompareConfigReq
-	370, // 416: pbcs.Config.GenerateConfig:input_type -> pbcs.GenerateConfigReq
-	372, // 417: pbcs.Config.CheckConfig:input_type -> pbcs.CheckConfigReq
-	406, // 418: pbcs.Config.GetConfigDiff:input_type -> pbcs.GetConfigDiffReq
-	408, // 419: pbcs.Config.GetConfigView:input_type -> pbcs.GetConfigViewReq
-	404, // 420: pbcs.Config.OperateGenerateConfig:input_type -> pbcs.OperateGenerateConfigReq
-	374, // 421: pbcs.Config.PushConfig:input_type -> pbcs.PushConfigReq
-	376, // 422: pbcs.Config.GetConfigRenderResult:input_type -> pbcs.GetConfigRenderResultReq
-	378, // 423: pbcs.Config.ListConfigTemplate:input_type -> pbcs.ListConfigTemplateReq
-	380, // 424: pbcs.Config.ListConfigTemplateRevisions:input_type -> pbcs.ListConfigTemplateRevisionsReq
-	390, // 425: pbcs.Config.CreateConfigTemplate:input_type -> pbcs.CreateConfigTemplateReq
-	392, // 426: pbcs.Config.UpdateConfigTemplate:input_type -> pbcs.UpdateConfigTemplateReq
-	394, // 427: pbcs.Config.GetConfigTemplate:input_type -> pbcs.GetConfigTemplateReq
-	396, // 428: pbcs.Config.ConfigTemplateVariable:input_type -> pbcs.ConfigTemplateVariableReq
-	398, // 429: pbcs.Config.BindProcessInstance:input_type -> pbcs.BindProcessInstanceReq
-	400, // 430: pbcs.Config.PreviewBindProcessInstance:input_type -> pbcs.PreviewBindProcessInstanceReq
-	386, // 431: pbcs.Config.ProcessInstance:input_type -> pbcs.ProcessInstanceReq
-	388, // 432: pbcs.Config.ServiceInstance:input_type -> pbcs.ServiceInstanceReq
-	402, // 433: pbcs.Config.DeleteConfigTemplate:input_type -> pbcs.DeleteConfigTemplateReq
-	410, // 434: pbcs.Config.GetProcessInstanceTopo:input_type -> pbcs.GetProcessInstanceTopoReq
-	412, // 435: pbcs.Config.ManageConfigKV:input_type -> pbcs.ManageConfigKVReq
-	415, // 436: pbcs.Config.GetProcessConfigView:input_type -> pbcs.GetProcessConfigViewReq
-	417, // 437: pbcs.Config.ListProjects:input_type -> pbcs.ListProjectsReq
-	419, // 438: pbcs.Config.GetProject:input_type -> pbcs.GetProjectReq
-	421, // 439: pbcs.Config.CreateProject:input_type -> pbcs.CreateProjectReq
-	423, // 440: pbcs.Config.UpdateProject:input_type -> pbcs.UpdateProjectReq
-	425, // 441: pbcs.Config.DeleteProject:input_type -> pbcs.DeleteProjectReq
-	427, // 442: pbcs.Config.ListEnvironments:input_type -> pbcs.ListEnvironmentsReq
-	429, // 443: pbcs.Config.GetEnvironment:input_type -> pbcs.GetEnvironmentReq
-	431, // 444: pbcs.Config.CreateEnvironment:input_type -> pbcs.CreateEnvironmentReq
-	433, // 445: pbcs.Config.UpdateEnvironment:input_type -> pbcs.UpdateEnvironmentReq
-	435, // 446: pbcs.Config.DeleteEnvironment:input_type -> pbcs.DeleteEnvironmentReq
-	437, // 447: pbcs.Config.GetProjectByKey:input_type -> pbcs.GetProjectByKeyReq
-	438, // 448: pbcs.Config.GetEnvironmentByName:input_type -> pbcs.GetEnvironmentByNameReq
-	0,   // 449: pbcs.Config.EnsureDefaultProjectEnv:input_type -> pbcs.EnsureDefaultProjectEnvReq
-	21,  // 450: pbcs.Config.CreateApp:output_type -> pbcs.CreateAppResp
-	483, // 451: pbcs.Config.UpdateApp:output_type -> pbapp.App
-	24,  // 452: pbcs.Config.DeleteApp:output_type -> pbcs.DeleteAppResp
-	483, // 453: pbcs.Config.GetApp:output_type -> pbapp.App
-	483, // 454: pbcs.Config.GetAppByName:output_type -> pbapp.App
-	29,  // 455: pbcs.Config.ListAppsRest:output_type -> pbcs.ListAppsResp
-	29,  // 456: pbcs.Config.ListAppsBySpaceRest:output_type -> pbcs.ListAppsResp
-	21,  // 457: pbcs.Config.CloneApp:output_type -> pbcs.CreateAppResp
-	33,  // 458: pbcs.Config.CreateConfigItem:output_type -> pbcs.CreateConfigItemResp
-	32,  // 459: pbcs.Config.BatchUpsertConfigItems:output_type -> pbcs.BatchUpsertConfigItemsResp
-	35,  // 460: pbcs.Config.UpdateConfigItem:output_type -> pbcs.UpdateConfigItemResp
-	37,  // 461: pbcs.Config.DeleteConfigItem:output_type -> pbcs.DeleteConfigItemResp
-	298, // 462: pbcs.Config.BatchDeleteConfigItems:output_type -> pbcs.BatchDeleteResp
-	39,  // 463: pbcs.Config.UnDeleteConfigItem:output_type -> pbcs.UnDeleteConfigItemResp
-	41,  // 464: pbcs.Config.BatchUnDeleteConfigItem:output_type -> pbcs.BatchUnDeleteConfigItemResp
-	43,  // 465: pbcs.Config.UndoConfigItem:output_type -> pbcs.UndoConfigItemResp
-	45,  // 466: pbcs.Config.GetConfigItem:output_type -> pbcs.GetConfigItemResp
-	47,  // 467: pbcs.Config.GetReleasedConfigItem:output_type -> pbcs.GetReleasedConfigItemResp
-	49,  // 468: pbcs.Config.ListConfigItems:output_type -> pbcs.ListConfigItemsResp
-	51,  // 469: pbcs.Config.ListReleasedConfigItems:output_type -> pbcs.ListReleasedConfigItemsResp
-	53,  // 470: pbcs.Config.ListConfigItemCount:output_type -> pbcs.ListConfigItemCountResp
-	55,  // 471: pbcs.Config.ListConfigItemByTuple:output_type -> pbcs.ListConfigItemByTupleResp
-	57,  // 472: pbcs.Config.GetReleasedKv:output_type -> pbcs.GetReleasedKvResp
-	59,  // 473: pbcs.Config.ListReleasedKvs:output_type -> pbcs.ListReleasedKvsResp
-	61,  // 474: pbcs.Config.ListAllReleasedConfigItems:output_type -> pbcs.ListAllReleasedConfigItemsResp
-	63,  // 475: pbcs.Config.UpdateConfigHook:output_type -> pbcs.UpdateConfigHookResp
-	65,  // 476: pbcs.Config.CreateRelease:output_type -> pbcs.CreateReleaseResp
-	69,  // 477: pbcs.Config.ListReleases:output_type -> pbcs.ListReleasesResp
-	490, // 478: pbcs.Config.GetReleaseByName:output_type -> pbrelease.Release
-	490, // 479: pbcs.Config.GetRelease:output_type -> pbrelease.Release
-	73,  // 480: pbcs.Config.DeprecateRelease:output_type -> pbcs.DeprecateReleaseResp
-	75,  // 481: pbcs.Config.UnDeprecateRelease:output_type -> pbcs.UnDeprecateReleaseResp
-	77,  // 482: pbcs.Config.DeleteRelease:output_type -> pbcs.DeleteReleaseResp
-	67,  // 483: pbcs.Config.CheckReleaseName:output_type -> pbcs.CheckReleaseNameResp
-	79,  // 484: pbcs.Config.CreateHook:output_type -> pbcs.CreateHookResp
-	81,  // 485: pbcs.Config.DeleteHook:output_type -> pbcs.DeleteHookResp
-	298, // 486: pbcs.Config.BatchDeleteHook:output_type -> pbcs.BatchDeleteResp
-	84,  // 487: pbcs.Config.UpdateHook:output_type -> pbcs.UpdateHookResp
-	86,  // 488: pbcs.Config.ListHooks:output_type -> pbcs.ListHooksResp
-	88,  // 489: pbcs.Config.ListHookTags:output_type -> pbcs.ListHookTagsResp
-	98,  // 490: pbcs.Config.GetHook:output_type -> pbcs.GetHookResp
-	90,  // 491: pbcs.Config.CreateHookRevision:output_type -> pbcs.CreateHookRevisionResp
-	92,  // 492: pbcs.Config.ListHookRevisions:output_type -> pbcs.ListHookRevisionsResp
-	94,  // 493: pbcs.Config.DeleteHookRevision:output_type -> pbcs.DeleteHookRevisionResp
-	96,  // 494: pbcs.Config.PublishHookRevision:output_type -> pbcs.PublishHookRevisionResp
-	564, // 495: pbcs.Config.GetHookRevision:output_type -> pbhr.HookRevision
-	102, // 496: pbcs.Config.UpdateHookRevision:output_type -> pbcs.UpdateHookRevisionResp
-	106, // 497: pbcs.Config.ListHookReferences:output_type -> pbcs.ListHookReferencesResp
-	104, // 498: pbcs.Config.ListHookRevisionReferences:output_type -> pbcs.ListHookRevisionReferencesResp
-	108, // 499: pbcs.Config.GetReleaseHook:output_type -> pbcs.GetReleaseHookResp
-	110, // 500: pbcs.Config.CreateTemplateSpace:output_type -> pbcs.CreateTemplateSpaceResp
-	114, // 501: pbcs.Config.DeleteTemplateSpace:output_type -> pbcs.DeleteTemplateSpaceResp
-	112, // 502: pbcs.Config.UpdateTemplateSpace:output_type -> pbcs.UpdateTemplateSpaceResp
-	116, // 503: pbcs.Config.ListTemplateSpaces:output_type -> pbcs.ListTemplateSpacesResp
-	117, // 504: pbcs.Config.GetAllBizsOfTmplSpaces:output_type -> pbcs.GetAllBizsOfTmplSpacesResp
-	119, // 505: pbcs.Config.CreateDefaultTmplSpace:output_type -> pbcs.CreateDefaultTmplSpaceResp
-	121, // 506: pbcs.Config.ListTmplSpacesByIDs:output_type -> pbcs.ListTmplSpacesByIDsResp
-	123, // 507: pbcs.Config.GetTemplateSpace:output_type -> pbcs.GetTemplateSpaceResp
-	125, // 508: pbcs.Config.CreateTemplate:output_type -> pbcs.CreateTemplateResp
-	129, // 509: pbcs.Config.DeleteTemplate:output_type -> pbcs.DeleteTemplateResp
-	131, // 510: pbcs.Config.BatchDeleteTemplate:output_type -> pbcs.BatchDeleteTemplateResp
-	127, // 511: pbcs.Config.UpdateTemplate:output_type -> pbcs.UpdateTemplateResp
-	133, // 512: pbcs.Config.ListTemplates:output_type -> pbcs.ListTemplatesResp
-	135, // 513: pbcs.Config.BatchUpsertTemplates:output_type -> pbcs.BatchUpsertTemplatesResp
-	137, // 514: pbcs.Config.BatchUpdateTemplatePermissions:output_type -> pbcs.BatchUpdateTemplatePermissionsResp
-	139, // 515: pbcs.Config.AddTmplsToTmplSets:output_type -> pbcs.AddTmplsToTmplSetsResp
-	298, // 516: pbcs.Config.DeleteTmplsFromTmplSets:output_type -> pbcs.BatchDeleteResp
-	142, // 517: pbcs.Config.ListTemplatesByIDs:output_type -> pbcs.ListTemplatesByIDsResp
-	146, // 518: pbcs.Config.ListTemplatesNotBound:output_type -> pbcs.ListTemplatesNotBoundResp
-	145, // 519: pbcs.Config.ListTemplateByTuple:output_type -> pbcs.ListTemplateByTupleResp
-	148, // 520: pbcs.Config.ListTmplsOfTmplSet:output_type -> pbcs.ListTmplsOfTmplSetResp
-	150, // 521: pbcs.Config.ListTemplateSetsAndRevisions:output_type -> pbcs.ListTemplateSetsAndRevisionsResp
-	152, // 522: pbcs.Config.CreateTemplateRevision:output_type -> pbcs.CreateTemplateRevisionResp
-	154, // 523: pbcs.Config.UpdateTemplateRevision:output_type -> pbcs.UpdateTemplateRevisionResp
-	156, // 524: pbcs.Config.ListTemplateRevisions:output_type -> pbcs.ListTemplateRevisionsResp
-	158, // 525: pbcs.Config.GetTemplateRevision:output_type -> pbcs.GetTemplateRevisionResp
-	162, // 526: pbcs.Config.ListTemplateRevisionsByIDs:output_type -> pbcs.ListTemplateRevisionsByIDsResp
-	164, // 527: pbcs.Config.ListTmplRevisionNamesByTmplIDs:output_type -> pbcs.ListTmplRevisionNamesByTmplIDsResp
-	166, // 528: pbcs.Config.CreateTemplateSet:output_type -> pbcs.CreateTemplateSetResp
-	170, // 529: pbcs.Config.DeleteTemplateSet:output_type -> pbcs.DeleteTemplateSetResp
-	168, // 530: pbcs.Config.UpdateTemplateSet:output_type -> pbcs.UpdateTemplateSetResp
-	172, // 531: pbcs.Config.ListTemplateSets:output_type -> pbcs.ListTemplateSetsResp
-	337, // 532: pbcs.Config.GetLatestTemplateVersionsInSpace:output_type -> pbcs.GetLatestTemplateVersionsInSpaceResp
-	174, // 533: pbcs.Config.ListAppTemplateSets:output_type -> pbcs.ListAppTemplateSetsResp
-	176, // 534: pbcs.Config.ListTemplateSetsByIDs:output_type -> pbcs.ListTemplateSetsByIDsResp
-	178, // 535: pbcs.Config.ListTmplSetsOfBiz:output_type -> pbcs.ListTmplSetsOfBizResp
-	180, // 536: pbcs.Config.CreateAppTemplateBinding:output_type -> pbcs.CreateAppTemplateBindingResp
-	184, // 537: pbcs.Config.DeleteAppTemplateBinding:output_type -> pbcs.DeleteAppTemplateBindingResp
-	182, // 538: pbcs.Config.UpdateAppTemplateBinding:output_type -> pbcs.UpdateAppTemplateBindingResp
-	186, // 539: pbcs.Config.ListAppTemplateBindings:output_type -> pbcs.ListAppTemplateBindingsResp
-	188, // 540: pbcs.Config.ListAppBoundTmplRevisions:output_type -> pbcs.ListAppBoundTmplRevisionsResp
-	190, // 541: pbcs.Config.ListReleasedAppBoundTmplRevisions:output_type -> pbcs.ListReleasedAppBoundTmplRevisionsResp
-	192, // 542: pbcs.Config.GetReleasedAppBoundTmplRevision:output_type -> pbcs.GetReleasedAppBoundTmplRevisionResp
-	194, // 543: pbcs.Config.UpdateAppBoundTmplRevisions:output_type -> pbcs.UpdateAppBoundTmplRevisionsResp
-	196, // 544: pbcs.Config.DeleteAppBoundTmplSets:output_type -> pbcs.DeleteAppBoundTmplSetsResp
-	198, // 545: pbcs.Config.RemoveAppBoundTmplSet:output_type -> pbcs.RemoveAppBoundTmplSetResp
-	200, // 546: pbcs.Config.CheckAppTemplateBinding:output_type -> pbcs.CheckAppTemplateBindingResp
-	202, // 547: pbcs.Config.ImportFromTemplateSetToApp:output_type -> pbcs.ImportFromTemplateSetToAppResp
-	204, // 548: pbcs.Config.ListTmplBoundCounts:output_type -> pbcs.ListTmplBoundCountsResp
-	206, // 549: pbcs.Config.ListTmplRevisionBoundCounts:output_type -> pbcs.ListTmplRevisionBoundCountsResp
-	208, // 550: pbcs.Config.ListTmplSetBoundCounts:output_type -> pbcs.ListTmplSetBoundCountsResp
-	210, // 551: pbcs.Config.ListTmplBoundUnnamedApps:output_type -> pbcs.ListTmplBoundUnnamedAppsResp
-	212, // 552: pbcs.Config.ListTmplBoundNamedApps:output_type -> pbcs.ListTmplBoundNamedAppsResp
-	214, // 553: pbcs.Config.ListTmplBoundTmplSets:output_type -> pbcs.ListTmplBoundTmplSetsResp
-	216, // 554: pbcs.Config.ListMultiTmplBoundTmplSets:output_type -> pbcs.ListMultiTmplBoundTmplSetsResp
-	218, // 555: pbcs.Config.ListTmplRevisionBoundUnnamedApps:output_type -> pbcs.ListTmplRevisionBoundUnnamedAppsResp
-	220, // 556: pbcs.Config.ListTmplRevisionBoundNamedApps:output_type -> pbcs.ListTmplRevisionBoundNamedAppsResp
-	222, // 557: pbcs.Config.ListTmplSetBoundUnnamedApps:output_type -> pbcs.ListTmplSetBoundUnnamedAppsResp
-	224, // 558: pbcs.Config.ListMultiTmplSetBoundUnnamedApps:output_type -> pbcs.ListMultiTmplSetBoundUnnamedAppsResp
-	226, // 559: pbcs.Config.CheckTemplateSetReferencesApps:output_type -> pbcs.CheckTemplateSetReferencesAppsResp
-	228, // 560: pbcs.Config.ListTmplSetBoundNamedApps:output_type -> pbcs.ListTmplSetBoundNamedAppsResp
-	230, // 561: pbcs.Config.ListLatestTmplBoundUnnamedApps:output_type -> pbcs.ListLatestTmplBoundUnnamedAppsResp
-	232, // 562: pbcs.Config.CreateTemplateVariable:output_type -> pbcs.CreateTemplateVariableResp
-	236, // 563: pbcs.Config.DeleteTemplateVariable:output_type -> pbcs.DeleteTemplateVariableResp
-	298, // 564: pbcs.Config.BatchDeleteTemplateVariable:output_type -> pbcs.BatchDeleteResp
-	234, // 565: pbcs.Config.UpdateTemplateVariable:output_type -> pbcs.UpdateTemplateVariableResp
-	238, // 566: pbcs.Config.ListTemplateVariables:output_type -> pbcs.ListTemplateVariablesResp
-	240, // 567: pbcs.Config.ImportTemplateVariables:output_type -> pbcs.ImportTemplateVariablesResp
-	242, // 568: pbcs.Config.ImportOtherFormatTemplateVariables:output_type -> pbcs.ImportOtherFormatTemplateVariablesResp
-	244, // 569: pbcs.Config.GetTemplateVariable:output_type -> pbcs.GetTemplateVariableResp
-	246, // 570: pbcs.Config.ExtractAppTmplVariables:output_type -> pbcs.ExtractAppTmplVariablesResp
-	248, // 571: pbcs.Config.GetAppTmplVariableRefs:output_type -> pbcs.GetAppTmplVariableRefsResp
-	250, // 572: pbcs.Config.GetReleasedAppTmplVariableRefs:output_type -> pbcs.GetReleasedAppTmplVariableRefsResp
-	252, // 573: pbcs.Config.UpdateAppTmplVariables:output_type -> pbcs.UpdateAppTmplVariablesResp
-	254, // 574: pbcs.Config.ListAppTmplVariables:output_type -> pbcs.ListAppTmplVariablesResp
-	256, // 575: pbcs.Config.ListReleasedAppTmplVariables:output_type -> pbcs.ListReleasedAppTmplVariablesResp
-	258, // 576: pbcs.Config.CreateGroup:output_type -> pbcs.CreateGroupResp
-	262, // 577: pbcs.Config.DeleteGroup:output_type -> pbcs.DeleteGroupResp
-	298, // 578: pbcs.Config.BatchDeleteGroups:output_type -> pbcs.BatchDeleteResp
-	260, // 579: pbcs.Config.UpdateGroup:output_type -> pbcs.UpdateGroupResp
-	264, // 580: pbcs.Config.ListAllGroups:output_type -> pbcs.ListAllGroupsResp
-	266, // 581: pbcs.Config.ListAppGroups:output_type -> pbcs.ListAppGroupsResp
-	268, // 582: pbcs.Config.ListGroupReleasedApps:output_type -> pbcs.ListGroupReleasedAppsResp
-	521, // 583: pbcs.Config.GetGroupByName:output_type -> pbgroup.Group
-	271, // 584: pbcs.Config.GetGroup:output_type -> pbcs.GetGroupResp
-	274, // 585: pbcs.Config.ListGroupSelector:output_type -> pbcs.ListGroupSelectorResp
-	277, // 586: pbcs.Config.Publish:output_type -> pbcs.PublishResp
-	277, // 587: pbcs.Config.GenerateReleaseAndPublish:output_type -> pbcs.PublishResp
-	277, // 588: pbcs.Config.SubmitPublishApprove:output_type -> pbcs.PublishResp
-	280, // 589: pbcs.Config.Approve:output_type -> pbcs.ApproveResp
-	339, // 590: pbcs.Config.ApprovalCallback:output_type -> pbcs.ApprovalCallbackResp
-	282, // 591: pbcs.Config.GetLastSelect:output_type -> pbcs.GetLastSelectResp
-	284, // 592: pbcs.Config.GetLastPublish:output_type -> pbcs.GetLastPublishResp
-	570, // 593: pbcs.Config.GetReleasesStatus:output_type -> pbstrategy.Strategy
-	287, // 594: pbcs.Config.ListAudits:output_type -> pbcs.ListAuditsResp
-	19,  // 595: pbcs.Config.CreateCredentials:output_type -> pbcs.CreateCredentialResp
-	17,  // 596: pbcs.Config.ListCredentials:output_type -> pbcs.ListCredentialsResp
-	11,  // 597: pbcs.Config.DeleteCredential:output_type -> pbcs.DeleteCredentialsResp
-	13,  // 598: pbcs.Config.UpdateCredential:output_type -> pbcs.UpdateCredentialsResp
-	15,  // 599: pbcs.Config.CheckCredentialName:output_type -> pbcs.CheckCredentialNameResp
-	7,   // 600: pbcs.Config.ListCredentialScopes:output_type -> pbcs.ListCredentialScopesResp
-	3,   // 601: pbcs.Config.UpdateCredentialScope:output_type -> pbcs.UpdateCredentialScopeResp
-	5,   // 602: pbcs.Config.CredentialScopePreview:output_type -> pbcs.CredentialScopePreviewResp
-	289, // 603: pbcs.Config.CreateKv:output_type -> pbcs.CreateKvResp
-	291, // 604: pbcs.Config.UpdateKv:output_type -> pbcs.UpdateKvResp
-	293, // 605: pbcs.Config.ListKvs:output_type -> pbcs.ListKvsResp
-	295, // 606: pbcs.Config.DeleteKv:output_type -> pbcs.DeleteKvResp
-	298, // 607: pbcs.Config.BatchDeleteKv:output_type -> pbcs.BatchDeleteResp
-	300, // 608: pbcs.Config.BatchUpsertKvs:output_type -> pbcs.BatchUpsertKvsResp
-	302, // 609: pbcs.Config.UnDeleteKv:output_type -> pbcs.UnDeleteKvResp
-	304, // 610: pbcs.Config.BatchUnDeleteKv:output_type -> pbcs.BatchUnDeleteKvResp
-	306, // 611: pbcs.Config.UndoKv:output_type -> pbcs.UndoKvResp
-	308, // 612: pbcs.Config.ImportKvs:output_type -> pbcs.ImportKvsResp
-	311, // 613: pbcs.Config.FindNearExpiryCertKvs:output_type -> pbcs.FindNearExpiryCertKvsResp
-	312, // 614: pbcs.Config.ListClients:output_type -> pbcs.ListClientsResp
-	314, // 615: pbcs.Config.GetClient:output_type -> pbcs.GetClientResp
-	316, // 616: pbcs.Config.ListClientEvents:output_type -> pbcs.ListClientEventsResp
-	318, // 617: pbcs.Config.RetryClients:output_type -> pbcs.RetryClientsResp
-	320, // 618: pbcs.Config.ListClientQuerys:output_type -> pbcs.ListClientQuerysResp
-	322, // 619: pbcs.Config.CreateClientQuery:output_type -> pbcs.CreateClientQueryResp
-	324, // 620: pbcs.Config.UpdateClientQuery:output_type -> pbcs.UpdateClientQueryResp
-	326, // 621: pbcs.Config.DeleteClientQuery:output_type -> pbcs.DeleteClientQueryResp
-	328, // 622: pbcs.Config.CheckClientQueryName:output_type -> pbcs.CheckClientQueryNameResp
-	482, // 623: pbcs.Config.ClientConfigVersionStatistics:output_type -> google.protobuf.Struct
-	482, // 624: pbcs.Config.ClientPullTrendStatistics:output_type -> google.protobuf.Struct
-	482, // 625: pbcs.Config.ClientPullStatistics:output_type -> google.protobuf.Struct
-	482, // 626: pbcs.Config.ClientLabelStatistics:output_type -> google.protobuf.Struct
-	482, // 627: pbcs.Config.ClientAnnotationStatistics:output_type -> google.protobuf.Struct
-	482, // 628: pbcs.Config.ClientVersionStatistics:output_type -> google.protobuf.Struct
-	482, // 629: pbcs.Config.ListClientLabelAndAnnotation:output_type -> google.protobuf.Struct
-	482, // 630: pbcs.Config.ClientSpecificFailedReason:output_type -> google.protobuf.Struct
-	331, // 631: pbcs.Config.CompareConfigItemConflicts:output_type -> pbcs.CompareConfigItemConflictsResp
-	333, // 632: pbcs.Config.CompareKvConflicts:output_type -> pbcs.CompareKvConflictsResp
-	335, // 633: pbcs.Config.GetTemplateAndNonTemplateCICount:output_type -> pbcs.GetTemplateAndNonTemplateCICountResp
-	342, // 634: pbcs.Config.ListProcess:output_type -> pbcs.ListProcessResp
-	344, // 635: pbcs.Config.ListProcessInnerIPs:output_type -> pbcs.ListProcessInnerIPsResp
-	346, // 636: pbcs.Config.OperateProcess:output_type -> pbcs.OperateProcessResp
-	359, // 637: pbcs.Config.ProcessFilterOptions:output_type -> pbcs.ProcessFilterOptionsResp
-	351, // 638: pbcs.Config.ListTaskBatch:output_type -> pbcs.ListTaskBatchResp
-	353, // 639: pbcs.Config.GetTaskBatchDetail:output_type -> pbcs.GetTaskBatchDetailResp
-	348, // 640: pbcs.Config.SyncCmdbGseStatus:output_type -> pbcs.SyncCmdbGseStatusResp
-	357, // 641: pbcs.Config.CmdbGseStatus:output_type -> pbcs.CmdbGseStatusResp
-	355, // 642: pbcs.Config.RetryTasks:output_type -> pbcs.RetryTasksResp
-	361, // 643: pbcs.Config.BizTopo:output_type -> pbcs.BizTopoResp
-	363, // 644: pbcs.Config.ServiceTemplate:output_type -> pbcs.ServiceTemplateResp
-	365, // 645: pbcs.Config.ProcessTemplate:output_type -> pbcs.ProcessTemplateResp
-	367, // 646: pbcs.Config.ListConfigInstances:output_type -> pbcs.ListConfigInstancesResp
-	383, // 647: pbcs.Config.ConfigGenerateStatus:output_type -> pbcs.ConfigGenerateStatusResp
-	385, // 648: pbcs.Config.PreviewConfig:output_type -> pbcs.PreviewConfigResp
-	369, // 649: pbcs.Config.CompareConfig:output_type -> pbcs.CompareConfigResp
-	371, // 650: pbcs.Config.GenerateConfig:output_type -> pbcs.GenerateConfigResp
-	373, // 651: pbcs.Config.CheckConfig:output_type -> pbcs.CheckConfigResp
-	407, // 652: pbcs.Config.GetConfigDiff:output_type -> pbcs.GetConfigDiffResp
-	409, // 653: pbcs.Config.GetConfigView:output_type -> pbcs.GetConfigViewResp
-	405, // 654: pbcs.Config.OperateGenerateConfig:output_type -> pbcs.OperateGenerateConfigResp
-	375, // 655: pbcs.Config.PushConfig:output_type -> pbcs.PushConfigResp
-	377, // 656: pbcs.Config.GetConfigRenderResult:output_type -> pbcs.GetConfigRenderResultResp
-	379, // 657: pbcs.Config.ListConfigTemplate:output_type -> pbcs.ListConfigTemplateResp
-	381, // 658: pbcs.Config.ListConfigTemplateRevisions:output_type -> pbcs.ListConfigTemplateRevisionsResp
-	391, // 659: pbcs.Config.CreateConfigTemplate:output_type -> pbcs.CreateConfigTemplateResp
-	393, // 660: pbcs.Config.UpdateConfigTemplate:output_type -> pbcs.UpdateConfigTemplateResp
-	395, // 661: pbcs.Config.GetConfigTemplate:output_type -> pbcs.GetConfigTemplateResp
-	397, // 662: pbcs.Config.ConfigTemplateVariable:output_type -> pbcs.ConfigTemplateVariableResp
-	399, // 663: pbcs.Config.BindProcessInstance:output_type -> pbcs.BindProcessInstanceResp
-	401, // 664: pbcs.Config.PreviewBindProcessInstance:output_type -> pbcs.PreviewBindProcessInstanceResp
-	387, // 665: pbcs.Config.ProcessInstance:output_type -> pbcs.ProcessInstanceResp
-	389, // 666: pbcs.Config.ServiceInstance:output_type -> pbcs.ServiceInstanceResp
-	403, // 667: pbcs.Config.DeleteConfigTemplate:output_type -> pbcs.DeleteConfigTemplateResp
-	411, // 668: pbcs.Config.GetProcessInstanceTopo:output_type -> pbcs.GetProcessInstanceTopoResp
-	414, // 669: pbcs.Config.ManageConfigKV:output_type -> pbcs.ManageConfigKVResp
-	416, // 670: pbcs.Config.GetProcessConfigView:output_type -> pbcs.GetProcessConfigViewResp
-	418, // 671: pbcs.Config.ListProjects:output_type -> pbcs.ListProjectsResp
-	420, // 672: pbcs.Config.GetProject:output_type -> pbcs.GetProjectResp
-	422, // 673: pbcs.Config.CreateProject:output_type -> pbcs.CreateProjectResp
-	424, // 674: pbcs.Config.UpdateProject:output_type -> pbcs.UpdateProjectResp
-	426, // 675: pbcs.Config.DeleteProject:output_type -> pbcs.DeleteProjectResp
-	428, // 676: pbcs.Config.ListEnvironments:output_type -> pbcs.ListEnvironmentsResp
-	430, // 677: pbcs.Config.GetEnvironment:output_type -> pbcs.GetEnvironmentResp
-	432, // 678: pbcs.Config.CreateEnvironment:output_type -> pbcs.CreateEnvironmentResp
-	434, // 679: pbcs.Config.UpdateEnvironment:output_type -> pbcs.UpdateEnvironmentResp
-	436, // 680: pbcs.Config.DeleteEnvironment:output_type -> pbcs.DeleteEnvironmentResp
-	420, // 681: pbcs.Config.GetProjectByKey:output_type -> pbcs.GetProjectResp
-	430, // 682: pbcs.Config.GetEnvironmentByName:output_type -> pbcs.GetEnvironmentResp
-	1,   // 683: pbcs.Config.EnsureDefaultProjectEnv:output_type -> pbcs.EnsureDefaultProjectEnvResp
-	450, // [450:684] is the sub-list for method output_type
-	216, // [216:450] is the sub-list for method input_type
+	346, // 403: pbcs.Config.OperateUpdateRegisterProcess:input_type -> pbcs.OperateUpdateRegisterProcessReq
+	347, // 404: pbcs.Config.OperateDeleteProcess:input_type -> pbcs.OperateDeleteProcessReq
+	360, // 405: pbcs.Config.ProcessFilterOptions:input_type -> pbcs.ProcessFilterOptionsReq
+	352, // 406: pbcs.Config.ListTaskBatch:input_type -> pbcs.ListTaskBatchReq
+	354, // 407: pbcs.Config.GetTaskBatchDetail:input_type -> pbcs.GetTaskBatchDetailReq
+	349, // 408: pbcs.Config.SyncCmdbGseStatus:input_type -> pbcs.SyncCmdbGseStatusReq
+	358, // 409: pbcs.Config.CmdbGseStatus:input_type -> pbcs.CmdbGseStatusReq
+	356, // 410: pbcs.Config.RetryTasks:input_type -> pbcs.RetryTasksReq
+	362, // 411: pbcs.Config.BizTopo:input_type -> pbcs.BizTopoReq
+	364, // 412: pbcs.Config.ServiceTemplate:input_type -> pbcs.ServiceTemplateReq
+	366, // 413: pbcs.Config.ProcessTemplate:input_type -> pbcs.ProcessTemplateReq
+	368, // 414: pbcs.Config.ListConfigInstances:input_type -> pbcs.ListConfigInstancesReq
+	384, // 415: pbcs.Config.ConfigGenerateStatus:input_type -> pbcs.ConfigGenerateStatusReq
+	386, // 416: pbcs.Config.PreviewConfig:input_type -> pbcs.PreviewConfigReq
+	370, // 417: pbcs.Config.CompareConfig:input_type -> pbcs.CompareConfigReq
+	372, // 418: pbcs.Config.GenerateConfig:input_type -> pbcs.GenerateConfigReq
+	374, // 419: pbcs.Config.CheckConfig:input_type -> pbcs.CheckConfigReq
+	408, // 420: pbcs.Config.GetConfigDiff:input_type -> pbcs.GetConfigDiffReq
+	410, // 421: pbcs.Config.GetConfigView:input_type -> pbcs.GetConfigViewReq
+	406, // 422: pbcs.Config.OperateGenerateConfig:input_type -> pbcs.OperateGenerateConfigReq
+	376, // 423: pbcs.Config.PushConfig:input_type -> pbcs.PushConfigReq
+	378, // 424: pbcs.Config.GetConfigRenderResult:input_type -> pbcs.GetConfigRenderResultReq
+	380, // 425: pbcs.Config.ListConfigTemplate:input_type -> pbcs.ListConfigTemplateReq
+	382, // 426: pbcs.Config.ListConfigTemplateRevisions:input_type -> pbcs.ListConfigTemplateRevisionsReq
+	392, // 427: pbcs.Config.CreateConfigTemplate:input_type -> pbcs.CreateConfigTemplateReq
+	394, // 428: pbcs.Config.UpdateConfigTemplate:input_type -> pbcs.UpdateConfigTemplateReq
+	396, // 429: pbcs.Config.GetConfigTemplate:input_type -> pbcs.GetConfigTemplateReq
+	398, // 430: pbcs.Config.ConfigTemplateVariable:input_type -> pbcs.ConfigTemplateVariableReq
+	400, // 431: pbcs.Config.BindProcessInstance:input_type -> pbcs.BindProcessInstanceReq
+	402, // 432: pbcs.Config.PreviewBindProcessInstance:input_type -> pbcs.PreviewBindProcessInstanceReq
+	388, // 433: pbcs.Config.ProcessInstance:input_type -> pbcs.ProcessInstanceReq
+	390, // 434: pbcs.Config.ServiceInstance:input_type -> pbcs.ServiceInstanceReq
+	404, // 435: pbcs.Config.DeleteConfigTemplate:input_type -> pbcs.DeleteConfigTemplateReq
+	412, // 436: pbcs.Config.GetProcessInstanceTopo:input_type -> pbcs.GetProcessInstanceTopoReq
+	414, // 437: pbcs.Config.ManageConfigKV:input_type -> pbcs.ManageConfigKVReq
+	417, // 438: pbcs.Config.GetProcessConfigView:input_type -> pbcs.GetProcessConfigViewReq
+	419, // 439: pbcs.Config.ListProjects:input_type -> pbcs.ListProjectsReq
+	421, // 440: pbcs.Config.GetProject:input_type -> pbcs.GetProjectReq
+	423, // 441: pbcs.Config.CreateProject:input_type -> pbcs.CreateProjectReq
+	425, // 442: pbcs.Config.UpdateProject:input_type -> pbcs.UpdateProjectReq
+	427, // 443: pbcs.Config.DeleteProject:input_type -> pbcs.DeleteProjectReq
+	429, // 444: pbcs.Config.ListEnvironments:input_type -> pbcs.ListEnvironmentsReq
+	431, // 445: pbcs.Config.GetEnvironment:input_type -> pbcs.GetEnvironmentReq
+	433, // 446: pbcs.Config.CreateEnvironment:input_type -> pbcs.CreateEnvironmentReq
+	435, // 447: pbcs.Config.UpdateEnvironment:input_type -> pbcs.UpdateEnvironmentReq
+	437, // 448: pbcs.Config.DeleteEnvironment:input_type -> pbcs.DeleteEnvironmentReq
+	439, // 449: pbcs.Config.GetProjectByKey:input_type -> pbcs.GetProjectByKeyReq
+	440, // 450: pbcs.Config.GetEnvironmentByName:input_type -> pbcs.GetEnvironmentByNameReq
+	0,   // 451: pbcs.Config.EnsureDefaultProjectEnv:input_type -> pbcs.EnsureDefaultProjectEnvReq
+	21,  // 452: pbcs.Config.CreateApp:output_type -> pbcs.CreateAppResp
+	485, // 453: pbcs.Config.UpdateApp:output_type -> pbapp.App
+	24,  // 454: pbcs.Config.DeleteApp:output_type -> pbcs.DeleteAppResp
+	485, // 455: pbcs.Config.GetApp:output_type -> pbapp.App
+	485, // 456: pbcs.Config.GetAppByName:output_type -> pbapp.App
+	29,  // 457: pbcs.Config.ListAppsRest:output_type -> pbcs.ListAppsResp
+	29,  // 458: pbcs.Config.ListAppsBySpaceRest:output_type -> pbcs.ListAppsResp
+	21,  // 459: pbcs.Config.CloneApp:output_type -> pbcs.CreateAppResp
+	33,  // 460: pbcs.Config.CreateConfigItem:output_type -> pbcs.CreateConfigItemResp
+	32,  // 461: pbcs.Config.BatchUpsertConfigItems:output_type -> pbcs.BatchUpsertConfigItemsResp
+	35,  // 462: pbcs.Config.UpdateConfigItem:output_type -> pbcs.UpdateConfigItemResp
+	37,  // 463: pbcs.Config.DeleteConfigItem:output_type -> pbcs.DeleteConfigItemResp
+	298, // 464: pbcs.Config.BatchDeleteConfigItems:output_type -> pbcs.BatchDeleteResp
+	39,  // 465: pbcs.Config.UnDeleteConfigItem:output_type -> pbcs.UnDeleteConfigItemResp
+	41,  // 466: pbcs.Config.BatchUnDeleteConfigItem:output_type -> pbcs.BatchUnDeleteConfigItemResp
+	43,  // 467: pbcs.Config.UndoConfigItem:output_type -> pbcs.UndoConfigItemResp
+	45,  // 468: pbcs.Config.GetConfigItem:output_type -> pbcs.GetConfigItemResp
+	47,  // 469: pbcs.Config.GetReleasedConfigItem:output_type -> pbcs.GetReleasedConfigItemResp
+	49,  // 470: pbcs.Config.ListConfigItems:output_type -> pbcs.ListConfigItemsResp
+	51,  // 471: pbcs.Config.ListReleasedConfigItems:output_type -> pbcs.ListReleasedConfigItemsResp
+	53,  // 472: pbcs.Config.ListConfigItemCount:output_type -> pbcs.ListConfigItemCountResp
+	55,  // 473: pbcs.Config.ListConfigItemByTuple:output_type -> pbcs.ListConfigItemByTupleResp
+	57,  // 474: pbcs.Config.GetReleasedKv:output_type -> pbcs.GetReleasedKvResp
+	59,  // 475: pbcs.Config.ListReleasedKvs:output_type -> pbcs.ListReleasedKvsResp
+	61,  // 476: pbcs.Config.ListAllReleasedConfigItems:output_type -> pbcs.ListAllReleasedConfigItemsResp
+	63,  // 477: pbcs.Config.UpdateConfigHook:output_type -> pbcs.UpdateConfigHookResp
+	65,  // 478: pbcs.Config.CreateRelease:output_type -> pbcs.CreateReleaseResp
+	69,  // 479: pbcs.Config.ListReleases:output_type -> pbcs.ListReleasesResp
+	492, // 480: pbcs.Config.GetReleaseByName:output_type -> pbrelease.Release
+	492, // 481: pbcs.Config.GetRelease:output_type -> pbrelease.Release
+	73,  // 482: pbcs.Config.DeprecateRelease:output_type -> pbcs.DeprecateReleaseResp
+	75,  // 483: pbcs.Config.UnDeprecateRelease:output_type -> pbcs.UnDeprecateReleaseResp
+	77,  // 484: pbcs.Config.DeleteRelease:output_type -> pbcs.DeleteReleaseResp
+	67,  // 485: pbcs.Config.CheckReleaseName:output_type -> pbcs.CheckReleaseNameResp
+	79,  // 486: pbcs.Config.CreateHook:output_type -> pbcs.CreateHookResp
+	81,  // 487: pbcs.Config.DeleteHook:output_type -> pbcs.DeleteHookResp
+	298, // 488: pbcs.Config.BatchDeleteHook:output_type -> pbcs.BatchDeleteResp
+	84,  // 489: pbcs.Config.UpdateHook:output_type -> pbcs.UpdateHookResp
+	86,  // 490: pbcs.Config.ListHooks:output_type -> pbcs.ListHooksResp
+	88,  // 491: pbcs.Config.ListHookTags:output_type -> pbcs.ListHookTagsResp
+	98,  // 492: pbcs.Config.GetHook:output_type -> pbcs.GetHookResp
+	90,  // 493: pbcs.Config.CreateHookRevision:output_type -> pbcs.CreateHookRevisionResp
+	92,  // 494: pbcs.Config.ListHookRevisions:output_type -> pbcs.ListHookRevisionsResp
+	94,  // 495: pbcs.Config.DeleteHookRevision:output_type -> pbcs.DeleteHookRevisionResp
+	96,  // 496: pbcs.Config.PublishHookRevision:output_type -> pbcs.PublishHookRevisionResp
+	566, // 497: pbcs.Config.GetHookRevision:output_type -> pbhr.HookRevision
+	102, // 498: pbcs.Config.UpdateHookRevision:output_type -> pbcs.UpdateHookRevisionResp
+	106, // 499: pbcs.Config.ListHookReferences:output_type -> pbcs.ListHookReferencesResp
+	104, // 500: pbcs.Config.ListHookRevisionReferences:output_type -> pbcs.ListHookRevisionReferencesResp
+	108, // 501: pbcs.Config.GetReleaseHook:output_type -> pbcs.GetReleaseHookResp
+	110, // 502: pbcs.Config.CreateTemplateSpace:output_type -> pbcs.CreateTemplateSpaceResp
+	114, // 503: pbcs.Config.DeleteTemplateSpace:output_type -> pbcs.DeleteTemplateSpaceResp
+	112, // 504: pbcs.Config.UpdateTemplateSpace:output_type -> pbcs.UpdateTemplateSpaceResp
+	116, // 505: pbcs.Config.ListTemplateSpaces:output_type -> pbcs.ListTemplateSpacesResp
+	117, // 506: pbcs.Config.GetAllBizsOfTmplSpaces:output_type -> pbcs.GetAllBizsOfTmplSpacesResp
+	119, // 507: pbcs.Config.CreateDefaultTmplSpace:output_type -> pbcs.CreateDefaultTmplSpaceResp
+	121, // 508: pbcs.Config.ListTmplSpacesByIDs:output_type -> pbcs.ListTmplSpacesByIDsResp
+	123, // 509: pbcs.Config.GetTemplateSpace:output_type -> pbcs.GetTemplateSpaceResp
+	125, // 510: pbcs.Config.CreateTemplate:output_type -> pbcs.CreateTemplateResp
+	129, // 511: pbcs.Config.DeleteTemplate:output_type -> pbcs.DeleteTemplateResp
+	131, // 512: pbcs.Config.BatchDeleteTemplate:output_type -> pbcs.BatchDeleteTemplateResp
+	127, // 513: pbcs.Config.UpdateTemplate:output_type -> pbcs.UpdateTemplateResp
+	133, // 514: pbcs.Config.ListTemplates:output_type -> pbcs.ListTemplatesResp
+	135, // 515: pbcs.Config.BatchUpsertTemplates:output_type -> pbcs.BatchUpsertTemplatesResp
+	137, // 516: pbcs.Config.BatchUpdateTemplatePermissions:output_type -> pbcs.BatchUpdateTemplatePermissionsResp
+	139, // 517: pbcs.Config.AddTmplsToTmplSets:output_type -> pbcs.AddTmplsToTmplSetsResp
+	298, // 518: pbcs.Config.DeleteTmplsFromTmplSets:output_type -> pbcs.BatchDeleteResp
+	142, // 519: pbcs.Config.ListTemplatesByIDs:output_type -> pbcs.ListTemplatesByIDsResp
+	146, // 520: pbcs.Config.ListTemplatesNotBound:output_type -> pbcs.ListTemplatesNotBoundResp
+	145, // 521: pbcs.Config.ListTemplateByTuple:output_type -> pbcs.ListTemplateByTupleResp
+	148, // 522: pbcs.Config.ListTmplsOfTmplSet:output_type -> pbcs.ListTmplsOfTmplSetResp
+	150, // 523: pbcs.Config.ListTemplateSetsAndRevisions:output_type -> pbcs.ListTemplateSetsAndRevisionsResp
+	152, // 524: pbcs.Config.CreateTemplateRevision:output_type -> pbcs.CreateTemplateRevisionResp
+	154, // 525: pbcs.Config.UpdateTemplateRevision:output_type -> pbcs.UpdateTemplateRevisionResp
+	156, // 526: pbcs.Config.ListTemplateRevisions:output_type -> pbcs.ListTemplateRevisionsResp
+	158, // 527: pbcs.Config.GetTemplateRevision:output_type -> pbcs.GetTemplateRevisionResp
+	162, // 528: pbcs.Config.ListTemplateRevisionsByIDs:output_type -> pbcs.ListTemplateRevisionsByIDsResp
+	164, // 529: pbcs.Config.ListTmplRevisionNamesByTmplIDs:output_type -> pbcs.ListTmplRevisionNamesByTmplIDsResp
+	166, // 530: pbcs.Config.CreateTemplateSet:output_type -> pbcs.CreateTemplateSetResp
+	170, // 531: pbcs.Config.DeleteTemplateSet:output_type -> pbcs.DeleteTemplateSetResp
+	168, // 532: pbcs.Config.UpdateTemplateSet:output_type -> pbcs.UpdateTemplateSetResp
+	172, // 533: pbcs.Config.ListTemplateSets:output_type -> pbcs.ListTemplateSetsResp
+	337, // 534: pbcs.Config.GetLatestTemplateVersionsInSpace:output_type -> pbcs.GetLatestTemplateVersionsInSpaceResp
+	174, // 535: pbcs.Config.ListAppTemplateSets:output_type -> pbcs.ListAppTemplateSetsResp
+	176, // 536: pbcs.Config.ListTemplateSetsByIDs:output_type -> pbcs.ListTemplateSetsByIDsResp
+	178, // 537: pbcs.Config.ListTmplSetsOfBiz:output_type -> pbcs.ListTmplSetsOfBizResp
+	180, // 538: pbcs.Config.CreateAppTemplateBinding:output_type -> pbcs.CreateAppTemplateBindingResp
+	184, // 539: pbcs.Config.DeleteAppTemplateBinding:output_type -> pbcs.DeleteAppTemplateBindingResp
+	182, // 540: pbcs.Config.UpdateAppTemplateBinding:output_type -> pbcs.UpdateAppTemplateBindingResp
+	186, // 541: pbcs.Config.ListAppTemplateBindings:output_type -> pbcs.ListAppTemplateBindingsResp
+	188, // 542: pbcs.Config.ListAppBoundTmplRevisions:output_type -> pbcs.ListAppBoundTmplRevisionsResp
+	190, // 543: pbcs.Config.ListReleasedAppBoundTmplRevisions:output_type -> pbcs.ListReleasedAppBoundTmplRevisionsResp
+	192, // 544: pbcs.Config.GetReleasedAppBoundTmplRevision:output_type -> pbcs.GetReleasedAppBoundTmplRevisionResp
+	194, // 545: pbcs.Config.UpdateAppBoundTmplRevisions:output_type -> pbcs.UpdateAppBoundTmplRevisionsResp
+	196, // 546: pbcs.Config.DeleteAppBoundTmplSets:output_type -> pbcs.DeleteAppBoundTmplSetsResp
+	198, // 547: pbcs.Config.RemoveAppBoundTmplSet:output_type -> pbcs.RemoveAppBoundTmplSetResp
+	200, // 548: pbcs.Config.CheckAppTemplateBinding:output_type -> pbcs.CheckAppTemplateBindingResp
+	202, // 549: pbcs.Config.ImportFromTemplateSetToApp:output_type -> pbcs.ImportFromTemplateSetToAppResp
+	204, // 550: pbcs.Config.ListTmplBoundCounts:output_type -> pbcs.ListTmplBoundCountsResp
+	206, // 551: pbcs.Config.ListTmplRevisionBoundCounts:output_type -> pbcs.ListTmplRevisionBoundCountsResp
+	208, // 552: pbcs.Config.ListTmplSetBoundCounts:output_type -> pbcs.ListTmplSetBoundCountsResp
+	210, // 553: pbcs.Config.ListTmplBoundUnnamedApps:output_type -> pbcs.ListTmplBoundUnnamedAppsResp
+	212, // 554: pbcs.Config.ListTmplBoundNamedApps:output_type -> pbcs.ListTmplBoundNamedAppsResp
+	214, // 555: pbcs.Config.ListTmplBoundTmplSets:output_type -> pbcs.ListTmplBoundTmplSetsResp
+	216, // 556: pbcs.Config.ListMultiTmplBoundTmplSets:output_type -> pbcs.ListMultiTmplBoundTmplSetsResp
+	218, // 557: pbcs.Config.ListTmplRevisionBoundUnnamedApps:output_type -> pbcs.ListTmplRevisionBoundUnnamedAppsResp
+	220, // 558: pbcs.Config.ListTmplRevisionBoundNamedApps:output_type -> pbcs.ListTmplRevisionBoundNamedAppsResp
+	222, // 559: pbcs.Config.ListTmplSetBoundUnnamedApps:output_type -> pbcs.ListTmplSetBoundUnnamedAppsResp
+	224, // 560: pbcs.Config.ListMultiTmplSetBoundUnnamedApps:output_type -> pbcs.ListMultiTmplSetBoundUnnamedAppsResp
+	226, // 561: pbcs.Config.CheckTemplateSetReferencesApps:output_type -> pbcs.CheckTemplateSetReferencesAppsResp
+	228, // 562: pbcs.Config.ListTmplSetBoundNamedApps:output_type -> pbcs.ListTmplSetBoundNamedAppsResp
+	230, // 563: pbcs.Config.ListLatestTmplBoundUnnamedApps:output_type -> pbcs.ListLatestTmplBoundUnnamedAppsResp
+	232, // 564: pbcs.Config.CreateTemplateVariable:output_type -> pbcs.CreateTemplateVariableResp
+	236, // 565: pbcs.Config.DeleteTemplateVariable:output_type -> pbcs.DeleteTemplateVariableResp
+	298, // 566: pbcs.Config.BatchDeleteTemplateVariable:output_type -> pbcs.BatchDeleteResp
+	234, // 567: pbcs.Config.UpdateTemplateVariable:output_type -> pbcs.UpdateTemplateVariableResp
+	238, // 568: pbcs.Config.ListTemplateVariables:output_type -> pbcs.ListTemplateVariablesResp
+	240, // 569: pbcs.Config.ImportTemplateVariables:output_type -> pbcs.ImportTemplateVariablesResp
+	242, // 570: pbcs.Config.ImportOtherFormatTemplateVariables:output_type -> pbcs.ImportOtherFormatTemplateVariablesResp
+	244, // 571: pbcs.Config.GetTemplateVariable:output_type -> pbcs.GetTemplateVariableResp
+	246, // 572: pbcs.Config.ExtractAppTmplVariables:output_type -> pbcs.ExtractAppTmplVariablesResp
+	248, // 573: pbcs.Config.GetAppTmplVariableRefs:output_type -> pbcs.GetAppTmplVariableRefsResp
+	250, // 574: pbcs.Config.GetReleasedAppTmplVariableRefs:output_type -> pbcs.GetReleasedAppTmplVariableRefsResp
+	252, // 575: pbcs.Config.UpdateAppTmplVariables:output_type -> pbcs.UpdateAppTmplVariablesResp
+	254, // 576: pbcs.Config.ListAppTmplVariables:output_type -> pbcs.ListAppTmplVariablesResp
+	256, // 577: pbcs.Config.ListReleasedAppTmplVariables:output_type -> pbcs.ListReleasedAppTmplVariablesResp
+	258, // 578: pbcs.Config.CreateGroup:output_type -> pbcs.CreateGroupResp
+	262, // 579: pbcs.Config.DeleteGroup:output_type -> pbcs.DeleteGroupResp
+	298, // 580: pbcs.Config.BatchDeleteGroups:output_type -> pbcs.BatchDeleteResp
+	260, // 581: pbcs.Config.UpdateGroup:output_type -> pbcs.UpdateGroupResp
+	264, // 582: pbcs.Config.ListAllGroups:output_type -> pbcs.ListAllGroupsResp
+	266, // 583: pbcs.Config.ListAppGroups:output_type -> pbcs.ListAppGroupsResp
+	268, // 584: pbcs.Config.ListGroupReleasedApps:output_type -> pbcs.ListGroupReleasedAppsResp
+	523, // 585: pbcs.Config.GetGroupByName:output_type -> pbgroup.Group
+	271, // 586: pbcs.Config.GetGroup:output_type -> pbcs.GetGroupResp
+	274, // 587: pbcs.Config.ListGroupSelector:output_type -> pbcs.ListGroupSelectorResp
+	277, // 588: pbcs.Config.Publish:output_type -> pbcs.PublishResp
+	277, // 589: pbcs.Config.GenerateReleaseAndPublish:output_type -> pbcs.PublishResp
+	277, // 590: pbcs.Config.SubmitPublishApprove:output_type -> pbcs.PublishResp
+	280, // 591: pbcs.Config.Approve:output_type -> pbcs.ApproveResp
+	339, // 592: pbcs.Config.ApprovalCallback:output_type -> pbcs.ApprovalCallbackResp
+	282, // 593: pbcs.Config.GetLastSelect:output_type -> pbcs.GetLastSelectResp
+	284, // 594: pbcs.Config.GetLastPublish:output_type -> pbcs.GetLastPublishResp
+	572, // 595: pbcs.Config.GetReleasesStatus:output_type -> pbstrategy.Strategy
+	287, // 596: pbcs.Config.ListAudits:output_type -> pbcs.ListAuditsResp
+	19,  // 597: pbcs.Config.CreateCredentials:output_type -> pbcs.CreateCredentialResp
+	17,  // 598: pbcs.Config.ListCredentials:output_type -> pbcs.ListCredentialsResp
+	11,  // 599: pbcs.Config.DeleteCredential:output_type -> pbcs.DeleteCredentialsResp
+	13,  // 600: pbcs.Config.UpdateCredential:output_type -> pbcs.UpdateCredentialsResp
+	15,  // 601: pbcs.Config.CheckCredentialName:output_type -> pbcs.CheckCredentialNameResp
+	7,   // 602: pbcs.Config.ListCredentialScopes:output_type -> pbcs.ListCredentialScopesResp
+	3,   // 603: pbcs.Config.UpdateCredentialScope:output_type -> pbcs.UpdateCredentialScopeResp
+	5,   // 604: pbcs.Config.CredentialScopePreview:output_type -> pbcs.CredentialScopePreviewResp
+	289, // 605: pbcs.Config.CreateKv:output_type -> pbcs.CreateKvResp
+	291, // 606: pbcs.Config.UpdateKv:output_type -> pbcs.UpdateKvResp
+	293, // 607: pbcs.Config.ListKvs:output_type -> pbcs.ListKvsResp
+	295, // 608: pbcs.Config.DeleteKv:output_type -> pbcs.DeleteKvResp
+	298, // 609: pbcs.Config.BatchDeleteKv:output_type -> pbcs.BatchDeleteResp
+	300, // 610: pbcs.Config.BatchUpsertKvs:output_type -> pbcs.BatchUpsertKvsResp
+	302, // 611: pbcs.Config.UnDeleteKv:output_type -> pbcs.UnDeleteKvResp
+	304, // 612: pbcs.Config.BatchUnDeleteKv:output_type -> pbcs.BatchUnDeleteKvResp
+	306, // 613: pbcs.Config.UndoKv:output_type -> pbcs.UndoKvResp
+	308, // 614: pbcs.Config.ImportKvs:output_type -> pbcs.ImportKvsResp
+	311, // 615: pbcs.Config.FindNearExpiryCertKvs:output_type -> pbcs.FindNearExpiryCertKvsResp
+	312, // 616: pbcs.Config.ListClients:output_type -> pbcs.ListClientsResp
+	314, // 617: pbcs.Config.GetClient:output_type -> pbcs.GetClientResp
+	316, // 618: pbcs.Config.ListClientEvents:output_type -> pbcs.ListClientEventsResp
+	318, // 619: pbcs.Config.RetryClients:output_type -> pbcs.RetryClientsResp
+	320, // 620: pbcs.Config.ListClientQuerys:output_type -> pbcs.ListClientQuerysResp
+	322, // 621: pbcs.Config.CreateClientQuery:output_type -> pbcs.CreateClientQueryResp
+	324, // 622: pbcs.Config.UpdateClientQuery:output_type -> pbcs.UpdateClientQueryResp
+	326, // 623: pbcs.Config.DeleteClientQuery:output_type -> pbcs.DeleteClientQueryResp
+	328, // 624: pbcs.Config.CheckClientQueryName:output_type -> pbcs.CheckClientQueryNameResp
+	484, // 625: pbcs.Config.ClientConfigVersionStatistics:output_type -> google.protobuf.Struct
+	484, // 626: pbcs.Config.ClientPullTrendStatistics:output_type -> google.protobuf.Struct
+	484, // 627: pbcs.Config.ClientPullStatistics:output_type -> google.protobuf.Struct
+	484, // 628: pbcs.Config.ClientLabelStatistics:output_type -> google.protobuf.Struct
+	484, // 629: pbcs.Config.ClientAnnotationStatistics:output_type -> google.protobuf.Struct
+	484, // 630: pbcs.Config.ClientVersionStatistics:output_type -> google.protobuf.Struct
+	484, // 631: pbcs.Config.ListClientLabelAndAnnotation:output_type -> google.protobuf.Struct
+	484, // 632: pbcs.Config.ClientSpecificFailedReason:output_type -> google.protobuf.Struct
+	331, // 633: pbcs.Config.CompareConfigItemConflicts:output_type -> pbcs.CompareConfigItemConflictsResp
+	333, // 634: pbcs.Config.CompareKvConflicts:output_type -> pbcs.CompareKvConflictsResp
+	335, // 635: pbcs.Config.GetTemplateAndNonTemplateCICount:output_type -> pbcs.GetTemplateAndNonTemplateCICountResp
+	342, // 636: pbcs.Config.ListProcess:output_type -> pbcs.ListProcessResp
+	344, // 637: pbcs.Config.ListProcessInnerIPs:output_type -> pbcs.ListProcessInnerIPsResp
+	348, // 638: pbcs.Config.OperateProcess:output_type -> pbcs.OperateProcessResp
+	348, // 639: pbcs.Config.OperateUpdateRegisterProcess:output_type -> pbcs.OperateProcessResp
+	348, // 640: pbcs.Config.OperateDeleteProcess:output_type -> pbcs.OperateProcessResp
+	361, // 641: pbcs.Config.ProcessFilterOptions:output_type -> pbcs.ProcessFilterOptionsResp
+	353, // 642: pbcs.Config.ListTaskBatch:output_type -> pbcs.ListTaskBatchResp
+	355, // 643: pbcs.Config.GetTaskBatchDetail:output_type -> pbcs.GetTaskBatchDetailResp
+	350, // 644: pbcs.Config.SyncCmdbGseStatus:output_type -> pbcs.SyncCmdbGseStatusResp
+	359, // 645: pbcs.Config.CmdbGseStatus:output_type -> pbcs.CmdbGseStatusResp
+	357, // 646: pbcs.Config.RetryTasks:output_type -> pbcs.RetryTasksResp
+	363, // 647: pbcs.Config.BizTopo:output_type -> pbcs.BizTopoResp
+	365, // 648: pbcs.Config.ServiceTemplate:output_type -> pbcs.ServiceTemplateResp
+	367, // 649: pbcs.Config.ProcessTemplate:output_type -> pbcs.ProcessTemplateResp
+	369, // 650: pbcs.Config.ListConfigInstances:output_type -> pbcs.ListConfigInstancesResp
+	385, // 651: pbcs.Config.ConfigGenerateStatus:output_type -> pbcs.ConfigGenerateStatusResp
+	387, // 652: pbcs.Config.PreviewConfig:output_type -> pbcs.PreviewConfigResp
+	371, // 653: pbcs.Config.CompareConfig:output_type -> pbcs.CompareConfigResp
+	373, // 654: pbcs.Config.GenerateConfig:output_type -> pbcs.GenerateConfigResp
+	375, // 655: pbcs.Config.CheckConfig:output_type -> pbcs.CheckConfigResp
+	409, // 656: pbcs.Config.GetConfigDiff:output_type -> pbcs.GetConfigDiffResp
+	411, // 657: pbcs.Config.GetConfigView:output_type -> pbcs.GetConfigViewResp
+	407, // 658: pbcs.Config.OperateGenerateConfig:output_type -> pbcs.OperateGenerateConfigResp
+	377, // 659: pbcs.Config.PushConfig:output_type -> pbcs.PushConfigResp
+	379, // 660: pbcs.Config.GetConfigRenderResult:output_type -> pbcs.GetConfigRenderResultResp
+	381, // 661: pbcs.Config.ListConfigTemplate:output_type -> pbcs.ListConfigTemplateResp
+	383, // 662: pbcs.Config.ListConfigTemplateRevisions:output_type -> pbcs.ListConfigTemplateRevisionsResp
+	393, // 663: pbcs.Config.CreateConfigTemplate:output_type -> pbcs.CreateConfigTemplateResp
+	395, // 664: pbcs.Config.UpdateConfigTemplate:output_type -> pbcs.UpdateConfigTemplateResp
+	397, // 665: pbcs.Config.GetConfigTemplate:output_type -> pbcs.GetConfigTemplateResp
+	399, // 666: pbcs.Config.ConfigTemplateVariable:output_type -> pbcs.ConfigTemplateVariableResp
+	401, // 667: pbcs.Config.BindProcessInstance:output_type -> pbcs.BindProcessInstanceResp
+	403, // 668: pbcs.Config.PreviewBindProcessInstance:output_type -> pbcs.PreviewBindProcessInstanceResp
+	389, // 669: pbcs.Config.ProcessInstance:output_type -> pbcs.ProcessInstanceResp
+	391, // 670: pbcs.Config.ServiceInstance:output_type -> pbcs.ServiceInstanceResp
+	405, // 671: pbcs.Config.DeleteConfigTemplate:output_type -> pbcs.DeleteConfigTemplateResp
+	413, // 672: pbcs.Config.GetProcessInstanceTopo:output_type -> pbcs.GetProcessInstanceTopoResp
+	416, // 673: pbcs.Config.ManageConfigKV:output_type -> pbcs.ManageConfigKVResp
+	418, // 674: pbcs.Config.GetProcessConfigView:output_type -> pbcs.GetProcessConfigViewResp
+	420, // 675: pbcs.Config.ListProjects:output_type -> pbcs.ListProjectsResp
+	422, // 676: pbcs.Config.GetProject:output_type -> pbcs.GetProjectResp
+	424, // 677: pbcs.Config.CreateProject:output_type -> pbcs.CreateProjectResp
+	426, // 678: pbcs.Config.UpdateProject:output_type -> pbcs.UpdateProjectResp
+	428, // 679: pbcs.Config.DeleteProject:output_type -> pbcs.DeleteProjectResp
+	430, // 680: pbcs.Config.ListEnvironments:output_type -> pbcs.ListEnvironmentsResp
+	432, // 681: pbcs.Config.GetEnvironment:output_type -> pbcs.GetEnvironmentResp
+	434, // 682: pbcs.Config.CreateEnvironment:output_type -> pbcs.CreateEnvironmentResp
+	436, // 683: pbcs.Config.UpdateEnvironment:output_type -> pbcs.UpdateEnvironmentResp
+	438, // 684: pbcs.Config.DeleteEnvironment:output_type -> pbcs.DeleteEnvironmentResp
+	422, // 685: pbcs.Config.GetProjectByKey:output_type -> pbcs.GetProjectResp
+	432, // 686: pbcs.Config.GetEnvironmentByName:output_type -> pbcs.GetEnvironmentResp
+	1,   // 687: pbcs.Config.EnsureDefaultProjectEnv:output_type -> pbcs.EnsureDefaultProjectEnvResp
+	452, // [452:688] is the sub-list for method output_type
+	216, // [216:452] is the sub-list for method input_type
 	216, // [216:216] is the sub-list for extension type_name
 	216, // [216:216] is the sub-list for extension extendee
 	0,   // [0:216] is the sub-list for field type_name
@@ -44113,7 +44252,7 @@ func file_config_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_config_service_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   478,
+			NumMessages:   480,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
