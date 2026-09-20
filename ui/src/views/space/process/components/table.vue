@@ -269,7 +269,7 @@
   import { ref, onMounted, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { AngleUpFill, Spinner } from 'bkui-vue/lib/icon';
-  import { getProcessList, processOperate } from '../../../../api/process';
+  import { getProcessList, processOperate, updateRegisterProcess, deleteProcess } from '../../../../api/process';
   import type { IProcessItem, IProcInst } from '../../../../../types/process';
   import { CC_SYNC_STATUS, PROCESS_STATUS_MAP, PROCESS_MANAGED_STATUS_MAP, PROCESS_AGENT_STATUS } from '../../../../constants/process';
   import { storeToRefs } from 'pinia';
@@ -610,7 +610,49 @@
     handleConfirmOp(op);
   };
 
+  // 进程操作跳转任务详情页
+  const redirectToTaskDetail = (batchID: number) => {
+    isShowOpProcess.value = false;
+    setTimeout(() => {
+      router.push({ name: 'task-detail', params: { taskId: batchID } });
+    }, 300);
+  };
+
+  // 更新托管信息
+  const handleUpdateRegister = async (restart?: boolean) => {
+    try {
+      const res = await updateRegisterProcess(spaceId.value, processIds.value[0], restart);
+      redirectToTaskDetail(res.batchID);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      processIds.value = [];
+    }
+  };
+
+  // 一键清除
+  const handleDeleteProcess = async () => {
+    try {
+      const res = await deleteProcess(spaceId.value, processIds.value[0]);
+      redirectToTaskDetail(res.batchID);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      processIds.value = [];
+      processInstanceIds.value = [];
+    }
+  };
+
   const handleConfirmOp = async (op: string, restart?: boolean) => {
+    // 更新托管信息、一键清除走各自的接口
+    if (op === 'update_register') {
+      handleUpdateRegister(restart);
+      return;
+    }
+    if (op === 'delete') {
+      handleDeleteProcess();
+      return;
+    }
     try {
       const query = {
         processIds: processIds.value,
@@ -619,11 +661,7 @@
         enable_process_restart: restart,
       };
       const res = await processOperate(spaceId.value, query);
-      isShowOpProcess.value = false;
-      // 进程操作跳转任务详情页
-      setTimeout(() => {
-        router.push({ name: 'task-detail', params: { taskId: res.batchID } });
-      }, 300);
+      redirectToTaskDetail(res.batchID);
     } catch (error) {
       console.error(error);
     } finally {
