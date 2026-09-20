@@ -38,6 +38,9 @@ type ProcessInstance interface {
 	GetByProcessIDs(kit *kit.Kit, bizID uint32, processIDs []uint32) ([]*table.ProcessInstance, error)
 	// GetCountTx 查询指定进程的实例数量.
 	GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processID uint32) (int64, error)
+	// CountByProcessIDsWithTx 按进程ID列表统计各进程的实例数量，返回 processID -> 实例数.
+	// 列表中不存在的进程不会出现在返回 map 中（实例数为 0 的语义由调用方处理）
+	CountByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, processIDs []uint32) (map[uint32]int, error)
 	// Delete ..
 	Delete(kit *kit.Kit, bizID, id uint32) error
 	// GetMaxModuleInstSeqTx 查询模块下所有进程的最大 ModuleInstSeq
@@ -199,6 +202,42 @@ func (dao *processInstanceDao) GetCountTx(kit *kit.Kit, tx *gen.QueryTx, bizID u
 	return tx.ProcessInstance.WithContext(kit.Ctx).
 		Where(m.BizID.Eq(bizID), m.ProcessID.Eq(processID)).
 		Count()
+}
+
+// CountByProcessIDsWithTx implements ProcessInstance.
+func (dao *processInstanceDao) CountByProcessIDsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32,
+	processIDs []uint32) (map[uint32]int, error) {
+	result := make(map[uint32]int, len(processIDs))
+	if len(processIDs) == 0 {
+		return result, nil
+	}
+
+	m := dao.genQ.ProcessInstance
+
+	// 按批次统计，避免 IN 子句参数过多
+	const batchSize = 500
+	for i := 0; i < len(processIDs); i += batchSize {
+		end := min(i+batchSize, len(processIDs))
+		batch := processIDs[i:end]
+
+		var rows []struct {
+			ProcessID uint32 `gorm:"column:process_id"`
+			Cnt       int    `gorm:"column:cnt"`
+		}
+		err := tx.ProcessInstance.WithContext(kit.Ctx).
+			Where(m.BizID.Eq(bizID), m.ProcessID.In(batch...)).
+			Select(m.ProcessID, m.ID.Count().As("cnt")).
+			Group(m.ProcessID).
+			Scan(&rows)
+		if err != nil {
+			return nil, err
+		}
+		for _, row := range rows {
+			result[row.ProcessID] = row.Cnt
+		}
+	}
+
+	return result, nil
 }
 
 // GetMaxModuleInstSeqTx implements ProcessInstance.
