@@ -186,6 +186,12 @@ type ConfigPayload struct {
 	ConfigContent           string
 	ConfigContentSignature  string        // 配置内容的签名(sha256)
 	CompareStatus           CompareStatus // 对比状态
+	// LastDispatchedContent 本次下发前机器上的配置内容快照，任务执行时记录，不受后续下发覆盖，空表示从未下发
+	LastDispatchedContent string
+	// LastDispatchedSignature 上述快照内容的 md5
+	LastDispatchedSignature string
+	// LastDispatchedAt 快照对应的下发时间
+	LastDispatchedAt time.Time
 }
 
 // CompareStatus 对比状态

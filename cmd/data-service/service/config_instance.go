@@ -2040,25 +2040,17 @@ func (s *Service) GetConfigDiff(ctx context.Context, req *pbds.GetConfigDiffReq)
 		Operator:  taskInfo.Creator,
 	}
 
-	configInstance, err := s.dao.ConfigInstance().GetConfigInstance(kt, req.BizId, &dao.ConfigInstanceSearchCondition{
-		ConfigTemplateId: taskPayload.ConfigPayload.ConfigTemplateID,
-		CcProcessId:      taskPayload.ProcessPayload.CcProcessID,
-		ModuleInstSeq:    taskPayload.ProcessPayload.ModuleInstSeq,
-	})
-
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
-	}
-
+	// lastDispatched 直接取任务 payload 中记录的「本次下发前机器上的版本」快照，
+	// 该快照在任务执行时写入且不可变，不会被后续下发覆盖；
+	// 不再读配置实例表，因为其内容会被最新一次下发覆盖，导致历史任务 diff 失真
 	var lastDispatched *pbcin.ConfigVersion
-	if configInstance != nil {
+	if taskPayload.ConfigPayload.LastDispatchedContent != "" {
 		lastDispatched = &pbcin.ConfigVersion{
 			Data: &pbcin.ConfigContent{
-				Content:  configInstance.Attachment.Content,
-				Checksum: configInstance.Attachment.Md5,
+				Content:  taskPayload.ConfigPayload.LastDispatchedContent,
+				Checksum: taskPayload.ConfigPayload.LastDispatchedSignature,
 			},
-			Timestamp: timestamppb.New(configInstance.Revision.UpdatedAt),
-			Operator:  configInstance.Revision.Reviser,
+			Timestamp: timestamppb.New(taskPayload.ConfigPayload.LastDispatchedAt),
 		}
 	}
 

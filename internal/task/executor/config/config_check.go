@@ -230,6 +230,16 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 		storedMD5 = configInstance.Attachment.Md5
 	}
 
+	// 快照「最后一次下发版本」：config_instances 永远保存最新下发记录，
+	// 检查时刻读取即为上一次发版的内容，连同 md5、下发时间写入 payload 作为不可变快照，
+	// 供 GetConfigDiff 对比，避免后续下发覆盖配置实例后历史任务的 diff 失真。
+	// 从未下发（configInstance == nil）时不快照，lastDispatched 保持为空
+	if configInstance != nil {
+		commonPayload.ConfigPayload.LastDispatchedContent = configInstance.Attachment.Content
+		commonPayload.ConfigPayload.LastDispatchedSignature = configInstance.Attachment.Md5
+		commonPayload.ConfigPayload.LastDispatchedAt = configInstance.Revision.UpdatedAt
+	}
+
 	logs.Infof("[CheckConfigMD5 STEP]: compare result, batch_id: %d, actualMD5=%s, storedMD5=%s, status=%s",
 		payload.BatchID, actualMD5, storedMD5, commonPayload.ConfigPayload.CompareStatus)
 
