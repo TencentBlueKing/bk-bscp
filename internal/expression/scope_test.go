@@ -87,6 +87,43 @@ func TestScopeToCcIDs(t *testing.T) {
 	}
 }
 
+// 段值首尾带空白时应归一化后再匹配（如前端传入 `"[m1,m2] "` 带尾部空格）。
+func TestScopeToCcIDsWithWhitespace(t *testing.T) {
+	candidates := []Candidate{
+		{Expression: JoinProcessExpression("set", "process-priority-svc-1", "svc1", "procA", "46"), CcProcessID: 46},
+		{Expression: JoinProcessExpression("set", "process-priority-svc-2", "svc2", "procB", "48"), CcProcessID: 48},
+		{Expression: JoinProcessExpression("set", "process-priority-svc-3", "svc3", "procC", "49"), CcProcessID: 49},
+	}
+	for _, tc := range []struct {
+		name       string
+		moduleName string
+		processID  string
+		want       []uint32
+	}{
+		// 括号外尾部空格
+		{"trailing space outside bracket", "[process-priority-svc-1,process-priority-svc-3] ", "*", []uint32{46, 49}},
+		// 括号外前导空格
+		{"leading space outside bracket", " [process-priority-svc-1,process-priority-svc-3]", "*", []uint32{46, 49}},
+		// 切片段带空白也应能识别
+		{"slice with whitespace", "*", " [0:2] ", []uint32{46, 48}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := Scope{
+				Environment: "3",
+				ModuleName:  tc.moduleName,
+				ProcessID:   tc.processID,
+			}
+			got, err := ScopeToCcIDs(s, candidates)
+			if err != nil {
+				t.Fatalf("err=%v", err)
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Errorf("ScopeToCcIDs = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 // 切片：先匹配得到 ID 列表，再对结果列表切片。
 func TestScopeToCcIDsWithSlice(t *testing.T) {
 	candidates := []Candidate{

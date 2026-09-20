@@ -77,6 +77,14 @@ func JoinProcessExpression(setName, moduleName, serviceName, alias, ccProcessID 
 // ScopeToCcIDs 将表达式范围解析为命中的 CC 进程 ID 列表
 // （对齐 gsekit ProcessHandler.expression_scope_to_scope 的 6 步流程）。
 func ScopeToCcIDs(s Scope, candidates []Candidate) ([]uint32, error) {
+	// 0. 归一化各段首尾空白：用户入参可能带多余空格（如 `"[m1,m2] "`），
+	// 若不 trim，括号外的空白会作为前缀/尾部拼进展开候选，导致全串匹配失败。
+	s.SetName = strings.TrimSpace(s.SetName)
+	s.ModuleName = strings.TrimSpace(s.ModuleName)
+	s.ServiceName = strings.TrimSpace(s.ServiceName)
+	s.ProcessAlias = strings.TrimSpace(s.ProcessAlias)
+	s.ProcessID = strings.TrimSpace(s.ProcessID)
+
 	// 1. 建立 expression -> cc_process_id 映射，并保持候选顺序
 	exprToID := make(map[string]uint32, len(candidates))
 	orderedExprs := make([]string, 0, len(candidates))
