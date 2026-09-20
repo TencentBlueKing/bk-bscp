@@ -15,6 +15,7 @@ package cmdb
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -585,5 +586,167 @@ func TestCCTopoXMLService_GetBizObjectAttributesCoalescesConcurrentCacheMiss(t *
 		if got := mockSvc.callCount(objID); got != 1 {
 			t.Fatalf("concurrent SearchObjectAttr for %s called %d times, want 1", objID, got)
 		}
+	}
+}
+
+func TestRefreshBizRenderCacheInvalidatesAndRebuilds(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+	)
+	cache := NewMemoryCMDBRenderCache()
+	cache.SetTopoXML(context.Background(), tenantID, bizID, "3", "stale-topo")
+	cache.SetBizObjectAttributes(context.Background(), tenantID, bizID, map[string][]ObjectAttribute{
+		BK_SET_OBJ_ID: {{BkPropertyID: "stale"}},
+	})
+
+	mockSvc := newCountingObjectAttrCMDB()
+	if err := RefreshBizRenderCache(context.Background(), tenantID, bizID, "", mockSvc, cache); err != nil {
+		t.Fatalf("RefreshBizRenderCache failed: %v", err)
+	}
+
+	// 旧 topo 缓存已被清除
+	if _, ok := cache.GetTopoXML(context.Background(), tenantID, bizID, "3"); ok {
+		t.Fatal("stale topo xml cache should be invalidated")
+	}
+
+	// 对象属性缓存已按最新 CMDB 数据重建并回填
+	attrs, ok := cache.GetBizObjectAttributes(context.Background(), tenantID, bizID)
+	if !ok {
+		t.Fatal("biz object attributes cache should be rebuilt")
+	}
+	if got := attrs[BK_SET_OBJ_ID][0].BkPropertyID; got != "set_custom" {
+		t.Fatalf("rebuilt set attr = %q, want set_custom", got)
+	}
+
+	// 二次刷新：RefreshBizRenderCache 每次都会先失效再重建，因此会重新调用 CMDB
+	if err := RefreshBizRenderCache(context.Background(), tenantID, bizID, "", mockSvc, cache); err != nil {
+		t.Fatalf("second RefreshBizRenderCache failed: %v", err)
+	}
+	for _, objID := range []string{BK_SET_OBJ_ID, BK_MODULE_OBJ_ID, BK_HOST_OBJ_ID} {
+		if got := mockSvc.callCount(objID); got != 2 {
+			t.Fatalf("SearchObjectAttr for %s called %d times, want 2 (refresh always rebuilds)", objID, got)
+		}
+	}
+}
+
+type failingObjectAttrCMDB struct {
+	bkcmdb.Service
+}
+
+func (m *failingObjectAttrCMDB) SearchObjectAttr(
+	_ context.Context, _ bkcmdb.SearchObjectAttrReq) ([]bkcmdb.ObjectAttrInfo, error) {
+	return nil, errors.New("cmdb unavailable")
+}
+
+func TestRefreshBizRenderCacheBlocksOnRebuildFailure(t *testing.T) {
+	cache := NewMemoryCMDBRenderCache()
+	cache.SetBizObjectAttributes(context.Background(), "tenant-a", 42, map[string][]ObjectAttribute{
+		BK_SET_OBJ_ID: {{BkPropertyID: "stale"}},
+	})
+
+	err := RefreshBizRenderCache(
+		context.Background(), "tenant-a", 42, "", &failingObjectAttrCMDB{}, cache)
+	if err == nil {
+		t.Fatal("RefreshBizRenderCache should fail when CMDB is unavailable")
+	}
+
+	// 属性缓存已失效（阻断方可以感知故障，不会使用陈旧数据）
+	if _, ok := cache.GetBizObjectAttributes(context.Background(), "tenant-a", 42); ok {
+		t.Fatal("stale biz object attributes cache should be invalidated even when rebuild fails")
+	}
+}
+
+// topoBuildingCMDB 提供构建拓扑 XML 所需的最小 CMDB 数据：
+// 业务 42 下两个集群（11 正式环境 "3"、12 测试环境 "1"），各含一个模块，主机 101 挂在模块 21 下。
+type topoBuildingCMDB struct {
+	*countingObjectAttrCMDB
+	findTopoBriefErr error
+}
+
+func (m *topoBuildingCMDB) FindTopoBrief(_ context.Context, _ int) (*bkcmdb.TopoBriefResp, error) {
+	if m.findTopoBriefErr != nil {
+		return nil, m.findTopoBriefErr
+	}
+	return &bkcmdb.TopoBriefResp{
+		Nodes: []*bkcmdb.TopoBriefNode{
+			{Obj: "set", ID: 11, Nodes: []*bkcmdb.TopoBriefNode{{Obj: "module", ID: 21}}},
+			{Obj: "set", ID: 12, Nodes: []*bkcmdb.TopoBriefNode{{Obj: "module", ID: 22}}},
+		},
+	}, nil
+}
+
+func (m *topoBuildingCMDB) SearchSet(_ context.Context, _ bkcmdb.SearchSetReq) (*bkcmdb.Sets, error) {
+	return &bkcmdb.Sets{Count: 2, Info: []bkcmdb.SetInfo{
+		{BkSetID: 11, BkSetName: "prod", BkSetEnv: "3"},
+		{BkSetID: 12, BkSetName: "test", BkSetEnv: "1"},
+	}}, nil
+}
+
+func (m *topoBuildingCMDB) FindModuleBatch(
+	_ context.Context, _ *bkcmdb.ModuleReq) ([]*bkcmdb.ModuleInfo, error) {
+	return []*bkcmdb.ModuleInfo{
+		{BkModuleID: 21, BkModuleName: "m21"},
+		{BkModuleID: 22, BkModuleName: "m22"},
+	}, nil
+}
+
+func (m *topoBuildingCMDB) ListBizHosts(
+	_ context.Context, _ *bkcmdb.ListBizHostsRequest) (*bkcmdb.CMDBListData[bkcmdb.HostInfo], error) {
+	return &bkcmdb.CMDBListData[bkcmdb.HostInfo]{Count: 1, Info: []bkcmdb.HostInfo{{BkHostID: 101}}}, nil
+}
+
+func (m *topoBuildingCMDB) FindHostBizRelations(
+	_ context.Context, _ *bkcmdb.FindHostBizRelationsRequest) ([]bkcmdb.HostBizRelation, error) {
+	return []bkcmdb.HostBizRelation{{BkBizID: 42, BkHostID: 101, BkModuleID: 21, BkSetID: 11}}, nil
+}
+
+func TestRefreshBizRenderCachePrebuildsTopoXMLForSetEnv(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+		setEnv   = "3"
+	)
+	cache := NewMemoryCMDBRenderCache()
+	mockSvc := &topoBuildingCMDB{countingObjectAttrCMDB: newCountingObjectAttrCMDB()}
+
+	if err := RefreshBizRenderCache(context.Background(), tenantID, bizID, setEnv, mockSvc, cache); err != nil {
+		t.Fatalf("RefreshBizRenderCache failed: %v", err)
+	}
+
+	// 指定环境的拓扑 XML 已预构建并回填缓存
+	xmlStr, ok := cache.GetTopoXML(context.Background(), tenantID, bizID, setEnv)
+	if !ok {
+		t.Fatal("topo xml cache should be prebuilt for the given set env")
+	}
+	if !strings.Contains(xmlStr, `SetID="11"`) {
+		t.Fatal("prebuilt topo xml should contain set 11 of env 3")
+	}
+	// setEnv 过滤生效：其他环境的集群不应出现在预构建的 XML 中
+	if strings.Contains(xmlStr, `SetID="12"`) {
+		t.Fatal("prebuilt topo xml should filter out sets not in the given set env")
+	}
+}
+
+func TestRefreshBizRenderCacheBlocksOnTopoXMLBuildFailure(t *testing.T) {
+	const (
+		tenantID = "tenant-a"
+		bizID    = 42
+		setEnv   = "3"
+	)
+	cache := NewMemoryCMDBRenderCache()
+	mockSvc := &topoBuildingCMDB{
+		countingObjectAttrCMDB: newCountingObjectAttrCMDB(),
+		findTopoBriefErr:       errors.New("topo unavailable"),
+	}
+
+	err := RefreshBizRenderCache(context.Background(), tenantID, bizID, setEnv, mockSvc, cache)
+	if err == nil || !strings.Contains(err.Error(), "rebuild topo xml cache failed") {
+		t.Fatalf("RefreshBizRenderCache err = %v, want topo xml rebuild failure", err)
+	}
+
+	// 构建失败的拓扑 XML 不应回填缓存
+	if _, ok := cache.GetTopoXML(context.Background(), tenantID, bizID, setEnv); ok {
+		t.Fatal("topo xml cache should not be filled when build fails")
 	}
 }

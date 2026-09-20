@@ -1264,3 +1264,32 @@ func cacheBuildTimeout(cache RenderCache) time.Duration {
 	}
 	return DefaultRenderCacheOptions().BuildTimeout
 }
+
+// RefreshBizRenderCache 强制重建业务的渲染缓存（对齐 gsekit：配置生成/校验批次派发前、配置预览前刷新 CMDB 缓存）：
+//  1. 失效该业务的全部渲染缓存（topo_xml、biz_global_variables）；
+//  2. 预构建业务对象属性缓存，提前暴露 CMDB 访问故障；
+//  3. setEnv 非空时预构建对应环境的拓扑 XML 缓存。
+//
+// 任一步失败即返回错误，调用方应阻断派发/预览，避免使用可能陈旧的缓存数据渲染配置。
+// 未预热的环境维度拓扑 XML 由后续渲染在 miss 时重建，此时数据必然为最新。
+func RefreshBizRenderCache(
+	ctx context.Context, tenantID string, bizID int, setEnv string, svc bkcmdb.Service, cache RenderCache) error {
+	if cache == nil {
+		return nil
+	}
+
+	if err := cache.InvalidateBiz(ctx, tenantID, bizID); err != nil {
+		return fmt.Errorf("invalidate cmdb render cache failed, biz: %d, err: %w", bizID, err)
+	}
+
+	topoSvc := NewCCTopoXMLServiceWithTenant(tenantID, bizID, svc, cache)
+	if _, err := topoSvc.GetBizObjectAttributes(ctx); err != nil {
+		return fmt.Errorf("rebuild biz object attributes cache failed, biz: %d, err: %w", bizID, err)
+	}
+	if setEnv != "" {
+		if _, err := topoSvc.GetTopoTreeXML(ctx, setEnv); err != nil {
+			return fmt.Errorf("rebuild topo xml cache failed, biz: %d, set_env: %s, err: %w", bizID, setEnv, err)
+		}
+	}
+	return nil
+}
