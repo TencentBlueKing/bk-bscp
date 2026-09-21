@@ -177,6 +177,9 @@ func renderTemplateWithFile(template string, context map[string]interface{}) (st
 **返回：**
 - 编译后的 Mako Template 对象
 
+缓存按模板原文字节数做 LRU 淘汰，默认预算 32MB，可用环境变量
+`BSCP_RENDER_TEMPLATE_CACHE_MB` 调整。超过预算的单个模板不入缓存。
+
 #### `mako_render(content: str, context: Dict[str, Any]) -> str`
 
 使用给定的上下文渲染 Mako 模板。

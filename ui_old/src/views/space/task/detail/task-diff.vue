@@ -13,7 +13,7 @@
           <slot name="baseHead">
             <div class="diff-panel-head">
               <div class="version-tag current-version">{{ t('最后下发') }}</div>
-              <span class="timer">{{ $t('下发时间') }}: {{ configDiffData.current.createTime }}</span>
+              <span class="timer">{{ $t('下发时间') }}: {{ configDiffData.base.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -21,7 +21,7 @@
           <slot name="currentHead">
             <div class="diff-panel-head">
               <div class="version-tag base-version">{{ t('现网配置') }}</div>
-              <span class="timer">{{ $t('检查时间') }}: {{ configDiffData.base.createTime }}</span>
+              <span class="timer">{{ $t('检查时间') }}: {{ configDiffData.current.createTime }}</span>
             </div>
           </slot>
         </template>
@@ -75,11 +75,11 @@
       configDiffData.value = {
         contentType: 'text',
         id: 0,
-        current: {
+        base: {
           content: res.last_dispatched ? res.last_dispatched.data.content : '',
           createTime: res.last_dispatched ? datetimeFormat(res.last_dispatched.timestamp) : '--',
         },
-        base: {
+        current: {
           content: res.current_online ? res.current_online.data.content : '',
           createTime: res.current_online ? datetimeFormat(res.current_online.timestamp) : '--',
         },

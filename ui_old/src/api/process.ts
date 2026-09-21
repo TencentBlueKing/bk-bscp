@@ -42,3 +42,24 @@ export const getProcessFilter = (biz_id: string, params: IProcessFilterQuery) =>
  */
 export const processOperate = (biz_id: string, query: any) =>
   http.post(`/config/biz_id/${biz_id}/process/operate`, query).then((res) => res.data);
+
+/**
+ * 更新托管信息
+ * @param bizId 业务ID
+ * @param processId 进程ID
+ * @param enableProcessRestart 是否启停进程：默认为 false
+ * @returns
+ */
+export const updateRegisterProcess = (biz_id: string, process_id: number, enable_process_restart = false) =>
+  http
+    .post(`/config/biz_id/${biz_id}/process/update_register`, { process_id, enable_process_restart })
+    .then((res) => res.data);
+
+/**
+ * 一键清除
+ * @param bizId 业务ID
+ * @param processId 进程ID
+ * @returns
+ */
+export const deleteProcess = (biz_id: string, process_id: number) =>
+  http.post(`/config/biz_id/${biz_id}/process/delete`, { process_id }).then((res) => res.data);
