@@ -4,7 +4,10 @@ Mako template rendering core logic
 参考原项目：bk-process-config-manager/apps/utils/mako_utils/render.py
 """
 
+import hashlib
+import os
 import sys
+from collections import OrderedDict
 from collections.abc import Mapping
 from types import SimpleNamespace
 from typing import Dict, Any
@@ -18,10 +21,46 @@ from .context import MakoSandbox
 from .exceptions import ForbiddenMakoTemplateException
 from .visitor import MakoNodeVisitor
 
-# Template cache to avoid repeated compilation
-TEMPLATE_CACHE = {}
 SAFE_CONTEXT_SCALAR_TYPES = (str, bytes, int, float, bool, type(None))
 SAFE_CONTEXT_SEQUENCE_TYPES = (list, tuple, set, frozenset)
+
+# 默认缓存预算(MB)，按模板原文字节计；编译后的实际驻留内存约为其 2.7 倍
+DEFAULT_TEMPLATE_CACHE_MB = 32
+TEMPLATE_CACHE_MB_ENV = "BSCP_RENDER_TEMPLATE_CACHE_MB"
+
+
+def _template_cache_max_bytes() -> int:
+    try:
+        mb = int(os.environ.get(TEMPLATE_CACHE_MB_ENV, ""))
+    except ValueError:
+        mb = 0
+    if mb <= 0:
+        mb = DEFAULT_TEMPLATE_CACHE_MB
+    return mb * 1024 * 1024
+
+
+# 模板缓存，避免重复编译。worker 进程常驻，缓存会随模板种类持续累积，
+# 故按模板原文字节数做 LRU 上限。淘汰只能阻止继续增长，已分配的内存不会归还 OS，
+# RSS 回落依赖 Go 侧按常驻内存重建 worker 进程。
+TEMPLATE_CACHE_MAX_BYTES = _template_cache_max_bytes()
+# key 为模板内容摘要，value 为 (template, 模板原文字节数)
+TEMPLATE_CACHE = OrderedDict()
+_TEMPLATE_CACHE_BYTES = 0
+
+
+def _cache_put(key: bytes, template: Template, size: int):
+    """写入缓存并按字节预算淘汰最久未使用的模板"""
+    global _TEMPLATE_CACHE_BYTES
+
+    if size > TEMPLATE_CACHE_MAX_BYTES:
+        # 单个模板就超过预算，缓存它会挤空整个缓存，直接不缓存
+        return
+
+    TEMPLATE_CACHE[key] = (template, size)
+    _TEMPLATE_CACHE_BYTES += size
+    while _TEMPLATE_CACHE_BYTES > TEMPLATE_CACHE_MAX_BYTES:
+        _, (_, evicted_size) = TEMPLATE_CACHE.popitem(last=False)
+        _TEMPLATE_CACHE_BYTES -= evicted_size
 
 
 def _validate_context_value(value: Any, path: str, seen: set):
@@ -77,19 +116,25 @@ def get_cache_template(content: str, enable_safety_check: bool = True) -> Templa
     """
     # 清理模板内容（替换制表符为空格）
     content = clean_mako_content(content)
-    
+    encoded = content.encode("utf-8")
+    # 用摘要作为 key，避免缓存里再存一份模板全文
+    key = hashlib.sha256(encoded).digest()
+
     # 缓存 template，避免重复构造耗时
-    template = TEMPLATE_CACHE.get(content)
-    if not template:
-        # 编译时安全检查（默认启用）
-        # 通过 AST 访问器检查模板语法树，提前发现危险操作
-        if enable_safety_check:
-            # 安全检查失败时直接抛出异常，阻止模板编译
-            # 这样可以提前发现危险代码，避免运行时拦截
-            check_mako_template_safety(content, MakoNodeVisitor())
-        
-        template = Template(content)
-        TEMPLATE_CACHE[content] = template
+    cached = TEMPLATE_CACHE.get(key)
+    if cached is not None:
+        TEMPLATE_CACHE.move_to_end(key)
+        return cached[0]
+
+    # 编译时安全检查（默认启用）
+    # 通过 AST 访问器检查模板语法树，提前发现危险操作
+    if enable_safety_check:
+        # 安全检查失败时直接抛出异常，阻止模板编译
+        # 这样可以提前发现危险代码，避免运行时拦截
+        check_mako_template_safety(content, MakoNodeVisitor())
+
+    template = Template(content)
+    _cache_put(key, template, len(encoded))
     return template
 
 

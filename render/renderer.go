@@ -43,6 +43,14 @@ const (
 	defaultPoolSizeCap = 16
 	// poolSizeEnv 覆盖渲染进程池大小的环境变量
 	poolSizeEnv = "BSCP_RENDER_POOL_SIZE"
+	// workerRSSLimitEnv 覆盖 worker 常驻内存上限(MB)的环境变量
+	workerRSSLimitEnv = "BSCP_RENDER_WORKER_RSS_MB"
+	// defaultWorkerRSSLimitMB worker 常驻内存超过该值时重建进程
+	defaultWorkerRSSLimitMB = 250
+	// workerMaxUsesEnv 覆盖 worker 最大渲染次数的环境变量
+	workerMaxUsesEnv = "BSCP_RENDER_WORKER_MAX_USES"
+	// defaultWorkerMaxUses 读不到进程常驻内存时，按渲染次数兜底重建
+	defaultWorkerMaxUses = 500
 )
 
 // GetDefaultRenderer returns a singleton Renderer instance
@@ -68,6 +76,10 @@ type Renderer struct {
 	timeout time.Duration
 	// poolSize 是常驻 worker 进程数；<=0 表示自动推导
 	poolSize int
+	// workerRSSLimitMB 是 worker 常驻内存上限，超过则在归还时重建进程
+	workerRSSLimitMB int
+	// workerMaxUses 是读不到常驻内存时，触发重建的渲染次数阈值
+	workerMaxUses int
 
 	// mu 保护 workers 的延迟初始化与 Close
 	mu sync.Mutex
@@ -82,6 +94,8 @@ type renderWorker struct {
 	stdin  io.WriteCloser
 	stdout *bufio.Reader
 	dead   bool
+	// uses 是当前进程自启动以来完成的渲染次数，重建后归零
+	uses int
 }
 
 // renderResponse 是常驻进程返回的一帧响应。
@@ -123,6 +137,20 @@ func WithPoolSize(size int) RendererOption {
 	}
 }
 
+// WithWorkerRSSLimitMB 设置 worker 常驻内存上限(MB)，超过则在归还时重建进程
+func WithWorkerRSSLimitMB(limit int) RendererOption {
+	return func(r *Renderer) {
+		r.workerRSSLimitMB = limit
+	}
+}
+
+// WithWorkerMaxUses 设置读不到常驻内存时，触发重建的渲染次数阈值
+func WithWorkerMaxUses(maxUses int) RendererOption {
+	return func(r *Renderer) {
+		r.workerMaxUses = maxUses
+	}
+}
+
 // NewRenderer creates a new Renderer instance
 func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 	// Get default script path from environment variable or use default
@@ -133,10 +161,12 @@ func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 	}
 
 	r := &Renderer{
-		uvPath:     "uv", // default to uv in PATH
-		scriptPath: defaultScriptPath,
-		timeout:    60 * time.Second,
-		poolSize:   poolSizeFromEnv(),
+		uvPath:           "uv", // default to uv in PATH
+		scriptPath:       defaultScriptPath,
+		timeout:          60 * time.Second,
+		poolSize:         poolSizeFromEnv(),
+		workerRSSLimitMB: intFromEnv(workerRSSLimitEnv, defaultWorkerRSSLimitMB),
+		workerMaxUses:    intFromEnv(workerMaxUsesEnv, defaultWorkerMaxUses),
 	}
 
 	// Apply options
@@ -165,14 +195,19 @@ func NewRenderer(opts ...RendererOption) (*Renderer, error) {
 
 // poolSizeFromEnv 从环境变量解析池大小，非法或缺省时返回 0（交由自动推导）
 func poolSizeFromEnv() int {
-	v := os.Getenv(poolSizeEnv)
+	return intFromEnv(poolSizeEnv, 0)
+}
+
+// intFromEnv 解析正整数环境变量，缺省或非法时返回 def
+func intFromEnv(key string, def int) int {
+	v := os.Getenv(key)
 	if v == "" {
-		return 0
+		return def
 	}
 	n, err := strconv.Atoi(v)
 	if err != nil || n <= 0 {
-		logs.Warnf("invalid %s=%q, fallback to auto pool size", poolSizeEnv, v)
-		return 0
+		logs.Warnf("invalid %s=%q, fallback to %d", key, v, def)
+		return def
 	}
 	return n
 }
@@ -238,6 +273,7 @@ func (r *Renderer) spawn(w *renderWorker) error {
 	w.stdin = stdin
 	w.stdout = bufio.NewReader(stdout)
 	w.dead = false
+	w.uses = 0
 	return nil
 }
 
@@ -257,6 +293,53 @@ func (w *renderWorker) reap() {
 	if w.cmd != nil {
 		_ = w.cmd.Wait()
 	}
+}
+
+// recycleIfNeeded 在归还 worker 前判断是否重建进程。
+// Python 侧模板缓存淘汰后内存不会归还 OS，只有进程退出才能让 RSS 回落，
+// 故以常驻内存为主判据，读不到时退化为渲染次数。
+// 重建发生在本次渲染完成、结果已返回之后，不影响任何进行中的请求。
+func (r *Renderer) recycleIfNeeded(w *renderWorker) {
+	if w.cmd == nil || w.cmd.Process == nil || w.dead {
+		return
+	}
+	w.uses++
+
+	pid := w.cmd.Process.Pid
+	var reason string
+	if rssMB, ok := workerRSSMB(pid); ok {
+		if rssMB >= r.workerRSSLimitMB {
+			reason = fmt.Sprintf("rss %dMB >= %dMB", rssMB, r.workerRSSLimitMB)
+		}
+	} else if w.uses >= r.workerMaxUses {
+		reason = fmt.Sprintf("uses %d >= %d", w.uses, r.workerMaxUses)
+	}
+	if reason == "" {
+		return
+	}
+
+	logs.Infof("recycle render worker, pid: %d, reason: %s", pid, reason)
+	w.terminate()
+	w.reap()
+	w.dead = true
+}
+
+// workerRSSMB 读取进程常驻内存(MB)；非 Linux 或读取失败时返回 ok=false。
+func workerRSSMB(pid int) (int, bool) {
+	data, err := os.ReadFile(fmt.Sprintf("/proc/%d/statm", pid))
+	if err != nil {
+		return 0, false
+	}
+	// statm 第二列为常驻页数
+	fields := strings.Fields(string(data))
+	if len(fields) < 2 {
+		return 0, false
+	}
+	pages, err := strconv.ParseInt(fields[1], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return int(pages * int64(os.Getpagesize()) / (1024 * 1024)), true
 }
 
 // exchange 在当前 goroutine 内同步完成一次「写请求-读响应」。
@@ -368,7 +451,10 @@ func (r *Renderer) RenderWithContext(ctx context.Context, template string, conte
 	r.ensurePool()
 
 	w := <-r.workers
-	defer func() { r.workers <- w }()
+	defer func() {
+		r.recycleIfNeeded(w)
+		r.workers <- w
+	}()
 
 	if w.cmd == nil || w.dead {
 		if err := r.spawn(w); err != nil {
