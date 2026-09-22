@@ -22,6 +22,18 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
+// StaggerDelayProcess 同阶段任务错峰延迟步骤
+// 间隔秒数由下发侧按阶段内序号写入任务，构建时为 0（执行时直接通过）
+func StaggerDelayProcess() *types.Step {
+	stf := cc.G().TaskFramework.ProcessOperate.StaggerDelay
+	delay := types.NewStep(process.StaggerDelayStepName.String(), process.StaggerDelayStepName.String()).
+		SetAlias("stagger_delay").
+		SetMaxExecution(stf.MaxExecution).
+		SetMaxTries(stf.MaxRetries)
+	lo.Must0(delay.SetPayload(process.OperatePayload{}))
+	return delay
+}
+
 // CompareWithCMDBProcessInfo 对比 DB 配置与 CMDB 最新配置，选定执行配置
 func CompareWithCMDBProcessInfo(
 	tenantID string,

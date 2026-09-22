@@ -88,6 +88,9 @@ func (t *OperateTask) FinalizeTask(task *types.Task) error {
 func (t *OperateTask) Steps() ([]*types.Step, error) {
 	// 构建任务的步骤
 	return []*types.Step{
+		// 同阶段任务错峰延迟（间隔秒数由下发侧按阶段内序号填充，0 则直接通过）
+		processStep.StaggerDelayProcess(),
+
 		// 对比 DB 配置与 CMDB 最新配置，选定执行配置（已删除进程的停止操作回退 DB 配置，其余报错）
 		processStep.CompareWithCMDBProcessInfo(
 			t.tenantID,

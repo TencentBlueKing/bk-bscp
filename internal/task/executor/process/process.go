@@ -45,6 +45,8 @@ const (
 	OperateProcessStepName istep.StepName = "OperateProcess"
 	// FinalizeOperateProcessStepName finalize operate process step name
 	FinalizeOperateProcessStepName istep.StepName = "FinalizeOperateProcess"
+	// StaggerDelayStepName 同阶段任务错峰延迟步骤名
+	StaggerDelayStepName istep.StepName = "StaggerDelay"
 	// RollbackProcessStepName rollback process step name
 	RollbackProcessStepName istep.StepName = "RollbackProcess"
 	// ProcessOperateCallbackName 进程操作回调名称
@@ -87,6 +89,28 @@ type OperatePayload struct {
 	OriginalProcStatus table.ProcessStatus
 	// CCSyncStatus 进程 CC 同步状态（下发时刻快照），供状态类校验使用
 	CCSyncStatus table.CCSyncStatus
+	// StaggerSeconds 错峰延迟秒数：同主机第 N 个任务延迟 N*间隔秒再执行，0 表示不延迟
+	StaggerSeconds int
+}
+
+// StaggerDelay 同阶段任务错峰延迟：同主机内第 N 个任务先等待 N*间隔秒再执行后续步骤，
+// 用于规避同机多实例并发启停互相干扰（如并发 stop 互踩 pid）
+func (e *ProcessExecutor) StaggerDelay(c *istep.Context) error {
+	payload := &OperatePayload{}
+	if err := c.GetPayload(payload); err != nil {
+		return fmt.Errorf("[StaggerDelay STEP]: get payload failed: %w", err)
+	}
+	if payload.StaggerSeconds <= 0 {
+		return nil
+	}
+	logs.Infof("[StaggerDelay STEP]: sleeping %d(s), bizID: %d, processInstanceID: %d",
+		payload.StaggerSeconds, payload.BizID, payload.ProcessInstanceID)
+	select {
+	case <-time.After(time.Duration(payload.StaggerSeconds) * time.Second):
+		return nil
+	case <-c.Context().Done():
+		return fmt.Errorf("[StaggerDelay STEP]: canceled while staggering: %w", c.Context().Err())
+	}
 }
 
 // CompareWithCMDBProcessInfo 对比随任务下发的 DB 配置与 CMDB 最新配置快照
@@ -605,6 +629,8 @@ func RegisterExecutor(e *ProcessExecutor) {
 	istep.Register(ValidateOperateProcessStepName, istep.StepExecutorFunc(e.ValidateOperate))
 	// 注册主要执行步骤
 	istep.Register(OperateProcessStepName, istep.StepExecutorFunc(e.Operate))
+	// 注册同阶段任务错峰延迟步骤
+	istep.Register(StaggerDelayStepName, istep.StepExecutorFunc(e.StaggerDelay))
 	// 注册进程操作完成后的状态更新步骤
 	istep.Register(FinalizeOperateProcessStepName, istep.StepExecutorFunc(e.Finalize))
 	// 注册回调，用于任务失败时的状态回滚
