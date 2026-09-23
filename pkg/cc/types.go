@@ -2023,6 +2023,11 @@ func (s *ConfigGenerateSteps) trySetDefault() {
 type ConfigPushSteps struct {
 	ValidatePushConfig StepTiming `yaml:"validatePushConfig"`
 	ReleaseConfig      StepTiming `yaml:"releaseConfig"`
+	// UsePushConfigToTarget 是否改用 PushConfigToTarget（GSE 文件传输）步骤下发配置
+	UsePushConfigToTarget bool `yaml:"usePushConfigToTarget"`
+	// PushConfigToTargetBizIDs PushConfigToTarget 步骤的业务白名单，
+	// 开关开启时仅白名单内业务走 GSE 文件传输下发，其余业务保持 ReleaseConfig 脚本下发
+	PushConfigToTargetBizIDs []uint32 `yaml:"pushConfigToTargetBizIDs"`
 }
 
 func (s *ConfigPushSteps) trySetDefault() {
