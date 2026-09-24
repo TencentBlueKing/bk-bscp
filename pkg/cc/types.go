@@ -2023,11 +2023,14 @@ func (s *ConfigGenerateSteps) trySetDefault() {
 type ConfigPushSteps struct {
 	ValidatePushConfig StepTiming `yaml:"validatePushConfig"`
 	ReleaseConfig      StepTiming `yaml:"releaseConfig"`
+	// StaggerDelay 同主机任务错峰延迟步骤（间隔秒数由下发侧按下发序号写入）
+	StaggerDelay StepTiming `yaml:"staggerDelay"`
 }
 
 func (s *ConfigPushSteps) trySetDefault() {
 	trySetStepDefault(&s.ValidatePushConfig, 3*time.Minute, 0)
 	trySetStepDefault(&s.ReleaseConfig, 3*time.Minute, 0)
+	trySetStepDefault(&s.StaggerDelay, 5*time.Minute, 0)
 }
 
 // ConfigCheckSteps 配置检查步骤
@@ -2047,6 +2050,8 @@ type ProcessOperateSteps struct {
 	ValidateOperateProcess     StepTiming `yaml:"validateOperateProcess"`
 	OperateProcess             StepTiming `yaml:"operateProcess"`
 	FinalizeOperateProcess     StepTiming `yaml:"finalizeOperateProcess"`
+	// StaggerDelay 同阶段任务错峰延迟步骤（间隔秒数由下发侧按阶段内序号写入）
+	StaggerDelay StepTiming `yaml:"staggerDelay"`
 }
 
 func (s *ProcessOperateSteps) trySetDefault() {
@@ -2054,6 +2059,7 @@ func (s *ProcessOperateSteps) trySetDefault() {
 	trySetStepDefault(&s.ValidateOperateProcess, 3*time.Minute, 0)
 	trySetStepDefault(&s.OperateProcess, 3*time.Minute, 0)
 	trySetStepDefault(&s.FinalizeOperateProcess, 3*time.Minute, 3)
+	trySetStepDefault(&s.StaggerDelay, 5*time.Minute, 0)
 }
 
 // ProcessUpdateRegisterSteps 更新托管步骤
@@ -2186,6 +2192,14 @@ type TaskFramework struct {
 	SyncGSE               SyncGSESteps               `yaml:"syncGSE"`
 	ScriptExecution       ScriptExecutionConfig      `yaml:"scriptExecution"`
 	ProcessPoll           ProcessPollConfig          `yaml:"processPoll"`
+	// ProcessOperateIntervalSecs 同阶段（同优先级）内同主机进程操作任务之间的错峰间隔（秒）。
+	// 同阶段任务并发执行，设为正数后同主机内第 N 个任务先延迟 N*间隔 再执行，
+	// 不同主机的任务互不影响；用于规避同机多实例并发启停互相干扰；0 表示不间隔（默认，保持并发）
+	ProcessOperateIntervalSecs int `yaml:"processOperateIntervalSecs"`
+	// ConfigPushIntervalSecs 同主机配置下发任务之间的错峰间隔（秒）。
+	// 同主机内第 N 个下发的任务先延迟 N*间隔 再执行，不同主机互不影响；
+	// 用于规避同机多实例并发写配置 / 重载互相干扰；0 表示不间隔（默认，保持并发）
+	ConfigPushIntervalSecs int `yaml:"configPushIntervalSecs"`
 }
 
 func (tf *TaskFramework) trySetDefault() {
@@ -2202,6 +2216,12 @@ func (tf *TaskFramework) trySetDefault() {
 }
 
 func (tf TaskFramework) validate() error {
+	if tf.ProcessOperateIntervalSecs < 0 {
+		return errors.New("taskFramework.processOperateIntervalSecs must be >= 0")
+	}
+	if tf.ConfigPushIntervalSecs < 0 {
+		return errors.New("taskFramework.configPushIntervalSecs must be >= 0")
+	}
 	if err := tf.ScriptExecution.validate(); err != nil {
 		return err
 	}
