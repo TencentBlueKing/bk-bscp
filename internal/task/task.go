@@ -17,6 +17,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"time"
 
 	machineryConf "github.com/RichardKnop/machinery/v2/config"
 	"github.com/Tencent/bk-bcs/bcs-common/common/task"
@@ -102,6 +103,9 @@ func NewTaskMgr(ctx context.Context, etcdConfig cc.Etcd, dbConfig cc.Database) (
 	store, err := mysqlstore.New(
 		dsn,
 		mysqlstore.WithDebug(true),
+		mysqlstore.WithMaxOpenConns(int(dbConfig.MaxOpenConn)),
+		mysqlstore.WithMaxIdleConns(int(dbConfig.MaxIdleConn)),
+		mysqlstore.WithConnMaxLifetime(time.Duration(dbConfig.MaxIdleTimeoutMin)*time.Minute),
 	)
 	if err != nil {
 		return nil, err
