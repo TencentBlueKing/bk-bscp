@@ -1371,6 +1371,23 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 		newProcessByCCID[p.Attachment.CcProcessID] = p
 	}
 
+	// 预查 DB 中各进程的实际实例数，用于实例数校准：
+	// 即使 ProcNum 未变化，实例数与目标数量漂移（如实例被清理后缺失）也需要补齐/收缩
+	instCountMap := make(map[uint32]int, len(dbProcesses))
+	if len(dbProcesses) > 0 {
+		procIDs := make([]uint32, 0, len(dbProcesses))
+		for _, p := range dbProcesses {
+			procIDs = append(procIDs, p.ID)
+		}
+		var err error
+		instCountMap, err = ctx.Dao.ProcessInstance().CountByProcessIDsWithTx(
+			ctx.Kit, ctx.Tx, dbProcesses[0].Attachment.BizID, procIDs)
+		if err != nil {
+			return nil, fmt.Errorf("[ProcessDiff][CountInstances] bizID=%d failed: %v",
+				dbProcesses[0].Attachment.BizID, err)
+		}
+	}
+
 	// 2. 遍历 newProcesses，计算新增 / 更新 / 实例变更
 	for _, newP := range newProcesses {
 		oldP, exists := dbProcessByCCID[newP.Attachment.CcProcessID]
@@ -1417,9 +1434,11 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 		}
 
 		// 2.2 已存在进程，计算变更
+		oldInstCount := instCountMap[oldP.ID]
 		changeResult, err := BuildProcessChanges(ctx, &BuildProcessChangesParams{
-			NewProcess: newP,
-			OldProcess: oldP,
+			NewProcess:   newP,
+			OldProcess:   oldP,
+			OldInstCount: &oldInstCount,
 		})
 		if err != nil {
 			logs.Errorf(
@@ -1591,6 +1610,10 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 	nameChanged := newP.Spec.Alias != oldP.Spec.Alias
 	infoChanged := !equal
 	numChanged := newP.Spec.ProcNum != oldP.Spec.ProcNum
+	// 实例数校准：DB 实际实例数与 CMDB 目标数量不一致时也需调整。
+	// 覆盖 ProcNum 未变化但实例漂移的场景（如实例被清理后缺失，一键同步需补齐）
+	instCountMismatch := params.OldInstCount != nil &&
+		*params.OldInstCount != int(newP.Spec.ProcNum)
 	agentStatusChanged := newP.Spec.AgentStatus != "" && newP.Spec.AgentStatus != oldP.Spec.AgentStatus
 	osTypeChanged := newP.Spec.OsType != "" && newP.Spec.OsType != oldP.Spec.OsType
 	// 启动优先级只影响操作编排顺序，不属于进程启动配置，因此单独 diff 而不并入 source_data 的一致性对比
@@ -1600,7 +1623,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 		newP.Spec.Environment != oldP.Spec.Environment
 
 	if !nameChanged && !infoChanged && !numChanged && !osTypeChanged &&
-		!agentStatusChanged && !agentIDChanged && !topoChanged && !priorityChanged {
+		!agentStatusChanged && !agentIDChanged && !topoChanged && !priorityChanged && !instCountMismatch {
 		return result, nil
 	}
 
@@ -1764,15 +1787,23 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 		}
 	}
 
-	// 实例调整逻辑
-	if numChanged {
-		// 更新进程的 ProcNum 字段
-		oldP.Spec.ProcNum = newP.Spec.ProcNum
+	// 实例调整逻辑：ProcNum 变化，或实例数与目标数量不一致（校准漂移的实例）
+	if numChanged || instCountMismatch {
+		if numChanged {
+			// 更新进程的 ProcNum 字段
+			oldP.Spec.ProcNum = newP.Spec.ProcNum
+		}
 
-		// 真实实例数
-		allInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(ctx.Kit, ctx.Tx, oldP.Attachment.BizID, oldP.ID)
-		if err != nil {
-			return nil, err
+		// 真实实例数：优先使用调用方预查的实例数（diff 阶段只读，与实时查询等价），未提供时实时查询
+		oldInstNum := 0
+		if params.OldInstCount != nil {
+			oldInstNum = *params.OldInstCount
+		} else {
+			allInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(ctx.Kit, ctx.Tx, oldP.Attachment.BizID, oldP.ID)
+			if err != nil {
+				return nil, err
+			}
+			oldInstNum = len(allInsts)
 		}
 
 		res, err := reconcileProcessInstances(ctx, &ReconcileInstancesParams{
@@ -1782,7 +1813,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 			ModuleID:    oldP.Attachment.ModuleID,
 			CcProcessID: oldP.Attachment.CcProcessID,
 			Alias:       oldP.Spec.Alias,
-			OldNum:      len(allInsts),
+			OldNum:      oldInstNum,
 			NewNum:      newProcNum,
 		})
 		if err != nil {
