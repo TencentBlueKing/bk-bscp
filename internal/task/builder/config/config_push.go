@@ -14,6 +14,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
@@ -22,6 +23,7 @@ import (
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	configExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
 	configStep "github.com/TencentBlueKing/bk-bscp/internal/task/step/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
@@ -64,6 +66,11 @@ func (t *PushConfigTask) FinalizeTask(task *types.Task) error {
 }
 
 func (t *PushConfigTask) Steps() ([]*types.Step, error) {
+	// 下发步骤选择：开关开启且业务在白名单内时，改用 PushConfigToTarget（GSE 文件传输）下发，
+	// 否则保持脚本下发（ReleaseConfig）
+	useTransfer := cc.G().TaskFramework.ConfigPush.UsePushConfigToTarget &&
+		slices.Contains(cc.G().TaskFramework.ConfigPush.PushConfigToTargetBizIDs, t.bizID)
+
 	// 构建配置下发的步骤
 	steps := []*types.Step{
 		// 1. 验证步骤
@@ -75,13 +82,26 @@ func (t *PushConfigTask) Steps() ([]*types.Step, error) {
 			t.operatorUser,
 			t.generateTaskPayload,
 		),
-		// 2. 发布配置步骤
-		configStep.ReleaseConfig(t.tenantID, t.bizID,
+	}
+
+	// 2. 发布配置步骤
+	if useTransfer {
+		steps = append(steps, configStep.PushConfigToTarget(
+			t.tenantID,
+			t.bizID,
+			t.batchID,
+			t.operateType,
+			t.operatorUser,
+			"",
+			t.generateTaskPayload,
+		))
+	} else {
+		steps = append(steps, configStep.ReleaseConfig(t.tenantID, t.bizID,
 			t.batchID,
 			t.operateType,
 			t.operatorUser,
 			t.generateTaskPayload,
-		),
+		))
 	}
 
 	return steps, nil

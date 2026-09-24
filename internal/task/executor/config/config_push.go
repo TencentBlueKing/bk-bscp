@@ -295,10 +295,11 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 func RegisterPushConfigExecutor(e *PushConfigExecutor) {
 	istep.Register(ValidatePushConfigStepName, istep.StepExecutorFunc(e.ValidatePushConfig))
 	istep.Register(ReleaseConfigStepName, istep.StepExecutorFunc(e.ReleaseConfig))
+	istep.Register(PushConfigStepName, istep.StepExecutorFunc(e.PushConfig))
 	istep.RegisterCallback(CallbackName, istep.CallbackExecutorFunc(e.Callback))
 }
 
-// getServerInfo 获取服务器 AgentID 和 ContainerID(暂时没有用到)
+// getServerInfo 获取本服务侧（源端）服务器 AgentID 和 ContainerID
 func getServerInfo() (agentID string, containerID string, err error) {
 	conf := cc.DataService().GSE
 
@@ -361,7 +362,10 @@ func getServerInfo() (agentID string, containerID string, err error) {
 }
 
 // PushConfig implements istep.Step.
-// PushConfig 通过 GSE 传输文件到目标机器(预留接口，暂未使用)
+// PushConfig 通过 GSE 传输文件到目标机器（Windows 平台使用）。
+// 参考异步下载任务的处理方式：先将配置内容保存到本地临时目录，
+// 再通过 GSE 文件传输下发到目标机器。
+// nolint:funlen
 func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
@@ -392,14 +396,56 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 		return fmt.Errorf("render full path failed: %w", err)
 	}
 
-	// 分离文件名和目录
-	renderedFilePath := path.Dir(fullPath)
-	renderedFileName := path.Base(fullPath)
+	// 分离文件名和目录：保留原始路径分隔符（Windows 为 `\`，Linux 为 `/`），
+	// 不能用 path.Dir/path.Base（只认 `/`，会把 Windows 路径切错），
+	// 确保下发到目标机器的路径和文件名与原配置一致
+	sepIdx := strings.LastIndexAny(fullPath, `/\`)
+	if sepIdx < 0 {
+		return fmt.Errorf("invalid rendered path: %s", fullPath)
+	}
+	renderedFilePath := fullPath[:sepIdx]
+	renderedFileName := fullPath[sepIdx+1:]
 
-	// 构建源文件路径
-	cacheDir := cc.G().GSE.CacheDir
-	srcDir := path.Join(cacheDir, strconv.Itoa(int(payload.BizID)))
-	fileName := cfg.ConfigContentSignature
+	// 目标文件名必须是纯文件名
+	if strings.ContainsAny(renderedFileName, `/\`) {
+		return fmt.Errorf("invalid rendered file name: %s", renderedFileName)
+	}
+
+	// 本机临时目录以 sha256 为文件夹名，文件以原文件名保存在其中。
+	// GSE 文件传输为原样复制（落地名与源文件名一致），源文件用原名传输即可保证目标机器上的文件名正确
+	srcDir := path.Join(e.GseConf.CacheDir, strconv.Itoa(int(payload.BizID)), cfg.ConfigContentSignature)
+	fileName := renderedFileName
+	srcPath := path.Join(srcDir, fileName)
+
+	// 文件锁避免并发写入
+	e.fileLock.Acquire(srcPath)
+	defer e.fileLock.Release(srcPath)
+
+	_, statErr := os.Stat(srcPath)
+	if statErr != nil {
+		if !os.IsNotExist(statErr) {
+			return fmt.Errorf("stat source file failed: %w", statErr)
+		}
+		if errM := os.MkdirAll(srcDir, os.ModePerm); errM != nil {
+			return fmt.Errorf("create source dir failed: %w", errM)
+		}
+		// 对齐异步下载的写盘方式：OpenFile + Sync，确保 GSE 传输前内容已持久化
+		file, errO := os.OpenFile(srcPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+		if errO != nil {
+			return fmt.Errorf("open source file failed: %w", errO)
+		}
+		defer file.Close()
+		if _, errF := file.WriteString(cfg.ConfigContent); errF != nil {
+			return fmt.Errorf("write source file failed: %w", errF)
+		}
+		if errS := file.Sync(); errS != nil {
+			return fmt.Errorf("sync source file failed: %w", errS)
+		}
+		logs.Infof("[PushConfig STEP]: config file saved to temp dir: %s, size: %d", srcPath,
+			len(cfg.ConfigContent))
+	} else {
+		logs.Infof("[PushConfig STEP]: config file exists, skip writing: %s", srcPath)
+	}
 
 	// 获取源服务器信息
 	srcAgentID, srcContainerID, err := getServerInfo()
@@ -424,7 +470,9 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 					},
 				},
 				Target: gse.TransferFileTarget{
-					FileName: renderedFileName,
+					// GSE 文件传输为原样复制（落地名与源文件名一致），
+					// 源文件已用原文件名保存，目标名保持一致即可
+					FileName: fileName,
 					StoreDir: renderedFilePath,
 					Agents: []gse.TransferFileAgent{
 						{
@@ -464,6 +512,14 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	}
 
 	logs.Infof("[PushConfig STEP]: transfer success, batch_id: %d, task_id: %s", payload.BatchID, resp.Result.TaskID)
+
+	// 传输完成后清理本地临时文件，任务即完成；清理失败不影响下发结果
+	if err := os.Remove(srcPath); err != nil {
+		logs.Warnf("[PushConfig STEP]: remove temp source file failed, path=%s, err=%v", srcPath, err)
+	} else {
+		logs.Infof("[PushConfig STEP]: temp source file removed: %s", srcPath)
+	}
+
 	return nil
 }
 
