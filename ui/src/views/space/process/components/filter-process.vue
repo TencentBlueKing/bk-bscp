@@ -218,9 +218,16 @@
   };
 
   onMounted(() => {
-    if (route.query.processIds) {
-      const processIds = Array.isArray(route.query.processIds) ? route.query.processIds : [route.query.processIds];
-      filterValues.value.cc_process_ids = processIds.map(Number);
+    const { processIds, environment: queryEnvironment } = route.query;
+    if (queryEnvironment) {
+      // 进程管理页跳转配置下发时，沿用来源页的环境，避免所选进程因环境不一致被过滤掉
+      activeEnv.value = String(queryEnvironment);
+    }
+    if (processIds || queryEnvironment) {
+      if (processIds) {
+        const ids = Array.isArray(processIds) ? processIds : [processIds];
+        filterValues.value.cc_process_ids = ids.map(Number);
+      }
       triggerSearch();
     }
     if (filterFlag.value) {

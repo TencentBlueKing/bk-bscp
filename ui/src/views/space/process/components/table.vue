@@ -695,6 +695,7 @@
       query: {
         processIds: [process.attachment.cc_process_id],
         templateIds: process.spec.bind_template_ids,
+        environment: filterConditions.value.environment,
       },
     });
   };
@@ -703,15 +704,16 @@
   const handleBatchConfigIssued = () => {
     const selectedProcess = processList.value.filter((item) => selectedIds.value.includes(item.id));
 
-    const processIds = new Set(selectedProcess.map((p) => p.attachment.cc_process_id));
+    const processIds = [...new Set(selectedProcess.map((p) => p.attachment.cc_process_id))];
 
-    const templateIds = new Set(selectedProcess.flatMap((p) => p.spec.bind_template_ids));
+    const templateIds = [...new Set(selectedProcess.flatMap((p) => p.spec.bind_template_ids ?? []))];
 
     router.push({
       name: 'config-issued',
       query: {
-        processIds: [...processIds],
-        templateIds: [...templateIds],
+        processIds,
+        templateIds,
+        environment: filterConditions.value.environment,
       },
     });
   };
