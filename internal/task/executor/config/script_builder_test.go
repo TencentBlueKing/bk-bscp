@@ -74,6 +74,53 @@ func TestBuildWindowsPushScriptRejectsInvalidInput(t *testing.T) {
 	assert.ErrorContains(t, err, "absPath must be absolute")
 }
 
+// TestBuildLinuxBackupScript 校验 Linux 备份脚本：目标不存在跳过（首次下发）、
+// cp -p 保留属主、备份命名与下发脚本备份段一致、按 MAX_BACKUPS 清理最旧备份
+func TestBuildLinuxBackupScript(t *testing.T) {
+	builder := &ScriptBuilder{FileMode: table.Unix}
+
+	script, err := builder.BuildBackupScript("/etc/app/app.conf", 3)
+	require.NoError(t, err)
+
+	assert.Contains(t, script, "TARGET_PATH='/etc/app/app.conf'")
+	assert.Contains(t, script, "MAX_BACKUPS=3")
+	assert.Contains(t, script, `if [ ! -f "$TARGET_PATH" ]; then`)
+	assert.Contains(t, script, "exit 0", "目标不存在必须以 0 退出（首次下发）")
+	assert.Contains(t, script, `cp -p -- "$TARGET_PATH" "$BACKUP_PATH"`)
+	assert.Contains(t, script, `"${TARGET_DIR}/${TARGET_NAME}.${TIMESTAMP}.bak"`,
+		"备份命名必须与下发脚本的备份段一致，保证清理 glob 兼容")
+	assert.Contains(t, script, `ls -1t "${TARGET_DIR}/${TARGET_NAME}".*.bak`)
+	assert.Contains(t, script, "xargs -r rm -f --")
+
+	// 相对路径拒绝进入脚本
+	_, err = builder.BuildBackupScript("relative/path.conf", 3)
+	assert.ErrorContains(t, err, "absPath must be absolute")
+}
+
+// TestBuildWindowsBackupScript 校验 Windows 备份脚本：目标不存在跳过、
+// 备份命名带毫秒时间戳与唯一 token（防同秒并发覆盖）、按 MAX_BACKUPS 清理最旧备份
+func TestBuildWindowsBackupScript(t *testing.T) {
+	builder := &ScriptBuilder{FileMode: table.Windows}
+
+	script, err := builder.BuildBackupScript(`D:\app\conf\app.conf`, 5)
+	require.NoError(t, err)
+
+	assert.Contains(t, script, `set "TARGET_PATH=D:\app\conf\app.conf"`)
+	assert.Contains(t, script, `set /a MAX_BACKUPS=5`)
+	assert.Contains(t, script, `if not exist "%TARGET_PATH%"`,
+		"目标不存在必须跳过备份（首次下发）")
+	assert.Contains(t, script, "yyyyMMddHHmmssfff", "备份名必须带毫秒时间戳")
+	assert.Contains(t, script, `.bscp.`, "备份名必须带唯一 token 防同秒并发覆盖")
+	assert.Contains(t, script, `copy /y "%TARGET_PATH%" "!BACKUP_FULL_PATH!" >nul`)
+	assert.Contains(t, script, `dir /b /o:d "!TARGET_DIR!!TARGET_NAME!.*.bak"`,
+		"清理 glob 必须与下发脚本的备份命名兼容")
+	assert.Contains(t, script, "exit /b 0")
+
+	// 相对路径拒绝进入脚本
+	_, err = builder.BuildBackupScript(`relative\path.conf`, 5)
+	assert.ErrorContains(t, err, "absPath must be absolute")
+}
+
 // TestBuildLinuxPushScriptAtomicOrder 校验脚本按「解析软链接 -> 备份 -> 写临时文件 -> 设权限属主 -> 原子替换」编排，
 // 权限与属主必须设置在临时文件上，否则失败时会留下属主不正确的目标文件。
 func TestBuildLinuxPushScriptAtomicOrder(t *testing.T) {

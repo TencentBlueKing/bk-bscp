@@ -48,9 +48,11 @@ type TransferFileSource struct {
 
 // TransferFileTarget defines transfer file task target
 type TransferFileTarget struct {
-	FileName string              `json:"file_name"`
-	StoreDir string              `json:"store_dir"`
-	Agents   []TransferFileAgent `json:"agents"`
+	FileName   string              `json:"file_name"`
+	StoreDir   string              `json:"store_dir"`
+	Agents     []TransferFileAgent `json:"agents"`
+	Owner      string              `json:"owner"`
+	Permission int                 `json:"permission"`
 }
 
 // TransferFileAgent defines transfer file task agent
