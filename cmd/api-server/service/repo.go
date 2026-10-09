@@ -180,7 +180,11 @@ func (s *repoService) DownloadFile(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: kt.AppID}, BizID: kt.BizID},
+	}
+	// 模版空间内容下载时 kt.AppID 为 0, 不能携带 App 资源, 否则 IAM 按 ID=0 查服务报错
+	if kt.AppID > 0 {
+		res = append(res,
+			&meta.ResourceAttribute{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: kt.AppID}, BizID: kt.BizID})
 	}
 	if err := s.authorizer.Authorize(kt, res...); err != nil {
 		_ = render.Render(w, r, rest.GRPCErr(err))
@@ -232,7 +236,11 @@ func (s *repoService) DownloadFileURL(w http.ResponseWriter, r *http.Request) {
 	kt := kit.MustGetKit(r.Context())
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: kt.AppID}, BizID: kt.BizID},
+	}
+	// 模版空间内容下载时 kt.AppID 为 0, 不能携带 App 资源, 否则 IAM 按 ID=0 查服务报错
+	if kt.AppID > 0 {
+		res = append(res,
+			&meta.ResourceAttribute{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: kt.AppID}, BizID: kt.BizID})
 	}
 	if err := s.authorizer.Authorize(kt, res...); err != nil {
 		_ = render.Render(w, r, rest.GRPCErr(err))
