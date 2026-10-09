@@ -157,6 +157,24 @@ func (s *Service) ListConfigTemplateRevisions(ctx context.Context,
 		return nil, err
 	}
 
+	// 按需返回配置文件内容
+	if req.GetWithContent() {
+		details := r.GetDetails()
+		tmplRevisions := make([]*table.TemplateRevision, 0, len(details))
+		for _, d := range details {
+			tmplRevisions = append(tmplRevisions, d.TemplateRevision())
+		}
+		contents, err := s.downloadTmplContent(grpcKit, tmplRevisions)
+		if err != nil {
+			return nil, err
+		}
+		for i := range details {
+			if details[i].GetSpec() != nil {
+				details[i].Spec.Content = string(contents[i])
+			}
+		}
+	}
+
 	return &pbds.ListConfigTemplateRevisionsResp{
 		Count:   r.GetCount(),
 		Details: r.GetDetails(),

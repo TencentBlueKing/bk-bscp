@@ -78,6 +78,7 @@ func (s *Service) ListConfigTemplateRevisions(ctx context.Context, req *pbcs.Lis
 		Start:            req.GetStart(),
 		Limit:            req.GetLimit(),
 		All:              req.GetAll(),
+		WithContent:      req.GetWithContent(),
 	})
 	if err != nil {
 		return nil, err
