@@ -399,7 +399,19 @@ func (dao *processDao) BatchUpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, data []*
 	if len(data) == 0 {
 		return nil
 	}
-	return tx.Process.WithContext(kit.Ctx).Save(data...)
+
+	q := tx.Process.WithContext(kit.Ctx)
+
+	// 按批次更新，每次最多 500 条，避免单条 SQL 占位符超过 MySQL 上限 65535
+	batchSize := 500
+	for i := 0; i < len(data); i += batchSize {
+		end := min(i+batchSize, len(data))
+		if err := q.Save(data[i:end]...); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // BatchCreateWithTx implements Process.
