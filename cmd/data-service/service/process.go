@@ -1067,6 +1067,7 @@ func dispatchProcessTasks(kt *kit.Kit, daoSet dao.Set, taskManager *task.TaskMan
 	// 阶段一：全内存构建任务，此阶段失败不产生任何副作用
 	tasks := make([]*taskTypes.Task, 0, len(toDispatch))
 	items := make([]priority.TaskItem, 0, len(toDispatch))
+	instancesByTaskID := make(map[string]resolvedInstance, len(toDispatch))
 	for _, item := range toDispatch {
 		// 构建任务（finalOpType 已确定，不再是 Delete）
 		taskObj, err := buildTask(
@@ -1084,6 +1085,7 @@ func dispatchProcessTasks(kt *kit.Kit, daoSet dao.Set, taskManager *task.TaskMan
 			return 0, errf.Errorf(errf.Internal, "%s",
 				i18n.T(kt, "build process operate task failed, err: %v", err))
 		}
+		instancesByTaskID[taskObj.TaskID] = item
 
 		// 记录 CMDB 最新配置快照（LatestConfigData），ConfigData 保留下发时取的 DB 配置
 		// （普通操作为 source_data，更新托管为 prev_data，见 UpdateRegisterTask.FinalizeTask）；
@@ -1113,13 +1115,42 @@ func dispatchProcessTasks(kt *kit.Kit, daoSet dao.Set, taskManager *task.TaskMan
 			TaskID:   taskObj.TaskID,
 			Priority: prio,
 			OpType:   item.finalOpType,
+			// 同主机实例据此归组错峰（同机第 N 个延迟 N*interval，跨机互不影响）
+			HostKey: strconv.FormatUint(uint64(item.proc.Attachment.HostID), 10),
 		})
 	}
 
 	// 阶段二：按优先级排出阶段序列，并把任务归入各自阶段
 	plan := priority.BuildStages(items)
+
+	// 同阶段任务错峰：同主机内第 N 个任务延迟 N*interval 秒执行，规避同机多实例并发启停互相干扰
+	interval := cc.G().TaskFramework.ProcessOperateIntervalSecs
+	baseDelay := cc.G().TaskFramework.ProcessOperate.StaggerDelay.MaxExecution
 	for _, taskObj := range tasks {
 		taskObj.StageSeq = plan.StageSeq(taskObj.TaskID)
+
+		stagger := plan.StaggerIndex(taskObj.TaskID) * interval
+		if stagger <= 0 {
+			continue
+		}
+		for _, step := range taskObj.Steps {
+			if step.GetName() != string(processExecutor.StaggerDelayStepName) {
+				continue
+			}
+			payload := processExecutor.OperatePayload{
+				TenantID:          kt.TenantID,
+				BizID:             bizID,
+				ProcessID:         instancesByTaskID[taskObj.TaskID].instance.Attachment.ProcessID,
+				ProcessInstanceID: instancesByTaskID[taskObj.TaskID].instance.ID,
+				StaggerSeconds:    stagger,
+			}
+			if perr := step.SetPayload(payload); perr != nil {
+				return 0, errf.Errorf(errf.Internal, "%s",
+					i18n.T(kt, "set stagger delay payload failed, err: %v", perr))
+			}
+			// 延迟时长计入步骤执行上限，避免长间隔被步骤超时误杀
+			step.SetMaxExecution(baseDelay + time.Duration(stagger)*time.Second)
+		}
 	}
 
 	group, err := buildProcessTaskGroup(kt, plan, batchID, bizID, taskType, toDispatch)
