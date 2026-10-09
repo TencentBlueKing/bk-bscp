@@ -2856,6 +2856,7 @@ message ListConfigTemplateRevisionsReq {
   uint32 start = 4;
   uint32 limit = 5;
   bool all = 6;
+  bool with_content = 7;
 }
 
 message ListConfigTemplateRevisionsResp {

@@ -28107,6 +28107,11 @@
           "type": "boolean",
           "default": false,
           "description": "是否获取所有"
+        },
+        "withContent": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否返回配置文件内容"
         }
       }
     },
@@ -37538,6 +37543,10 @@
         },
         "templateName": {
           "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "description": "配置文件内容，仅列表接口 with_content=true 时返回"
         }
       },
       "title": "TemplateRevisionSpec source resource reference: pkg/dal/table/template_revision.go"

@@ -6127,6 +6127,10 @@ message ListConfigTemplateRevisionsReq {
   uint32 limit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "每页条数" }];
   bool all = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  bool with_content = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否返回配置文件内容"
+    default: "false"
+  }];
 }
 
 message ListConfigTemplateRevisionsResp {

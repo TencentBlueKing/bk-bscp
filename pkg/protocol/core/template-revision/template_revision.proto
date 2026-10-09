@@ -40,6 +40,9 @@ message TemplateRevisionSpec {
   pbcontent.ContentSpec content_spec = 8;
   string charset = 9;
   string template_name = 10;
+  string content = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "配置文件内容，仅列表接口 with_content=true 时返回"
+  }];
 }
 
 // TemplateRevisionAttachment source resource reference: pkg/dal/table/template_revision.go
