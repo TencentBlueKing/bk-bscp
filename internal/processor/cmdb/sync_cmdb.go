@@ -224,6 +224,14 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 		statusMap[s.BkAgentID] = s.StatusCode
 	}
 
+	// 通过 list_hosts 补全主机 os_type（按 bk_cloud_id + bk_host_innerip 关联）。
+	// os_type 获取失败不阻断主流程，进程 os_type 留空由下次同步自然补齐
+	osTypeIndex, err := s.fetchHostOsTypeMap(kt.Ctx, collectHostInnerIPs(data))
+	if err != nil {
+		logs.Errorf("[buildProcessEntities] fetch host os_type failed, bizID=%d: %v", s.bizID, err)
+		osTypeIndex = map[hostOsTypeKey]string{}
+	}
+
 	for _, item := range data {
 		agentState := table.AgentStatusAbnormal
 		if code, ok := statusMap[item.Host.BkAgentID]; ok && code == 2 {
@@ -236,6 +244,8 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 			logs.Errorf("[buildProcessEntities] source data failed: %v", err)
 			continue
 		}
+
+		osType := osTypeIndex[hostOsTypeKey{cloudID: item.Host.BkCloudID, innerIP: item.Host.BkHostInnerIP}]
 
 		proc := &table.Process{
 			Attachment: &table.ProcessAttachment{
@@ -262,7 +272,7 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 				PrevData:     "{}",
 				ProcNum:      normalizeProcNum(item.Process.ProcNum),
 				FuncName:     item.Process.BkFuncName,
-				OsType:       "",
+				OsType:       osType,
 				CcSyncStatus: table.Synced,
 				AgentStatus:  agentState,
 				Priority:     item.Process.Priority,
@@ -297,13 +307,116 @@ func (s *syncCMDBService) buildSourceData(item *bkcmdb.ProcessRelatedInfoItem) (
 	return info.Value()
 }
 
+// os_type 业务语义取值（processes.os_type 与主机维度统一使用）
+const (
+	osTypeLinux = "linux"
+	osTypeWin   = "win"
+	osTypeAix   = "aix"
+)
+
+// list_hosts 查询使用的 CC 主机属性字段
+const (
+	ccFieldHostID  = "bk_host_id"
+	ccFieldCloudID = "bk_cloud_id"
+	ccFieldInnerIP = "bk_host_innerip"
+	ccFieldOSType  = "bk_os_type"
+)
+
+// osTypeMapping CC bk_os_type 数字编码到业务语义字符串的映射
+// 未覆盖的编码与空值统一映射为空字符串。
+var osTypeMapping = map[string]string{
+	"1": osTypeLinux,
+	"2": osTypeWin,
+	"3": osTypeAix,
+}
+
+// mapOsType 将 CC bk_os_type 原始编码转换为业务语义字符串，未覆盖编码返回空字符串
+func mapOsType(raw string) string {
+	return osTypeMapping[raw]
+}
+
 // resolveOsType 决定进程最终 os_type：新值非空时采用新值，否则沿用旧值。
-// 用于进程重建场景，避免同步取不到 os_type 时把已有类型覆盖为空（R-002）。
+// 用于进程重建场景，避免同步取不到 os_type（如 list_hosts 异常）时把已有类型覆盖为空
 func resolveOsType(newOsType, oldOsType string) string {
 	if newOsType != "" {
 		return newOsType
 	}
 	return oldOsType
+}
+
+// hostOsTypeKey 主机唯一标识：管控区域 + 内网 IP（CC 通过该组合唯一确定一台主机）
+type hostOsTypeKey struct {
+	cloudID int
+	innerIP string
+}
+
+// buildHostOsTypeIndex 以 (bk_cloud_id, bk_host_innerip) 为键建立映射后的 os_type 索引；
+// 映射结果为空（空值或未覆盖编码）的主机不入索引，避免空值覆盖已有非空值
+func buildHostOsTypeIndex(hosts []bkcmdb.HostInfo) map[hostOsTypeKey]string {
+	index := make(map[hostOsTypeKey]string, len(hosts))
+	for _, h := range hosts {
+		osType := mapOsType(h.BkOSType)
+		if osType == "" {
+			continue
+		}
+		index[hostOsTypeKey{cloudID: h.BkCloudID, innerIP: h.BkHostInnerIP}] = osType
+	}
+	return index
+}
+
+// collectHostInnerIPs 提取进程关联信息中去重后的非空内网 IP，用于过滤 list_hosts 查询范围
+func collectHostInnerIPs(data []*bkcmdb.ProcessRelatedInfoItem) []string {
+	seen := make(map[string]struct{}, len(data))
+	ips := make([]string, 0, len(data))
+	for _, item := range data {
+		if item.Host == nil || item.Host.BkHostInnerIP == "" {
+			continue
+		}
+		if _, ok := seen[item.Host.BkHostInnerIP]; ok {
+			continue
+		}
+		seen[item.Host.BkHostInnerIP] = struct{}{}
+		ips = append(ips, item.Host.BkHostInnerIP)
+	}
+	return ips
+}
+
+// fetchHostOsTypeMap 通过 list_hosts 拉取指定内网 IP 的主机 os_type，
+// 以 (bk_cloud_id, bk_host_innerip) 为键返回映射后的 os_type 索引
+func (s *syncCMDBService) fetchHostOsTypeMap(ctx context.Context, innerIPs []string) (
+	map[hostOsTypeKey]string, error) {
+	index := make(map[hostOsTypeKey]string)
+	if len(innerIPs) == 0 {
+		return index, nil
+	}
+
+	for _, chunk := range chunkStrings(innerIPs, 500) {
+		hosts, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
+			resp, err := s.svc.ListBizHosts(ctx, &bkcmdb.ListBizHostsRequest{
+				BkBizID: s.bizID,
+				Page:    *page,
+				Fields:  []string{ccFieldHostID, ccFieldCloudID, ccFieldInnerIP, ccFieldOSType},
+				HostPropertyFilter: &bkcmdb.HostPropertyFilter{
+					Condition: bkcmdb.HostPropertyConditionAnd,
+					Rules: []bkcmdb.HostPropertyRule{
+						{Field: ccFieldInnerIP, Operator: bkcmdb.HostPropertyOperatorIn, Value: chunk},
+					},
+				},
+			})
+			if err != nil {
+				return nil, 0, err
+			}
+			return resp.Info, resp.Count, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range buildHostOsTypeIndex(hosts) {
+			index[k] = v
+		}
+	}
+
+	return index, nil
 }
 
 // resolveAgentStatus agent_id 为空时状态一律为 abnormal，否则会被判定为可同步、用空 agent_id 调用 GSE
@@ -458,7 +571,7 @@ func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
 			IPV6:       h.BkHostInnerIPV6,
 			CloudId:    h.BkCloudID,
 			AgentID:    h.BkAgentID,
-			OsType:     "",
+			OsType:     mapOsType(h.BkOSType),
 			AgentState: table.AgentStatusAbnormal.String(),
 		})
 	}
@@ -786,7 +899,7 @@ func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcm
 				IPV6:    h.BkHostInnerIPV6,
 				CloudId: h.BkCloudID,
 				AgentID: h.BkAgentID,
-				OsType:  "",
+				OsType:  mapOsType(h.BkOSType),
 			})
 		}
 	}
@@ -1017,6 +1130,8 @@ func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.
 		return &SyncProcessResult{}, nil
 	}
 
+	s.refreshProcessesOsType(kt.Ctx, newProcesses)
+
 	// 开启事务并入库（kit 已带 TenantID，SyncProcessData 内按租户回填 ProcessID）
 	tx := s.dao.GenQuery().Begin()
 
@@ -1048,6 +1163,41 @@ func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.
 	logs.Infof("[UpdateProcess][Success] bizID=%d tenantID=%s process data synced, %d processes written", s.bizID, s.tenantID, len(newProcesses))
 
 	return res, nil
+}
+
+// refreshProcessesOsType 监听事件不含主机信息，通过 list_hosts 按进程内网 IP 批量补全 os_type。
+// 取不到（异常或编码未覆盖）时留空，由 BuildProcessChanges 的 osTypeChanged 空值保护沿用旧值
+func (s *syncCMDBService) refreshProcessesOsType(ctx context.Context, processes []*table.Process) {
+	innerIPs := make([]string, 0, len(processes))
+	seenIPs := make(map[string]struct{}, len(processes))
+	for _, p := range processes {
+		if p.Spec == nil || p.Spec.InnerIP == "" {
+			continue
+		}
+		if _, ok := seenIPs[p.Spec.InnerIP]; ok {
+			continue
+		}
+		seenIPs[p.Spec.InnerIP] = struct{}{}
+		innerIPs = append(innerIPs, p.Spec.InnerIP)
+	}
+
+	osTypeIndex, err := s.fetchHostOsTypeMap(ctx, innerIPs)
+	if err != nil {
+		logs.Errorf("[refreshProcessesOsType] fetch host os_type failed, bizID=%d: %v", s.bizID, err)
+		osTypeIndex = map[hostOsTypeKey]string{}
+	}
+
+	for _, p := range processes {
+		if p.Spec == nil {
+			continue
+		}
+		if osType, ok := osTypeIndex[hostOsTypeKey{
+			cloudID: int(p.Attachment.CloudID),
+			innerIP: p.Spec.InnerIP,
+		}]; ok {
+			p.Spec.OsType = osType
+		}
+	}
 }
 
 // buildProcessesFromSets 根据业务拓扑信息构建进程表数据
@@ -1135,7 +1285,7 @@ func buildProcessesFromSets(tenantID string, bizID int, sets []Set) []*table.Pro
 							PrevData:             "{}",
 							ProcNum:              normalizeProcNum(proc.ProcNum),
 							FuncName:             proc.FuncName,
-							OsType:               "",
+							OsType:               h.OsType,
 							AgentStatus:          resolveAgentStatus(h.AgentID, table.AgentStatus(h.AgentState)),
 							Priority:             proc.Priority,
 						},
@@ -1207,6 +1357,18 @@ func chunkIntIDs(src []int, size int) [][]int {
 		return nil
 	}
 	var res [][]int
+	for i := 0; i < len(src); i += size {
+		end := i + size
+		if end > len(src) {
+			end = len(src)
+		}
+		res = append(res, src[i:end])
+	}
+	return res
+}
+
+func chunkStrings(src []string, size int) [][]string {
+	var res [][]string
 	for i := 0; i < len(src); i += size {
 		end := i + size
 		if end > len(src) {

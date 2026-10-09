@@ -2023,11 +2023,18 @@ func (s *ConfigGenerateSteps) trySetDefault() {
 type ConfigPushSteps struct {
 	ValidatePushConfig StepTiming `yaml:"validatePushConfig"`
 	ReleaseConfig      StepTiming `yaml:"releaseConfig"`
+	// BackupConfig 目标机器配置备份步骤（仅 PushConfigToTarget 文件传输下发前执行）
+	BackupConfig StepTiming `yaml:"backupConfig"`
+	// UsePushConfigToTarget 是否改用 PushConfigToTarget（GSE 文件传输）步骤下发配置，
+	// 开关开启时仅 configs 表 push_config_to_target_biz 白名单内业务走 GSE 文件传输下发，
+	// 其余业务保持 ReleaseConfig 脚本下发
+	UsePushConfigToTarget bool `yaml:"usePushConfigToTarget"`
 }
 
 func (s *ConfigPushSteps) trySetDefault() {
 	trySetStepDefault(&s.ValidatePushConfig, 3*time.Minute, 0)
 	trySetStepDefault(&s.ReleaseConfig, 3*time.Minute, 0)
+	trySetStepDefault(&s.BackupConfig, 3*time.Minute, 0)
 }
 
 // ConfigCheckSteps 配置检查步骤

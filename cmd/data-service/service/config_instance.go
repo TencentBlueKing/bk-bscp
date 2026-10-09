@@ -1430,6 +1430,7 @@ func dispatchTasks(
 	batchID uint32,
 	tasks []*taskTypes.Task,
 	payloadCache map[string]*executorCommon.TaskPayload,
+	pushToTargetBizIDs []uint32,
 ) uint32 {
 	var count uint32
 
@@ -1448,6 +1449,7 @@ func dispatchTasks(
 				table.ConfigOperateType(table.TaskActionConfigPublish),
 				kt.User,
 				payload,
+				pushToTargetBizIDs,
 			),
 		)
 		if err != nil {
@@ -1552,7 +1554,8 @@ func (s *Service) PushConfig(ctx context.Context, req *pbds.PushConfigReq) (*pbd
 		}
 	}()
 
-	dispatched = dispatchTasks(s.dao, s.taskManager, kt, req.GetBizId(), batchID, validTasks, payloadCache)
+	dispatched = dispatchTasks(s.dao, s.taskManager, kt, req.GetBizId(), batchID, validTasks, payloadCache,
+		s.ListPushConfigToTargetBizIDs())
 
 	logs.Infof("push batch created, batch_id: %d, source_batch_id: %d, task_count: %d, rid: %s",
 		batchID, req.GetBatchId(), dispatched, kt.Rid)

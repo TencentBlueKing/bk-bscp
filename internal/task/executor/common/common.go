@@ -171,6 +171,9 @@ type ProcessPayload struct {
 	// Priority 进程启动优先级，来源 CMDB。改造前的历史任务负载没有该字段，
 	// 用指针区分「优先级为 0」与「取不到优先级」，后者在任务详情中展示为 --
 	Priority *int
+	// OsType 目标机器操作系统类型（linux/win/aix），来源 processes 表 os_type 字段。
+	// 下发时以此判断机器类型，存量数据可能为空，为空时回退配置模板的 FileMode
+	OsType string
 }
 
 // ConfigPayload 配置相关
@@ -433,6 +436,7 @@ func BuildConfigTaskPayload(
 			ModuleInstSeq: processInstance.Spec.ModuleInstSeq,
 			ConfigData:    process.Spec.SourceData,
 			CloudID:       int(process.Attachment.CloudID),
+			OsType:        process.Spec.OsType,
 		},
 		ConfigPayload: &ConfigPayload{
 			ConfigTemplateID:        configTemplateID,
