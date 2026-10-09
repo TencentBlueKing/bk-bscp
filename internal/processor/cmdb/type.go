@@ -145,6 +145,10 @@ type ReconcileInstancesParams struct {
 type BuildProcessChangesParams struct {
 	NewProcess *table.Process
 	OldProcess *table.Process
+	// OldInstCount 旧进程在 DB 中的实际实例数。
+	// nil 表示调用方未提供，跳过实例数校准（保持仅按 ProcNum 变化扩缩容的历史行为）；
+	// 非 nil 且与 CMDB 目标 ProcNum 不一致时触发校准，补齐/收缩漂移的实例
+	OldInstCount *int
 }
 
 // ReorderParams reorderModuleInstSeq 函数的参数
