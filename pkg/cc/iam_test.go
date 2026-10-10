@@ -17,6 +17,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 )
 
 func TestIAMVersionDefaultsToV3(t *testing.T) {
@@ -95,6 +97,35 @@ func TestIAMValidateScopedToVersion(t *testing.T) {
 
 func TestIAMRejectsUnknownVersion(t *testing.T) {
 	iam := IAM{Version: "v5", APIURL: "http://iam", AppCode: "c", AppSecret: "s"}
+	require.ErrorContains(t, iam.validate(), "unsupported iam version")
+}
+
+// 配置文件未指定版本时，允许通过环境变量 BK_BSCP_IAM_VERSION 开启 iam v4。
+func TestIAMVersionFromEnv(t *testing.T) {
+	t.Setenv(config.IAMVersionEnv, "v4")
+	iam := IAM{AppCode: "c", AppSecret: "s", V4: IAMV4{GatewayURL: "https://gw/prod"}}
+	iam.trySetDefault()
+
+	require.True(t, iam.IsV4())
+	require.NoError(t, iam.validate())
+}
+
+// 配置文件显式指定的版本优先于环境变量。
+func TestIAMVersionConfigFileWinsOverEnv(t *testing.T) {
+	t.Setenv(config.IAMVersionEnv, "v4")
+	iam := IAM{Version: IAMVersionV3, APIURL: "http://iam", AppCode: "c", AppSecret: "s"}
+	iam.trySetDefault()
+
+	require.False(t, iam.IsV4())
+	require.NoError(t, iam.validate())
+}
+
+// 环境变量取值非法时应报错，而不是静默回退 v3。
+func TestIAMVersionEnvInvalid(t *testing.T) {
+	t.Setenv(config.IAMVersionEnv, "v5")
+	iam := IAM{AppCode: "c", AppSecret: "s"}
+	iam.trySetDefault()
+
 	require.ErrorContains(t, iam.validate(), "unsupported iam version")
 }
 

@@ -26,6 +26,7 @@ import (
 	etcd3 "go.etcd.io/etcd/client/v3"
 	"gorm.io/gorm/logger"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/config"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/version"
@@ -407,6 +408,12 @@ func (s IAM) IsV4() bool {
 
 // trySetDefault set the default value of the iam runtime.
 func (s *IAM) trySetDefault() {
+	// 版本支持通过环境变量 BK_BSCP_IAM_VERSION 设置，仅当配置文件未指定时生效，
+	// 用于不便于修改配置文件时切换 iam 版本；非法取值由 validate 统一报错。
+	if len(s.Version) == 0 {
+		s.Version = IAMVersion(os.Getenv(config.IAMVersionEnv))
+	}
+
 	if len(s.Version) == 0 {
 		s.Version = IAMVersionV3
 	}
