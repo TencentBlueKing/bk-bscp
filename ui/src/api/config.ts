@@ -201,7 +201,7 @@ export const updateConfigContent = (
 /**
  * 下载配置文件内容
  * @param bizId 业务ID
- * @param appId 模板空间ID
+ * @param appId 服务ID
  * @param signature sha256签名
  * @param isBlob 是否需要返回二进制流，下载配置文件时需要
  * @returns
@@ -210,7 +210,7 @@ export const downloadConfigContent = (bizId: string, appId: number, signature: s
   http
     .get<string, Blob | string>(`/biz/${bizId}/content/download`, {
       headers: {
-        'X-Bscp-Template-Space-Id': appId,
+        'X-Bscp-App-Id': appId,
         'X-Bkapi-File-Content-Id': signature,
       },
       transitional: {
