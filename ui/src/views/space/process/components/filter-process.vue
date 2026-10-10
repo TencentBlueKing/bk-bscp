@@ -18,6 +18,7 @@
           :class="['bk-select', { issued: isIssued }]"
           :key="filter.value"
           :placeholder="filter.label"
+          filterable
           multiple
           @change="triggerSearch">
           <bk-option

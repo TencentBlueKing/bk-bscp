@@ -84,6 +84,7 @@
     getBoundTemplates,
     getBoundTemplatesByAppVersion,
   } from '../../../../../../../../api/config';
+  import { downloadTemplateContent } from '../../../../../../../../api/template';
   import { getReleasedAppVariables } from '../../../../../../../../api/variable';
   import SearchInput from '../../../../../../../../components/search-input.vue';
   import tableEmpty from '../../../../../../../../components/table/table-empty.vue';
@@ -588,7 +589,7 @@
       });
       if (config) {
         selected.value = selectedConfig;
-        const data = await getConfigDiffDetail(config);
+        const data = await getConfigDiffDetail(config, pkg.template_space_id);
         emits('selected', data);
       }
     }
@@ -599,13 +600,14 @@
     groupedConfigListOnShow.value = getMenuList();
   };
 
-  const getConfigDiffDetail = async (config: IConfigDiffItem) => {
+  const getConfigDiffDetail = async (config: IConfigDiffItem, templateSpaceId = 0) => {
     let currentConfigContent: string | IFileConfigContentSummary = '';
     let baseConfigContent: string | IFileConfigContentSummary = '';
     const {
       id,
       name,
       file_type,
+      type,
       current: currentSignature,
       base: baseSignature,
       currentPermission,
@@ -624,6 +626,8 @@
         update_at: currentUpdate,
         byte_size: currentByte_size,
         signature: currentSignature,
+        type,
+        templateSpaceId,
       });
     }
 
@@ -635,6 +639,8 @@
         update_at: baseUpdate,
         byte_size: baseByte_size,
         signature: baseSignature,
+        type,
+        templateSpaceId,
       });
     }
 
@@ -661,6 +667,8 @@
     update_at,
     signature,
     byte_size,
+    type,
+    templateSpaceId,
   }: {
     id: number;
     name: string;
@@ -668,6 +676,8 @@
     update_at: string;
     signature: string;
     byte_size: string;
+    type: string;
+    templateSpaceId: number;
   }) => {
     if (!signature) {
       return '';
@@ -681,7 +691,11 @@
         size: byteUnitConverse(Number(byte_size)),
       };
     }
-    const configContent = await downloadConfigContent(bkBizId.value, appData.value.id as number, signature);
+    // 模板项需使用模板空间ID经模板内容下载接口获取，避免误用服务配置下载接口
+    const configContent =
+      type === 'template'
+        ? await downloadTemplateContent(bkBizId.value, templateSpaceId, signature)
+        : await downloadConfigContent(bkBizId.value, appData.value.id as number, signature);
     return String(configContent);
   };
 
