@@ -26,11 +26,15 @@ const (
 	NewUIURLEnv = "BK_BSCP_NEW_UI_URL"
 	// OldUIURLEnv 旧 UI 路径/地址对应的环境变量，用于不便于修改配置文件时通过环境变量覆盖
 	OldUIURLEnv = "BK_BSCP_OLD_UI_URL"
+	// IAMVersionEnv 权限中心版本对应的环境变量，取值 v3/v4，
+	// 用于不便于修改配置文件时通过环境变量开启 iam v4，各组件共用
+	IAMVersionEnv = "BK_BSCP_IAM_VERSION"
 )
 
 // HostConf host conf
 type HostConf struct {
 	BKIAMHost            string `yaml:"bk_iam_host"`       // 权限中心
+	BKIAMV4Host          string `yaml:"bk_iam_v4_host"`    // 权限中心 V4，为空时使用 bk_iam_host
 	BKCMDBHost           string `yaml:"bk_cmdb_host"`      // 配置平台
 	BSCPAPIURL           string `yaml:"bscp_api_url"`      // bscp api地址
 	BKNODEMANHOST        string `yaml:"bk_nodeman_host"`   // 节点管理地址
@@ -40,6 +44,7 @@ type HostConf struct {
 	UserCenterURL        string `yaml:"user_center_url"`   // 用户中心(个人中心)跳转地址
 	NewUIURL             string `yaml:"new_ui_url"`        // 新 UI 路径/地址
 	OldUIURL             string `yaml:"old_ui_url"`        // 旧 UI 路径/地址
+	IAMVersion           string `yaml:"iam_version"`       // 权限中心版本, 取值 v3/v4, 为空时读环境变量 BK_BSCP_IAM_VERSION, 再为空时视为 v3
 }
 
 // getFromEnv 从环境变量补充配置，仅当对应字段为空时读取，避免覆盖显式配置
@@ -50,6 +55,25 @@ func (h *HostConf) getFromEnv() {
 	if h.OldUIURL == "" {
 		h.OldUIURL = os.Getenv(OldUIURLEnv)
 	}
+	if h.IAMVersion == "" {
+		h.IAMVersion = os.Getenv(IAMVersionEnv)
+	}
+}
+
+// IsIAMV4 判断是否启用权限中心 V4，仅由 iam_version(配置文件或环境变量)决定。
+func (h *HostConf) IsIAMV4() bool {
+	return h.IAMVersion == "v4"
+}
+
+// IAMHost 返回 UI 展示用的权限中心地址。
+// 开启 IAM V4 且配置了 bk_iam_v4_host 时使用 V4 地址，
+// 否则统一回退 bk_iam_host，关闭 V4 时即便残留 V4 地址也不会被使用。
+func (h *HostConf) IAMHost() string {
+	if h.IsIAMV4() && h.BKIAMV4Host != "" {
+		return h.BKIAMV4Host
+	}
+
+	return h.BKIAMHost
 }
 
 // FrontendConf docs and host conf

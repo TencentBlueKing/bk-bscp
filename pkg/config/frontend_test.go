@@ -55,4 +55,39 @@ func TestHostConfGetFromEnv(t *testing.T) {
 		assert.Equal(t, "https://explicit-new.example.com", h.NewUIURL)
 		assert.Equal(t, "https://explicit-old.example.com", h.OldUIURL)
 	})
+
+	// iam 版本为空时, 从环境变量补充
+	t.Run("fill iam version from env", func(t *testing.T) {
+		t.Setenv(IAMVersionEnv, "v4")
+
+		h := &HostConf{}
+		h.getFromEnv()
+		assert.Equal(t, "v4", h.IAMVersion)
+		assert.True(t, h.IsIAMV4())
+	})
+}
+
+func TestHostConfIAMHost(t *testing.T) {
+	h := &HostConf{BKIAMHost: "https://iam-v3.example.com"}
+
+	// 未开启 v4 时, 即使配置了 bk_iam_v4_host 也使用 bk_iam_host
+	t.Run("fallback when v4 disabled", func(t *testing.T) {
+		h.BKIAMV4Host = "https://iam-v4.example.com"
+		h.IAMVersion = ""
+		assert.Equal(t, "https://iam-v3.example.com", h.IAMHost())
+	})
+
+	// 环境变量开启 v4 且配置了 bk_iam_v4_host 时使用 v4 地址
+	t.Run("use v4 host when enabled by env", func(t *testing.T) {
+		h.BKIAMV4Host = "https://iam-v4.example.com"
+		h.IAMVersion = "v4"
+		assert.Equal(t, "https://iam-v4.example.com", h.IAMHost())
+	})
+
+	// 开启 v4 但未配置 bk_iam_v4_host 时回退 bk_iam_host
+	t.Run("fallback when v4 host missing", func(t *testing.T) {
+		h.BKIAMV4Host = ""
+		h.IAMVersion = "v4"
+		assert.Equal(t, "https://iam-v3.example.com", h.IAMHost())
+	})
 }

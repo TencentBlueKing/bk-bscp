@@ -19,6 +19,10 @@ frontend_conf:
   docs: {}
   hosts:
     bk_iam_host: ""
+    # 权限中心 V4 地址, 需配合开启 iam v4(iam_version 或环境变量 BK_BSCP_IAM_VERSION=v4), 为空时使用 bk_iam_host
+    bk_iam_v4_host: ""
+    # 权限中心版本, 取值 v3/v4, 为空时读环境变量 BK_BSCP_IAM_VERSION, 再为空时视为 v3
+    iam_version: ""
     bk_cmdb_host: ""
     bscp_api_url: ""
     bk_nodeman_host: ""
