@@ -143,17 +143,16 @@ func (p *ProcessInfo) Scan(value any) error {
 
 // ProcessInfo xxx
 type ProcessInfo struct {
-	BkStartParamRegex string `json:"bk_start_param_regex"` // 进程启动参数
-	WorkPath          string `json:"work_path"`            // 工作路径
-	PidFile           string `json:"pid_file"`             // PID文件路径
-	User              string `json:"user"`                 // 启动用户
-	ReloadCmd         string `json:"reload_cmd"`           // 重载命令
-	RestartCmd        string `json:"restart_cmd"`          // 重启命令
-	StartCmd          string `json:"start_cmd"`            // 启动命令
-	StopCmd           string `json:"stop_cmd"`             // 停止命令
-	FaceStopCmd       string `json:"face_stop_cmd"`        // 强制停止命令
-	Timeout           int    `json:"timeout"`              // 操作超时时长
-	StartCheckSecs    int    `json:"start_check_secs"`     // 启动等待时长
+	WorkPath       string `json:"work_path"`        // 工作路径
+	PidFile        string `json:"pid_file"`         // PID文件路径
+	User           string `json:"user"`             // 启动用户
+	ReloadCmd      string `json:"reload_cmd"`       // 重载命令
+	RestartCmd     string `json:"restart_cmd"`      // 重启命令
+	StartCmd       string `json:"start_cmd"`        // 启动命令
+	StopCmd        string `json:"stop_cmd"`         // 停止命令
+	FaceStopCmd    string `json:"face_stop_cmd"`    // 强制停止命令
+	Timeout        int    `json:"timeout"`          // 操作超时时长
+	StartCheckSecs int    `json:"start_check_secs"` // 启动等待时长
 }
 
 // ProcessAttachment xxx

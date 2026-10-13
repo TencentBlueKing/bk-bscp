@@ -5,7 +5,7 @@
         <div v-for="value in 2" :key="value" class="info">
           <div class="info-title">
             <bk-tag :theme="value === 1 ? 'info' : 'success'">{{ value === 1 ? t('旧') : t('新') }}</bk-tag>
-            <span class="title">进程别名</span>
+            <span class="title">{{ value === 1 ? oldAlias : newAlias }}</span>
           </div>
           <div class="content">
             <div v-for="info in value === 1 ? oldDisplayData : newDisplayData" :key="info.title" class="info-item">
@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   const { t } = useI18n();
   const props = defineProps<{
@@ -50,12 +50,18 @@
     managedInfo: {
       old: string;
       new: string;
+      oldAlias: string;
+      newAlias: string;
     };
   }>();
   const emits = defineEmits(['close', 'update']);
   const newDisplayData = ref();
   const oldDisplayData = ref();
   const restart = ref(false);
+
+  // 旧列展示旧别名，新列展示 new_alias，为空时回退旧别名
+  const oldAlias = computed(() => props.managedInfo.oldAlias || t('进程别名'));
+  const newAlias = computed(() => props.managedInfo.newAlias || props.managedInfo.oldAlias || t('进程别名'));
 
   watch(
     () => props.managedInfo,
@@ -71,7 +77,6 @@
   // 转换成展示格式的函数
   const transformToDisplayFormat = (data: any) => {
     return [
-      { title: t('进程启动参数：'), content: data.bk_start_param_regex || '--', isWarn: false },
       { title: t('工作路径：'), content: data.work_path || '--', isWarn: false },
       { title: t('PID 路径：'), content: data.pid_file || '--', isWarn: false },
       { title: t('启动用户：'), content: data.user || '--', isWarn: false },

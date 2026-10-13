@@ -148,12 +148,11 @@ func TestBuildConfigOperateRange(t *testing.T) {
 // 字段一致（与字段顺序无关）视为相等，任一侧解析失败视为不一致。
 func TestProcessConfigsEqual(t *testing.T) {
 	full := table.ProcessInfo{
-		BkStartParamRegex: ".*bin",
-		WorkPath:          "/data/bkapp",
-		PidFile:           "/data/bkapp/pid",
-		User:              "root",
-		StartCmd:          "start.sh",
-		StopCmd:           "stop.sh",
+		WorkPath: "/data/bkapp",
+		PidFile:  "/data/bkapp/pid",
+		User:     "root",
+		StartCmd: "start.sh",
+		StopCmd:  "stop.sh",
 	}
 
 	fullJSON, err := json.Marshal(full)

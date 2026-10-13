@@ -368,6 +368,8 @@
   const managedInfo = ref({
     old: '',
     new: '',
+    oldAlias: '',
+    newAlias: '',
   });
   const processIds = ref<number[]>([]);
   const processInstanceIds = ref<number[]>([]);
@@ -589,6 +591,8 @@
     processIds.value = [data.id];
     managedInfo.value.old = data.spec.prev_data;
     managedInfo.value.new = data.spec.source_data;
+    managedInfo.value.oldAlias = data.spec.alias;
+    managedInfo.value.newAlias = data.spec.new_alias;
     isShowUpdateManagedInfo.value = true;
   };
 

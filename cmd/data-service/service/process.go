@@ -970,17 +970,16 @@ func refreshConfigDataSnapshot(kt *kit.Kit, cmdbService bkcmdb.Service, bizID ui
 			continue
 		}
 		tableInfo := table.ProcessInfo{
-			BkStartParamRegex: info.BkStartParamRegex,
-			WorkPath:          info.WorkPath,
-			PidFile:           info.PidFile,
-			User:              info.User,
-			ReloadCmd:         info.ReloadCmd,
-			RestartCmd:        info.RestartCmd,
-			StartCmd:          info.StartCmd,
-			StopCmd:           info.StopCmd,
-			FaceStopCmd:       info.FaceStopCmd,
-			Timeout:           info.Timeout,
-			StartCheckSecs:    info.BkStartCheckSecs,
+			WorkPath:       info.WorkPath,
+			PidFile:        info.PidFile,
+			User:           info.User,
+			ReloadCmd:      info.ReloadCmd,
+			RestartCmd:     info.RestartCmd,
+			StartCmd:       info.StartCmd,
+			StopCmd:        info.StopCmd,
+			FaceStopCmd:    info.FaceStopCmd,
+			Timeout:        info.Timeout,
+			StartCheckSecs: info.BkStartCheckSecs,
 		}
 		configData, err := json.Marshal(tableInfo)
 		if err != nil {

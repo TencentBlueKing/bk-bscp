@@ -178,17 +178,16 @@ func TestCanProcessOperate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, _, _ := CanProcessOperate(tt.op, table.ProcessInfo{
-				BkStartParamRegex: "",
-				WorkPath:          "/data/work",
-				PidFile:           "test",
-				User:              "test",
-				ReloadCmd:         "reload test",
-				RestartCmd:        "restart test",
-				StartCmd:          "start test",
-				StopCmd:           "stop test",
-				FaceStopCmd:       "kill -9",
-				Timeout:           30,
-				StartCheckSecs:    60,
+				WorkPath:       "/data/work",
+				PidFile:        "test",
+				User:           "test",
+				ReloadCmd:      "reload test",
+				RestartCmd:     "restart test",
+				StartCmd:       "start test",
+				StopCmd:        "stop test",
+				FaceStopCmd:    "kill -9",
+				Timeout:        30,
+				StartCheckSecs: 60,
 			}, tt.status, tt.managedStatus, tt.syncStatus)
 			if got != tt.want {
 				t.Errorf("canProcessOperate() = %v, want %v", got, tt.want)
@@ -200,17 +199,16 @@ func TestCanProcessOperate(t *testing.T) {
 // fullAttrsInfo 命令与通用 3 项齐全的进程配置（属性矩阵用例基线）
 func fullAttrsInfo() table.ProcessInfo {
 	return table.ProcessInfo{
-		WorkPath:          "/data/work",
-		PidFile:           "test.pid",
-		User:              "test",
-		ReloadCmd:         "reload test",
-		RestartCmd:        "restart test",
-		StartCmd:          "start test",
-		StopCmd:           "stop test",
-		FaceStopCmd:       "kill -9",
-		Timeout:           30,
-		StartCheckSecs:    60,
-		BkStartParamRegex: "",
+		WorkPath:       "/data/work",
+		PidFile:        "test.pid",
+		User:           "test",
+		ReloadCmd:      "reload test",
+		RestartCmd:     "restart test",
+		StartCmd:       "start test",
+		StopCmd:        "stop test",
+		FaceStopCmd:    "kill -9",
+		Timeout:        30,
+		StartCheckSecs: 60,
 	}
 }
 
