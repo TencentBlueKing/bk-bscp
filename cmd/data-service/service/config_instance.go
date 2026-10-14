@@ -35,6 +35,8 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/common"
 	"github.com/TencentBlueKing/bk-bscp/internal/task/builder/config"
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
+	configExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
@@ -1433,6 +1435,11 @@ func dispatchTasks(
 ) uint32 {
 	var count uint32
 
+	// 同主机错峰：同主机内第 N 个下发的任务延迟 N*interval 秒执行，规避同机多实例并发写配置互相干扰
+	interval := cc.G().TaskFramework.ConfigPushIntervalSecs
+	baseDelay := cc.G().TaskFramework.ConfigPush.StaggerDelay.MaxExecution
+	hostCounters := make(map[string]int, len(tasks))
+
 	for _, t := range tasks {
 		payload, exists := payloadCache[t.GetTaskID()]
 		if !exists {
@@ -1455,6 +1462,8 @@ func dispatchTasks(
 			continue
 		}
 
+		setConfigPushStagger(kt, taskObj, bizID, batchID, payload, hostCounters, interval, baseDelay)
+
 		logs.Infof("dispatch push config task, task_id: %s, batch_id: %d, rid: %s", taskObj.GetTaskID(), batchID, kt.Rid)
 
 		taskMgr.Dispatch(taskObj)
@@ -1462,6 +1471,47 @@ func dispatchTasks(
 	}
 
 	return count
+}
+
+// setConfigPushStagger 按同主机下发序号给错峰延迟步骤写入延迟秒数；
+// 主机标识优先用 AgentID，缺失时退化为 管控区域:内网IP。interval <= 0 时不启用错峰。
+// 同主机内第 N 个下发的任务延迟 N*interval 秒，例如 interval=3s 时同主机 3 个任务依次 0s/3s/6s
+func setConfigPushStagger(kt *kit.Kit, taskObj *taskTypes.Task, bizID, batchID uint32,
+	payload *executorCommon.TaskPayload, hostCounters map[string]int, interval int, baseDelay time.Duration) {
+
+	if interval <= 0 || payload.ProcessPayload == nil {
+		return
+	}
+
+	proc := payload.ProcessPayload
+	hostKey := proc.AgentID
+	if hostKey == "" {
+		hostKey = strconv.Itoa(proc.CloudID) + ":" + proc.InnerIP
+	}
+	stagger := hostCounters[hostKey] * interval
+	hostCounters[hostKey]++
+
+	if stagger <= 0 {
+		return
+	}
+
+	for _, step := range taskObj.Steps {
+		if step.GetName() != string(configExecutor.ConfigStaggerDelayStepName) {
+			continue
+		}
+		if perr := step.SetPayload(configExecutor.PushConfigPayload{
+			TenantID:       kt.TenantID,
+			BizID:          bizID,
+			BatchID:        batchID,
+			StaggerSeconds: stagger,
+		}); perr != nil {
+			logs.Warnf("set config push stagger payload failed, task_id: %s, err: %v, rid: %s",
+				taskObj.GetTaskID(), perr, kt.Rid)
+			continue
+		}
+		// 延迟时长计入步骤执行上限，避免长间隔被步骤超时误杀
+		step.SetMaxExecution(baseDelay + time.Duration(stagger)*time.Second)
+	}
 }
 
 // PushConfig implements pbds.DataServer.
