@@ -593,7 +593,7 @@ func buildTaskNotifyContent(bizID uint32, taskID string, object table.TaskObject
 
 // 构建url
 func buildTaskDetailURL(bizID uint32, batchID string) string {
-	return fmt.Sprintf("%s/bscp/ui/space/%d/task/detail/%s",
+	return fmt.Sprintf("%s/space/%d/task/detail/%s",
 		cc.G().PushProvider.Config.BscpHost, bizID, batchID)
 }
 
