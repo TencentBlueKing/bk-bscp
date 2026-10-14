@@ -13,6 +13,7 @@
 package cmdb
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -23,9 +24,16 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
-// osTypeStubCMDB 空 CMDB 桩，供 buildProcessEntities 相关测试使用（已不再调用 ListBizHosts）
+// osTypeStubCMDB 空 CMDB 桩，供 buildProcessEntities 相关测试使用；
+// 通过 list_hosts 补全 os_type，主机数据由用例注入
 type osTypeStubCMDB struct {
 	bkcmdb.Service
+	hosts []bkcmdb.HostInfo
+}
+
+func (s *osTypeStubCMDB) ListBizHosts(_ context.Context, _ *bkcmdb.ListBizHostsRequest) (
+	*bkcmdb.CMDBListData[bkcmdb.HostInfo], error) {
+	return &bkcmdb.CMDBListData[bkcmdb.HostInfo]{Info: s.hosts}, nil
 }
 
 func newOsTypeProcessItem(cloudID int, innerIP string) *bkcmdb.ProcessRelatedInfoItem {
@@ -39,8 +47,30 @@ func newOsTypeProcessItem(cloudID int, innerIP string) *bkcmdb.ProcessRelatedInf
 	}
 }
 
-// TestBuildProcessEntitiesDoesNotSetOsType 停同步 os_type 后，新路径不再通过 list_hosts 补全该字段
-func TestBuildProcessEntitiesDoesNotSetOsType(t *testing.T) {
+// TestBuildProcessEntitiesSetsOsType 通过 list_hosts 补全进程 os_type：
+// 按云区域 + 内网 IP 关联主机，并将 CC 编码映射为业务语义（R-001）
+func TestBuildProcessEntitiesSetsOsType(t *testing.T) {
+	s := &syncCMDBService{
+		bizID: 3,
+		svc: &osTypeStubCMDB{hosts: []bkcmdb.HostInfo{
+			{BkHostID: 100, BkCloudID: 0, BkHostInnerIP: "127.0.0.1", BkOSType: "2"},
+		}},
+	}
+	data := []*bkcmdb.ProcessRelatedInfoItem{newOsTypeProcessItem(0, "127.0.0.1")}
+
+	procs := s.buildProcessEntities(kit.New(), data, "default")
+
+	if len(procs) != 1 {
+		t.Fatalf("processes count = %d, want 1", len(procs))
+	}
+	if got := procs[0].Spec.OsType; got != osTypeWin {
+		t.Fatalf("process os_type = %q, want %s", got, osTypeWin)
+	}
+}
+
+// TestBuildProcessEntitiesOsTypeEmptyWhenHostMissing list_hosts 未命中主机时 os_type 留空，
+// 不阻断同步（R-002：空值不覆盖已有非空值，由 BuildProcessChanges 空值保护兜底）
+func TestBuildProcessEntitiesOsTypeEmptyWhenHostMissing(t *testing.T) {
 	s := &syncCMDBService{bizID: 3, svc: &osTypeStubCMDB{}}
 	data := []*bkcmdb.ProcessRelatedInfoItem{newOsTypeProcessItem(0, "127.0.0.1")}
 

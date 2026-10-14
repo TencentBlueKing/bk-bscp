@@ -262,11 +262,16 @@ const (
 
 	// ConfigKeyPcvBiz 进程与配置管理可见性业务白名单
 	ConfigKeyPcvBiz = "pcv_biz"
+
+	// ConfigKeyPushConfigToTargetBiz GSE 文件传输下发（PushConfigToTarget）业务白名单，
+	// 仅当 yaml 开关 usePushConfigToTarget 开启且业务命中该白名单时才走文件传输下发
+	ConfigKeyPushConfigToTargetBiz = "push_config_to_target_biz"
 )
 
 // cachedConfigKeys 需要在启动时加载并定期刷新的 key 列表。
 var cachedConfigKeys = []string{
 	ConfigKeyPcvBiz,
+	ConfigKeyPushConfigToTargetBiz,
 }
 
 // ConfigKVCache configs 表中特定 key 的内存缓存
@@ -382,6 +387,16 @@ func (s *Service) IsProcessConfigViewEnabled(bizID uint32) bool {
 // 定时全量同步以该名单为准，不请求 CMDB 拉全量业务，避免返回顺序变化影响轮转。
 func (s *Service) ListProcessConfigEnabledBizIDs() []int {
 	return parsePcvBizIDs(s.getConfigValue(ConfigKeyPcvBiz))
+}
+
+// ListPushConfigToTargetBizIDs 从 configs.push_config_to_target_biz 解析 GSE 文件传输下发白名单业务 ID，按升序去重。
+func (s *Service) ListPushConfigToTargetBizIDs() []uint32 {
+	ids := parsePcvBizIDs(s.getConfigValue(ConfigKeyPushConfigToTargetBiz))
+	out := make([]uint32, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, uint32(id))
+	}
+	return out
 }
 
 // parsePcvBizIDs 解析逗号分隔的业务白名单，非法值和 <=0 丢弃，结果按 ID 升序。

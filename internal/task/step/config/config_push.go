@@ -103,6 +103,37 @@ func PushConfigToTarget(tenantID string, bizID, batchID uint32, operateType tabl
 	return push
 }
 
+// BackupConfig 备份目标机器现有配置步骤。
+// 仅 PushConfigToTarget（GSE 文件传输）下发前执行，文件传输会直接覆盖目标文件；
+// 备份为尽力而为，失败不阻断后续下发步骤；
+// ReleaseConfig 脚本内置备份，不插入该步骤
+func BackupConfig(
+	tenantID string,
+	bizID uint32,
+	batchID uint32,
+	operateType table.ConfigOperateType,
+	operatorUser string,
+	payload *executorCommon.TaskPayload,
+) *types.Step {
+	logs.V(3).Infof("backup config: bizID: %d, batchID: %d, operateType: %s", bizID, batchID, operateType)
+
+	btf := cc.G().TaskFramework.ConfigPush.BackupConfig
+	backup := types.NewStep(config.BackupConfigStepName.String(), config.BackupConfigStepName.String()).
+		SetAlias("backup_config").
+		SetMaxExecution(btf.MaxExecution).
+		SetMaxTries(btf.MaxRetries)
+
+	lo.Must0(backup.SetPayload(config.PushConfigPayload{
+		TenantID:     tenantID,
+		BizID:        bizID,
+		BatchID:      batchID,
+		OperateType:  operateType,
+		OperatorUser: operatorUser,
+		Payload:      payload,
+	}))
+	return backup
+}
+
 // ReleaseConfig 通过脚本方式下发配置步骤
 func ReleaseConfig(
 	tenantID string,

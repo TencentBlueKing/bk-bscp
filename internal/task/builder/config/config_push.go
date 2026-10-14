@@ -14,6 +14,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
@@ -22,6 +23,7 @@ import (
 	executorCommon "github.com/TencentBlueKing/bk-bscp/internal/task/executor/common"
 	configExecutor "github.com/TencentBlueKing/bk-bscp/internal/task/executor/config"
 	configStep "github.com/TencentBlueKing/bk-bscp/internal/task/step/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 )
 
@@ -33,12 +35,14 @@ type PushConfigTask struct {
 	operateType         table.ConfigOperateType
 	operatorUser        string
 	generateTaskPayload *executorCommon.TaskPayload
+	pushToTargetBizIDs  []uint32
 }
 
 // NewPushConfigTask creates a config push task builder.
+// pushToTargetBizIDs 为 GSE 文件传输下发的业务白名单，来源于 configs 表 push_config_to_target_biz。
 func NewPushConfigTask(dao dao.Set, tenantID string, bizID uint32, batchID uint32,
 	operateType table.ConfigOperateType, operatorUser string,
-	generateTaskPayload *executorCommon.TaskPayload) types.TaskBuilder {
+	generateTaskPayload *executorCommon.TaskPayload, pushToTargetBizIDs []uint32) types.TaskBuilder {
 	return &PushConfigTask{
 		Builder:             common.NewBuilder(dao),
 		tenantID:            tenantID,
@@ -47,6 +51,7 @@ func NewPushConfigTask(dao dao.Set, tenantID string, bizID uint32, batchID uint3
 		operateType:         operateType,
 		operatorUser:        operatorUser,
 		generateTaskPayload: generateTaskPayload,
+		pushToTargetBizIDs:  pushToTargetBizIDs,
 	}
 }
 
@@ -64,6 +69,11 @@ func (t *PushConfigTask) FinalizeTask(task *types.Task) error {
 }
 
 func (t *PushConfigTask) Steps() ([]*types.Step, error) {
+	// 下发步骤选择：开关开启且业务在 configs.push_config_to_target_biz 白名单内时，
+	// 改用 PushConfigToTarget（GSE 文件传输）下发，否则保持脚本下发（ReleaseConfig）
+	useTransfer := cc.G().TaskFramework.ConfigPush.UsePushConfigToTarget &&
+		slices.Contains(t.pushToTargetBizIDs, t.bizID)
+
 	// 构建配置下发的步骤
 	steps := []*types.Step{
 		// 1. 验证步骤
@@ -75,13 +85,37 @@ func (t *PushConfigTask) Steps() ([]*types.Step, error) {
 			t.operatorUser,
 			t.generateTaskPayload,
 		),
-		// 2. 发布配置步骤
-		configStep.ReleaseConfig(t.tenantID, t.bizID,
+	}
+
+	// 2. 发布配置步骤
+	if useTransfer {
+		// GSE 文件传输会直接覆盖目标文件，传输前先在目标机器上备份现有配置；
+		// 备份为尽力而为，失败只记录日志，不阻断下发；
+		// ReleaseConfig 脚本内置备份，无需该步骤
+		steps = append(steps, configStep.BackupConfig(
+			t.tenantID,
+			t.bizID,
 			t.batchID,
 			t.operateType,
 			t.operatorUser,
 			t.generateTaskPayload,
-		),
+		))
+		steps = append(steps, configStep.PushConfigToTarget(
+			t.tenantID,
+			t.bizID,
+			t.batchID,
+			t.operateType,
+			t.operatorUser,
+			"",
+			t.generateTaskPayload,
+		))
+	} else {
+		steps = append(steps, configStep.ReleaseConfig(t.tenantID, t.bizID,
+			t.batchID,
+			t.operateType,
+			t.operatorUser,
+			t.generateTaskPayload,
+		))
 	}
 
 	return steps, nil
