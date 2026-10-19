@@ -82,6 +82,7 @@
       { title: t('启动用户：'), content: data.user || '--', isWarn: false },
       { title: t('启动命令：'), content: data.start_cmd || '--', isWarn: false },
       { title: t('停止命令：'), content: data.stop_cmd || '--', isWarn: false },
+      { title: t('重启命令：'), content: data.restart_cmd || '--', isWarn: false },
       { title: t('强制停止：'), content: data.face_stop_cmd || '--', isWarn: false },
       { title: t('重载命令：'), content: data.reload_cmd || '--', isWarn: false },
       { title: t('启动等待时长：'), content: `${data.start_check_secs}s` || '--', isWarn: false },
