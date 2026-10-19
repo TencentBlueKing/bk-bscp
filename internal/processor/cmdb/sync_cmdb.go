@@ -948,7 +948,7 @@ func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.
 				"[UpdateProcess][QueryOldProcess] bizID=%d serviceInstanceID=%d ccProcessID=%d failed: %v",
 				p.BkBizID, p.ServiceInstanceID, p.BkProcessID, err,
 			)
-			continue
+			return nil, fmt.Errorf("query old process %d for biz %d: %w", p.BkProcessID, p.BkBizID, err)
 		}
 
 		// 更新事件，但 DB 中不存在 → 异常数据，直接跳过

@@ -595,7 +595,8 @@ func (ds *dataService) startCronTasks() {
 
 	// 监听cmdb资源变化
 	if crontabConfig.WatchCmdbResource.Enabled {
-		watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service, ds.taskManager)
+		watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service, ds.taskManager,
+			crontabConfig.WatchCmdbResource)
 		watchCmdb.Run()
 	}
 

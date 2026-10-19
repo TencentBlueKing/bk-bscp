@@ -16,6 +16,7 @@ package bkcmdb
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 
@@ -77,6 +78,11 @@ type CMDBService struct {
 }
 
 func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url string, body any, result any) error {
+	return bkcmdb.doRequestWithClient(ctx, components.GetClient(), method, url, body, result)
+}
+
+func (bkcmdb *CMDBService) doRequestWithClient(ctx context.Context, cli *resty.Client, method HTTPMethod,
+	url string, body any, result any) error {
 	// 组装网关认证信息
 	gwAuthOptions := []components.GWAuthOption{}
 	withBkUsername := components.WithBkUsername(bkcmdb.BkUserName)
@@ -98,7 +104,7 @@ func (bkcmdb *CMDBService) doRequest(ctx context.Context, method HTTPMethod, url
 	)
 
 	// 构造请求
-	request := components.GetClient().SetDebug(false).R().
+	request := cli.R().
 		SetContext(ctx).
 		SetHeader("X-Bkapi-Authorization", authHeader).
 		SetBody(body)
@@ -501,6 +507,22 @@ func (bkcmdb *CMDBService) ResourceWatch(ctx context.Context, req *WatchResource
 	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
 	result := new(WatchData)
 	if err := bkcmdb.doRequest(ctx, POST, url, req, &result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// ResourceWatchLongPolling 长轮询监听资源变化事件。
+// CC resource_watch 采用短长链设计：带游标 watch 且无事件时，CC 保持连接至多 20s，
+// 期间有变更即刻推回。请求使用 watch 专用长轮询客户端（可配置超时），避免被全局
+// 客户端 30s 硬编码超时截断。requestTimeout 必须 > 20s。
+func (bkcmdb *CMDBService) ResourceWatchLongPolling(ctx context.Context, req *WatchResourceRequest,
+	requestTimeout time.Duration) (*WatchData, error) {
+	url := fmt.Sprintf(watchResource, bkcmdb.Host, req.BkResource)
+	result := new(WatchData)
+	cli := components.GetLongPollingClient(requestTimeout)
+	if err := bkcmdb.doRequestWithClient(ctx, cli, POST, url, req, &result); err != nil {
 		return nil, err
 	}
 

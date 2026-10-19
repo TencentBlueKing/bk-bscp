@@ -13,6 +13,7 @@
 package cc
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -102,6 +103,121 @@ func TestWatchCmdbResourceCanBeEnabled(t *testing.T) {
 
 	if !conf.WatchCmdbResource.Enabled {
 		t.Fatalf("expected watchCmdbResource to be enabled when configured true")
+	}
+}
+
+func TestWatchCmdbResourceDefaults(t *testing.T) {
+	var conf WatchCmdbResourceConfig
+	conf.trySetDefault()
+
+	if conf.Interval != "1m" {
+		t.Fatalf("interval = %q, want 1m", conf.Interval)
+	}
+	if conf.IdleInterval != "1s" {
+		t.Fatalf("idleInterval = %q, want 1s", conf.IdleInterval)
+	}
+	if conf.MaxConcurrency != 8 {
+		t.Fatalf("maxConcurrency = %d, want 8", conf.MaxConcurrency)
+	}
+	if conf.QpsLimit != 20.0 {
+		t.Fatalf("qpsLimit = %f, want 20", conf.QpsLimit)
+	}
+	if conf.HandlerConcurrency != 4 {
+		t.Fatalf("handlerConcurrency = %d, want 4", conf.HandlerConcurrency)
+	}
+	if conf.StartFromOffset != "5m" {
+		t.Fatalf("startFromOffset = %q, want 5m", conf.StartFromOffset)
+	}
+	if conf.RequestTimeout != "35s" {
+		t.Fatalf("requestTimeout = %q, want 35s", conf.RequestTimeout)
+	}
+	if conf.MaxWatchChains != 100 {
+		t.Fatalf("maxWatchChains = %d, want 100", conf.MaxWatchChains)
+	}
+	if conf.MaxEventsPerPage != 200 {
+		t.Fatalf("maxEventsPerPage = %d, want 200", conf.MaxEventsPerPage)
+	}
+	if len(conf.Resources) != 3 {
+		t.Fatalf("resources = %v, want [set module process]", conf.Resources)
+	}
+	if _, ok := conf.Fields["set"]; !ok {
+		t.Fatal("expected default fields for set resource")
+	}
+	if _, ok := conf.Fields["module"]; !ok {
+		t.Fatal("expected default fields for module resource")
+	}
+	if err := conf.validate(); err != nil {
+		t.Fatalf("validate default config failed: %v", err)
+	}
+}
+
+func TestWatchCmdbResourceKeepsConfiguredValues(t *testing.T) {
+	raw := `
+watchCmdbResource:
+  enabled: true
+  interval: 2m
+  idleInterval: 3s
+  maxConcurrency: 16
+  qpsLimit: 40
+  handlerConcurrency: 8
+  startFromOffset: 10m
+  requestTimeout: 40s
+  resources:
+    - set
+    - process
+`
+	var conf CrontabConfig
+	if err := yaml.Unmarshal([]byte(raw), &conf); err != nil {
+		t.Fatalf("unmarshal crontab config failed: %v", err)
+	}
+	conf.trySetDefault()
+
+	watch := conf.WatchCmdbResource
+	if watch.MaxConcurrency != 16 {
+		t.Fatalf("maxConcurrency = %d, want 16", watch.MaxConcurrency)
+	}
+	if watch.RequestTimeout != "40s" {
+		t.Fatalf("requestTimeout = %q, want 40s", watch.RequestTimeout)
+	}
+	if len(watch.Resources) != 2 || watch.Resources[0] != "set" || watch.Resources[1] != "process" {
+		t.Fatalf("resources = %v, want [set process]", watch.Resources)
+	}
+	// 用户未配置 fields 时保留默认
+	if _, ok := watch.Fields["set"]; !ok {
+		t.Fatal("expected default fields preserved for set resource")
+	}
+	if err := watch.validate(); err != nil {
+		t.Fatalf("validate configured config failed: %v", err)
+	}
+}
+
+func TestWatchCmdbResourceValidateRejectsInvalidValues(t *testing.T) {
+	cases := []struct {
+		name string
+		conf WatchCmdbResourceConfig
+	}{
+		{"requestTimeout too short", WatchCmdbResourceConfig{RequestTimeout: "10s"}},
+		{"requestTimeout at boundary", WatchCmdbResourceConfig{RequestTimeout: "20s"}},
+		{"invalid interval", WatchCmdbResourceConfig{Interval: "abc"}},
+		{"invalid idleInterval", WatchCmdbResourceConfig{IdleInterval: "xyz"}},
+		{"negative maxConcurrency", WatchCmdbResourceConfig{MaxConcurrency: -1}},
+		{"negative handlerConcurrency", WatchCmdbResourceConfig{HandlerConcurrency: -1}},
+		{"negative qpsLimit", WatchCmdbResourceConfig{QpsLimit: -1}},
+		{"NaN qpsLimit", WatchCmdbResourceConfig{QpsLimit: math.NaN()}},
+		{"infinite qpsLimit", WatchCmdbResourceConfig{QpsLimit: math.Inf(1)}},
+		{"zero interval", WatchCmdbResourceConfig{Interval: "0s"}},
+		{"negative offset", WatchCmdbResourceConfig{StartFromOffset: "-1m"}},
+		{"unsupported resource", WatchCmdbResourceConfig{Resources: []string{"host"}}},
+		{"negative maxWatchChains", WatchCmdbResourceConfig{MaxWatchChains: -1}},
+		{"negative maxEventsPerPage", WatchCmdbResourceConfig{MaxEventsPerPage: -1}},
+		{"invalid resource type", WatchCmdbResourceConfig{Resources: []string{"pod"}}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if err := c.conf.validate(); err == nil {
+				t.Fatalf("expected validate to reject %s", c.name)
+			}
+		})
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"slices"
@@ -1362,9 +1363,43 @@ type WatchHostUpdatesConfig struct {
 }
 
 // WatchCmdbResourceConfig defines watch cmdb resource task configuration options.
+// watch 任务采用常驻长轮询循环（CC resource_watch 短长链设计），替代旧的固定 tick 轮询。
 type WatchCmdbResourceConfig struct {
 	// Enabled defines whether the watch cmdb resource task is enabled
 	Enabled bool `yaml:"enabled"`
+	// Interval defines the scan period for discovering new tenants or resources
+	Interval string `yaml:"interval"`
+	// IdleInterval defines the fallback probe interval, only effective when CC does NOT
+	// hold the long-polling connection (response without events costs < 1s).
+	// It is clamped to >= 1s to avoid a tight request loop.
+	IdleInterval string `yaml:"idleInterval"`
+	// MaxConcurrency defines the max number of concurrent watch requests to CC.
+	// Each long-polling request holds one CC watch session for up to 20s, so this
+	// value is also the CC watch session limit.
+	MaxConcurrency int `yaml:"maxConcurrency"`
+	// QpsLimit defines the QPS limit for watch requests to CC, mainly converging
+	// bursts when catching up event backlogs
+	QpsLimit float64 `yaml:"qpsLimit"`
+	// HandlerConcurrency defines the event handling worker concurrency across resources.
+	// Events of the same resource are always processed in FIFO order.
+	HandlerConcurrency int `yaml:"handlerConcurrency"`
+	// StartFromOffset defines the lookback offset used when the cursor is lost or expired
+	StartFromOffset string `yaml:"startFromOffset"`
+	// RequestTimeout defines the timeout of a single long-polling watch request.
+	// It must be > 20s (CC long-polling hold window) and is enforced by validate.
+	RequestTimeout string `yaml:"requestTimeout"`
+	// Resources defines the CMDB resource types to watch
+	Resources []string `yaml:"resources"`
+	// Fields defines per-resource bk_fields trimming, optional.
+	// Missing resource falls back to the code default; empty list means all fields.
+	Fields map[string][]string `yaml:"fields"`
+	// MaxWatchChains limits the number of concurrently running watch chains
+	// (tenant x resource). Chains beyond the limit will NOT run; when there are
+	// many tenants, increase this value or reduce resources explicitly.
+	MaxWatchChains int `yaml:"maxWatchChains"`
+	// MaxEventsPerPage limits the max events processed per batch; a page larger
+	// than this is split into chunks (CC protocol caps one page at 200)
+	MaxEventsPerPage int `yaml:"maxEventsPerPage"`
 }
 
 // SyncCmdbGseConfig defines sync cmdb and gse task configuration options.
@@ -1478,6 +1513,10 @@ func (c CrontabConfig) validate() error {
 		return err
 	}
 
+	if err := c.WatchCmdbResource.validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1525,6 +1564,124 @@ func (c *WatchHostUpdatesConfig) trySetDefault() {
 	}
 }
 
+// watchCmdbResourceValidResources lists the CMDB resource types that the watch
+// cmdb resource task supports. It is defined locally because pkg/cc cannot
+// import internal/components/bkcmdb (import cycle).
+var watchCmdbResourceValidResources = map[string]struct{}{
+	"set": {}, "module": {}, "process": {},
+}
+
+// validate if the watch cmdb resource config is valid or not.
+func (c WatchCmdbResourceConfig) validate() error {
+	durations := []struct {
+		name  string
+		value string
+	}{
+		{"interval", c.Interval},
+		{"idleInterval", c.IdleInterval},
+		{"startFromOffset", c.StartFromOffset},
+		{"requestTimeout", c.RequestTimeout},
+	}
+	for _, d := range durations {
+		if d.value == "" {
+			continue
+		}
+		if duration, err := time.ParseDuration(d.value); err != nil || duration <= 0 {
+			return fmt.Errorf("invalid watchCmdbResource %s duration: %s", d.name, d.value)
+		}
+	}
+
+	// CC long-polling holds the connection up to 20s, the request timeout must cover it.
+	if c.RequestTimeout != "" {
+		timeout, err := time.ParseDuration(c.RequestTimeout)
+		if err != nil {
+			return fmt.Errorf("invalid watchCmdbResource requestTimeout duration: %s", c.RequestTimeout)
+		}
+		if timeout <= 20*time.Second {
+			return fmt.Errorf("invalid watchCmdbResource requestTimeout value: %s, should > 20s"+
+				" (CC long-polling hold window)", c.RequestTimeout)
+		}
+	}
+
+	if c.MaxConcurrency < 0 {
+		return fmt.Errorf("invalid watchCmdbResource maxConcurrency value: %d, should >= 0", c.MaxConcurrency)
+	}
+
+	if c.HandlerConcurrency < 0 {
+		return fmt.Errorf("invalid watchCmdbResource handlerConcurrency value: %d, should >= 0", c.HandlerConcurrency)
+	}
+
+	if c.MaxWatchChains < 0 {
+		return fmt.Errorf("invalid watchCmdbResource maxWatchChains value: %d, should >= 0", c.MaxWatchChains)
+	}
+
+	if c.MaxEventsPerPage < 0 {
+		return fmt.Errorf("invalid watchCmdbResource maxEventsPerPage value: %d, should >= 0", c.MaxEventsPerPage)
+	}
+
+	if c.QpsLimit < 0 || math.IsNaN(c.QpsLimit) || math.IsInf(c.QpsLimit, 0) {
+		return fmt.Errorf("invalid watchCmdbResource qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	for _, res := range c.Resources {
+		if _, ok := watchCmdbResourceValidResources[res]; !ok {
+			return fmt.Errorf("invalid watchCmdbResource resource type: %s", res)
+		}
+	}
+
+	return nil
+}
+
+// trySetDefault try set the default value of watch cmdb resource config
+func (c *WatchCmdbResourceConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "1m" // tenant/resource scan period
+	}
+
+	if c.IdleInterval == "" {
+		c.IdleInterval = "1s" // fallback probe interval when CC does not hold
+	}
+
+	if c.MaxConcurrency == 0 {
+		c.MaxConcurrency = 8 // also the CC watch session limit
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 20.0 // 20 QPS
+	}
+
+	if c.HandlerConcurrency == 0 {
+		c.HandlerConcurrency = 4
+	}
+
+	if c.MaxWatchChains == 0 {
+		c.MaxWatchChains = 100
+	}
+
+	if c.MaxEventsPerPage == 0 {
+		c.MaxEventsPerPage = 200 // aligns with the CC protocol page cap
+	}
+
+	if c.StartFromOffset == "" {
+		c.StartFromOffset = "5m"
+	}
+
+	if c.RequestTimeout == "" {
+		c.RequestTimeout = "35s" // must cover the 20s CC long-polling hold window
+	}
+
+	if len(c.Resources) == 0 {
+		c.Resources = []string{"set", "module", "process"}
+	}
+
+	if c.Fields == nil {
+		c.Fields = map[string][]string{
+			"set":    {"bk_biz_id", "bk_set_id", "bk_set_name", "bk_set_env", "set_template_id"},
+			"module": {"bk_biz_id", "bk_set_id", "bk_module_id", "bk_module_name"},
+		}
+	}
+}
+
 // validate if the sync cmdb gse config is valid or not.
 func (c SyncCmdbGseConfig) validate() error {
 	if c.Interval != "" {
@@ -1566,6 +1723,7 @@ func (c *CrontabConfig) trySetDefault() {
 	c.WatchBizHostRelation.trySetDefault()
 	c.WatchHostUpdates.trySetDefault()
 	c.SyncCmdbGse.trySetDefault()
+	c.WatchCmdbResource.trySetDefault()
 }
 
 // RateLimiter defines the rate limiter options for traffic control.
