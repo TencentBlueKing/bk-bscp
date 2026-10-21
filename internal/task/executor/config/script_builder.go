@@ -80,6 +80,20 @@ func (b *ScriptBuilder) BuildFileCatScript(absPath string) (string, error) {
 	return buildLinuxCatScript(absPath)
 }
 
+// BuildBackupScript 构建配置下发前的目标文件备份脚本。
+// PushConfig（GSE 文件传输）直接覆盖目标文件，覆盖前需在目标机器上备份现有文件
+// 并清理旧备份；ReleaseConfig 脚本内置备份，不使用本脚本。
+// 目标文件不存在时脚本以 0 退出（首次下发无需备份）。
+func (b *ScriptBuilder) BuildBackupScript(absPath string, maxBackups int) (string, error) {
+	if maxBackups <= 0 {
+		maxBackups = defaultMaxBackups
+	}
+	if b.IsWindows() {
+		return b.buildWindowsBackupScript(absPath, maxBackups)
+	}
+	return buildLinuxBackupScript(absPath, maxBackups)
+}
+
 // ---- Linux 脚本 ----
 
 func shellQuote(s string) string {
@@ -270,6 +284,55 @@ TARGET_PATH=%s
 cat "$TARGET_PATH"
 `,
 		shellQuote(absPath),
+	), nil
+}
+
+// buildLinuxBackupScript 构建 Linux 目标文件备份脚本：
+// 备份原文件（cp -p 保留属主、权限与时间戳）并清理旧备份，命名与
+// buildLinuxPushScript 的备份段保持一致（${TARGET_NAME}.${TIMESTAMP}.bak）。
+// nolint:funlen
+func buildLinuxBackupScript(absPath string, maxBackups int) (string, error) {
+	if !strings.HasPrefix(absPath, "/") {
+		return "", fmt.Errorf("absPath must be absolute")
+	}
+
+	return fmt.Sprintf(`#!/bin/bash
+set -euo pipefail
+
+TARGET_PATH=%s
+MAX_BACKUPS=%d
+
+if [ ! -f "$TARGET_PATH" ]; then
+    echo "[INFO] 目标文件不存在，跳过备份。"
+    exit 0
+fi
+
+TARGET_DIR="$(dirname "$TARGET_PATH")"
+TARGET_NAME="$(basename "$TARGET_PATH")"
+
+# 1. 备份原文件，cp -p 让备份文件属主、权限、时间戳与目标保持一致
+TIMESTAMP="$(date +%%s)"
+BACKUP_PATH="${TARGET_DIR}/${TARGET_NAME}.${TIMESTAMP}.bak"
+
+cp -p -- "$TARGET_PATH" "$BACKUP_PATH"
+echo "[OK] 备份已生成: $BACKUP_PATH"
+
+# 2. 清理旧备份：超过 MAX_BACKUPS 份则删除最旧的。
+#    按修改时间从旧到新排列，找出需要删除的文件。
+BACKUP_COUNT="$(ls -1 "${TARGET_DIR}/${TARGET_NAME}".*.bak 2>/dev/null | wc -l)"
+
+if [ "$BACKUP_COUNT" -gt "$MAX_BACKUPS" ]; then
+    DELETE_COUNT=$(( BACKUP_COUNT - MAX_BACKUPS ))
+
+    ls -1t "${TARGET_DIR}/${TARGET_NAME}".*.bak 2>/dev/null \
+        | tail -n "$DELETE_COUNT" \
+        | xargs -r rm -f --
+
+    echo "[INFO] Cleaned $DELETE_COUNT old backup(s), kept latest $MAX_BACKUPS"
+fi
+`,
+		shellQuote(absPath),
+		maxBackups,
 	), nil
 }
 
@@ -636,6 +699,80 @@ if exist "%s" (
 `, winPath, winPath), nil
 }
 
+// buildWindowsBackupScript 构建 Windows 目标文件备份脚本：
+// 逻辑与 buildWindowsPushScript 的备份段对齐（毫秒时间戳 + 唯一 token 防同秒并发覆盖，
+// dir /b /o:d 找出最旧备份并删除），备份命名与下发脚本一致（.bscp.<token>.bak 后缀），
+// 保证两端清理 glob（!TARGET_NAME!.*.bak）互相兼容。
+// nolint:funlen
+func (b *ScriptBuilder) buildWindowsBackupScript(absPath string, maxBackups int) (string, error) {
+	if !windowsAbsPathRe.MatchString(absPath) {
+		return "", fmt.Errorf("absPath must be absolute")
+	}
+
+	winPath := ToWindowsPath(absPath)
+	token := newTempToken()
+
+	return fmt.Sprintf(`@echo off
+setlocal enabledelayedexpansion
+
+set "TARGET_PATH=%s"
+set /a MAX_BACKUPS=%d
+
+REM 1. 解析目录和文件名
+for %%%%i in ("%%TARGET_PATH%%") do (
+    set "TARGET_DIR=%%%%~dpi"
+    set "TARGET_NAME=%%%%~nxi"
+)
+
+REM 2. 目标文件不存在则跳过（首次下发无备份对象）
+if not exist "%%TARGET_PATH%%" (
+    echo [INFO] 目标文件不存在，跳过备份。
+    exit /b 0
+)
+
+REM 3. 备份原文件：毫秒级时间戳 + 唯一 token，防止同秒并发覆盖
+for /f "delims=" %%%%i in (
+    'powershell -NoProfile -Command "Get-Date -Format yyyyMMddHHmmssfff"'
+) do set "STAMP=%%%%i"
+
+set "BACKUP_FILE=!TARGET_NAME!.!STAMP!.bscp.%s.bak"
+set "BACKUP_FULL_PATH=!TARGET_DIR!!BACKUP_FILE!"
+
+copy /y "%%TARGET_PATH%%" "!BACKUP_FULL_PATH!" >nul || (
+    echo [ERROR] 备份失败
+    exit /b 1
+)
+echo [OK] 备份已生成: !BACKUP_FILE!
+
+REM 4. 清理旧备份：超过 MAX_BACKUPS 份则删除最旧的
+set /a COUNT=0
+for /f "delims=" %%%%f in (
+    'dir /b /o:d "!TARGET_DIR!!TARGET_NAME!.*.bak" 2^>nul'
+) do set /a COUNT+=1
+
+if !COUNT! gtr !MAX_BACKUPS! (
+    set /a DEL_COUNT=!COUNT!-!MAX_BACKUPS!
+    set /a IDX=0
+    for /f "delims=" %%%%f in (
+        'dir /b /o:d "!TARGET_DIR!!TARGET_NAME!.*.bak" 2^>nul'
+    ) do (
+        if !IDX! lss !DEL_COUNT! (
+            echo [CLEAN] 删除旧备份: %%%%f
+            del /f /q "!TARGET_DIR!%%%%f" >nul 2>&1
+            set /a IDX+=1
+        )
+    )
+)
+
+endlocal
+exit /b 0
+`,
+		winPath,
+		maxBackups,
+		token,
+	), nil
+}
+
 // ---- 公共辅助函数 ----
 
 // ScriptStoreDirByFileMode 根据平台返回脚本存放目录
@@ -678,6 +815,20 @@ func GetExecutionUser(fileMode table.FileMode) string {
 		return windowsExecutionUser
 	}
 	return linuxExecutionUser
+}
+
+// FileModeFromOsType 由目标机器 os_type（processes 表）决定机器类型。
+// 下发/check 的目标机器类型应跟随主机真实操作系统，而非配置模板的 FileMode；
+// 存量数据 os_type 可能为空，为空或未覆盖编码时回退配置模板的 FileMode
+func FileModeFromOsType(osType string, fallback table.FileMode) table.FileMode {
+	switch osType {
+	case "win":
+		return table.Windows
+	case "linux", "aix":
+		return table.Unix
+	default:
+		return fallback
+	}
 }
 
 // ToWindowsPath 将 POSIX 路径转换为 Windows 路径
