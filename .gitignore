@@ -41,3 +41,10 @@ graphify-out/
 docs/dev-map/*
 !docs/dev-map/README.md
 !docs/dev-map/graph.json
+### AI tooling (OpenSpec / Cursor / Claude / Copilot) ###
+.claude/
+.cursor/commands/
+.cursor/skills/
+.github/prompts/
+.github/skills/
+openspec/
