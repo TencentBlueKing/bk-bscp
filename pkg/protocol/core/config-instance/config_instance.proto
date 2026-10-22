@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "pkg/protocol/core/base/base.proto";
+import "pkg/protocol/core/process/process.proto";
 import "google/protobuf/timestamp.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
@@ -44,6 +45,9 @@ message ConfigInstanceSearchCondition {
   repeated string process_aliases = 5
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程别名" }];
   string environment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
+  // 表达式范围，作为附加过滤条件与上面的多选列表 AND 叠加；命中为空即空结果集。
+  pbproc.ExpressionScope expression_scope = 12
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "表达式范围(附加过滤)" }];
 }
 
 // Choice 查询枚举值选项

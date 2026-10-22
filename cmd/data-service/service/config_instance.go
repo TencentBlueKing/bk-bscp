@@ -450,6 +450,7 @@ func getFilteredProcesses(kt *kit.Kit, bizID uint32, dao dao.Set, configTemplate
 		processSearchCondition.ServiceInstances = search.ServiceInstances
 		processSearchCondition.ProcessAliases = search.ProcessAliases
 		processSearchCondition.Environment = search.GetEnvironment()
+		processSearchCondition.ExpressionScope = search.GetExpressionScope()
 	}
 
 	filteredProcesses, _, err := dao.Process().List(kt, bizID, processSearchCondition, &types.BasePage{

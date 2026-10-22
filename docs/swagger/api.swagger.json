@@ -30987,6 +30987,11 @@
         "environment": {
           "type": "string",
           "description": "环境"
+        },
+        "expressionScope": {
+          "$ref": "#/definitions/pbprocExpressionScope",
+          "description": "表达式范围(附加过滤)",
+          "title": "表达式范围，作为附加过滤条件与上面的多选列表 AND 叠加；命中为空即空结果集。"
         }
       },
       "title": "ConfigInstanceSearchCondition 配置实例搜索条件"
