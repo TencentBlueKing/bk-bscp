@@ -641,7 +641,7 @@ type ConfigClient interface {
 	// 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
 	// 进程数量与实例数量一致时无缩容，无需清除）
 	OperateDeleteProcess(ctx context.Context, in *OperateDeleteProcessReq, opts ...grpc.CallOption) (*OperateProcessResp, error)
-	// 进程过滤条件
+	// 进程过滤条件（进程模板/CC 进程范围可能较多，用 POST body 传递，避免 URL 长度限制）
 	ProcessFilterOptions(ctx context.Context, in *ProcessFilterOptionsReq, opts ...grpc.CallOption) (*ProcessFilterOptionsResp, error)
 	// 任务历史列表
 	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
@@ -3245,7 +3245,7 @@ type ConfigServer interface {
 	// 一键清除进程缩容实例（从最后一个缩容实例开始清除，按实例状态拆解为停止 / 取消托管 / 直接删除；
 	// 进程数量与实例数量一致时无缩容，无需清除）
 	OperateDeleteProcess(context.Context, *OperateDeleteProcessReq) (*OperateProcessResp, error)
-	// 进程过滤条件
+	// 进程过滤条件（进程模板/CC 进程范围可能较多，用 POST body 传递，避免 URL 长度限制）
 	ProcessFilterOptions(context.Context, *ProcessFilterOptionsReq) (*ProcessFilterOptionsResp, error)
 	// 任务历史列表
 	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)

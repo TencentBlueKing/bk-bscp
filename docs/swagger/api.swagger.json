@@ -23697,8 +23697,8 @@
       }
     },
     "/api/v1/config/biz_id/{bizId}/process/filter_options": {
-      "get": {
-        "summary": "进程过滤条件",
+      "post": {
+        "summary": "进程过滤条件（进程模板/CC 进程范围可能较多，用 POST body 传递，避免 URL 长度限制）",
         "operationId": "Config_ProcessFilterOptions",
         "responses": {
           "200": {
@@ -23724,11 +23724,12 @@
             "format": "int64"
           },
           {
-            "name": "environment",
-            "description": "环境",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigProcessFilterOptionsBody"
+            }
           }
         ],
         "tags": [
@@ -28764,6 +28765,33 @@
           "type": "integer",
           "format": "int64",
           "description": "模块下的递增ID序号(未提供则默认渲染序列号最小的实例)"
+        }
+      }
+    },
+    "ConfigProcessFilterOptionsBody": {
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "description": "环境"
+        },
+        "processTemplateIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "进程模板ID",
+          "title": "进程模板ID列表，与 cc_process_ids 取并集过滤，可选；仅配置下发页面按已绑定模板进程/进程限定过滤选项时传递"
+        },
+        "ccProcessIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "进程ID",
+          "title": "CC 进程ID列表，与 process_template_ids 取并集过滤，可选"
         }
       }
     },

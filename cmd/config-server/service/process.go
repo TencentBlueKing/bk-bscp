@@ -175,8 +175,10 @@ func (s *Service) ProcessFilterOptions(ctx context.Context, req *pbcs.ProcessFil
 	}
 
 	resp, err := s.client.DS.ProcessFilterOptions(grpcKit.RpcCtx(), &pbds.ProcessFilterOptionsReq{
-		BizId:       req.GetBizId(),
-		Environment: req.GetEnvironment(),
+		BizId:              req.GetBizId(),
+		Environment:        req.GetEnvironment(),
+		ProcessTemplateIds: req.GetProcessTemplateIds(),
+		CcProcessIds:       req.GetCcProcessIds(),
 	})
 	if err != nil {
 		return nil, err

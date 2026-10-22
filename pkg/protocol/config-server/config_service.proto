@@ -2174,11 +2174,12 @@ option (google.api.method_visibility).restriction = "INTERNAL";
       additional_bindings { post: "/api/v1/inner/config/biz_id/{biz_id}/process/delete" body: "*" }
     };
   }
-  // 进程过滤条件
+  // 进程过滤条件（进程模板/CC 进程范围可能较多，用 POST body 传递，避免 URL 长度限制）
   rpc ProcessFilterOptions(ProcessFilterOptionsReq) returns (ProcessFilterOptionsResp) {
     option (google.api.method_visibility).restriction = "INTERNAL";
     option (google.api.http) = {
-      get: "/api/v1/config/biz_id/{biz_id}/process/filter_options"
+      post: "/api/v1/config/biz_id/{biz_id}/process/filter_options"
+      body: "*"
     };
   }
   // 任务历史列表
@@ -5957,6 +5958,12 @@ message CmdbGseStatusResp {
 message ProcessFilterOptionsReq {
   uint32 biz_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
   string environment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境" }];
+  // 进程模板ID列表，与 cc_process_ids 取并集过滤，可选；仅配置下发页面按已绑定模板进程/进程限定过滤选项时传递
+  repeated uint32 process_template_ids = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程模板ID" }];
+  // CC 进程ID列表，与 process_template_ids 取并集过滤，可选
+  repeated uint32 cc_process_ids = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "进程ID" }];
 }
 
 message ProcessFilterOptionsResp {

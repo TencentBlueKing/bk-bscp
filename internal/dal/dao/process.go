@@ -49,7 +49,9 @@ type Process interface {
 	ListProcByBizIDWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]*table.Process, error)
 	UpdateSyncStatusWithTx(kit *kit.Kit, tx *gen.QueryTx, state string, ids []uint32) error
 	// ListBizFilterOptions 查询业务下的过滤选项去重值；environment 非空时仅返回该环境的数据。
-	ListBizFilterOptions(kit *kit.Kit, bizID uint32, environment string, fields ...field.Expr) ([]*table.Process, error)
+	// processTemplateIDs / ccProcessIDs 非空时按模板进程与 CC 进程的并集收敛范围。
+	ListBizFilterOptions(kit *kit.Kit, bizID uint32, environment string,
+		processTemplateIDs, ccProcessIDs []uint32, fields ...field.Expr) ([]*table.Process, error)
 	// UpdateSelectedFields 更新指定字段
 	UpdateSelectedFields(kit *kit.Kit, bizID uint32, data map[string]any, conds ...rawgen.Condition) error
 	// GetProcByBizScvProc 按业务、服务实例、进程 ID 查询进程
@@ -316,8 +318,10 @@ func (dao *processDao) GetByID(kit *kit.Kit, bizID uint32, id uint32) (*table.Pr
 // ListBizFilterOptions implements Process.
 // fields = append(fields, field.NewString("", "id"))
 // environment 为空时不按环境过滤，非空时仅返回该环境的数据。
-func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, environment string, fields ...field.Expr) (
-	[]*table.Process, error) {
+// processTemplateIDs / ccProcessIDs 非空时把范围收敛到命中的进程：两者取并集，
+// 同一进程同时命中模板进程和 CC 进程时由 DISTINCT 聚合成一条。
+func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, environment string,
+	processTemplateIDs, ccProcessIDs []uint32, fields ...field.Expr) ([]*table.Process, error) {
 	pids, err := dao.listRunningOrManagedProcessIDs(kit, bizID)
 	if err != nil {
 		return nil, err
@@ -332,7 +336,29 @@ func (dao *processDao) ListBizFilterOptions(kit *kit.Kit, bizID uint32, environm
 		q = q.Where(m.Environment.Eq(environment))
 	}
 
+	if cond := processScopeCond(m.ProcessTemplateID, m.CcProcessID, processTemplateIDs, ccProcessIDs); cond != nil {
+		q = q.Where(cond)
+	}
+
 	return q.Distinct(fields...).Select(fields...).Find()
+}
+
+// processScopeCond 构造过滤选项的进程范围条件：模板进程与 CC 进程取并集，
+// 同一进程同时命中两者时由调用方的 DISTINCT 聚合成一条。
+// 两者均为空时返回 nil，表示不限定范围（进程管理页面等场景）。
+func processScopeCond(processTemplateID, ccProcessID field.Uint32,
+	processTemplateIDs, ccProcessIDs []uint32) field.Expr {
+	switch {
+	case len(processTemplateIDs) != 0 && len(ccProcessIDs) != 0:
+		// OR 组必须作为整体参与外层 AND，否则 biz_id 等前置条件会被并入 OR 右侧放大范围
+		return field.Or(processTemplateID.In(processTemplateIDs...), ccProcessID.In(ccProcessIDs...))
+	case len(processTemplateIDs) != 0:
+		return processTemplateID.In(processTemplateIDs...)
+	case len(ccProcessIDs) != 0:
+		return ccProcessID.In(ccProcessIDs...)
+	default:
+		return nil
+	}
 }
 
 // listRunningOrManagedProcessIDs 查询存在「运行中」或「托管中」进程实例的进程 ID 集合，

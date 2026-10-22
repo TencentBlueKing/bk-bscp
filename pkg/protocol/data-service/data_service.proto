@@ -2766,6 +2766,10 @@ message CmdbGseStatusResp {
 message ProcessFilterOptionsReq {
   uint32 biz_id = 1;
   string environment = 2;
+  // 进程模板ID列表，与 cc_process_ids 取并集过滤，可选
+  repeated uint32 process_template_ids = 3;
+  // CC 进程ID列表，与 process_template_ids 取并集过滤，可选
+  repeated uint32 cc_process_ids = 4;
 }
 
 message ProcessFilterOptionsResp {
