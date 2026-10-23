@@ -141,7 +141,12 @@
       <span class="value">{{ opTemplate.templateName }}</span>
     </div>
   </DeleteConfirmDialog>
-  <ConfigCheck v-model:is-show="isShowConfigCheck" :bk-biz-id="spaceId" :id="opTemplate.id" />
+  <ConfigCheck
+    v-model:is-show="isShowConfigCheck"
+    :bk-biz-id="spaceId"
+    :id="opTemplate.id"
+    :process-template-ids="opTemplateProcessIds"
+    :cc-process-ids="opTemplateCCProcessIds" />
 </template>
 
 <script lang="ts" setup>
@@ -207,6 +212,8 @@
   const isShowDeleteDialog = ref(false);
   const deletePendding = ref(false);
   const isShowConfigCheck = ref(false);
+  const opTemplateProcessIds = ref<number[]>([]);
+  const opTemplateCCProcessIds = ref<number[]>([]);
   const permCheckLoading = ref(false);
   const tableRef = ref();
 
@@ -384,10 +391,13 @@
   // 配置下发
   const handleConfigIssue = (id: number) => {
     if (!checkOpPerm('issued')) return;
+    const template = templateList.value.find((item) => item.id === id);
     router.push({
       name: 'config-issued',
       query: {
         templateIds: [id],
+        processTemplateIds: template?.attachment.cc_template_process_ids,
+        ccProcessIds: template?.attachment.cc_process_ids,
       },
     });
   };
@@ -433,6 +443,8 @@
       templateName: template.spec.template_name,
       isAssociated: template.is_proc_bound,
     };
+    opTemplateProcessIds.value = template.attachment.cc_template_process_ids;
+    opTemplateCCProcessIds.value = template.attachment.cc_process_ids;
   };
 
   const handleDeletConfirm = async () => {

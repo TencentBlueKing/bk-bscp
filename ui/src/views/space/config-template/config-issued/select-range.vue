@@ -5,6 +5,8 @@
       <FilterProcess
         class="process-filter"
         :bk-biz-id="bkBizId"
+        :process-template-ids="processTemplateIds"
+        :cc-process-ids="ccProcessIds"
         @search="handleSelectProcessRange" />
     </div>
     <div class="config-template">
@@ -34,9 +36,17 @@
 
   const route = useRoute();
 
-  const props = defineProps<{
-    bkBizId: string;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      bkBizId: string;
+      processTemplateIds?: number[];
+      ccProcessIds?: number[];
+    }>(),
+    {
+      processTemplateIds: () => [],
+      ccProcessIds: () => [],
+    },
+  );
   const emits = defineEmits(['selectRange', 'selectTemplate', 'removeTemplate', 'clearTemplate']);
 
   const selectedTemplate = ref<number[]>([]);

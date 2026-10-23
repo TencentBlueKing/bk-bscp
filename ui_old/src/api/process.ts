@@ -29,10 +29,11 @@ export const getSyncStatus = (biz_id: string) =>
 /**
  * 获取进程过滤条件
  * @param bizId 业务ID
+ * @param params 查询参数
  * @returns
  */
 export const getProcessFilter = (biz_id: string, params: IProcessFilterQuery) =>
-  http.get(`/config/biz_id/${biz_id}/process/filter_options`, { params }).then((res) => res.data);
+  http.post(`/config/biz_id/${biz_id}/process/filter_options`, params).then((res) => res.data);
 
 /**
  * 进程操作

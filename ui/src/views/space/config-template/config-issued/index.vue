@@ -10,6 +10,8 @@
         <SelectRange
           v-show="stepsStatus.curStep === 1"
           :bk-biz-id="spaceId"
+          :process-template-ids="routeQueryProcessTemplateIds"
+          :cc-process-ids="routeQueryCCProcessIds"
           @select-template="handleSelectTemplate"
           @remove-template="handleRemoveTemplate"
           @clear-template="handleClearTemplate"
@@ -59,7 +61,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, watch, onMounted } from 'vue';
+  import { ref, watch, onMounted, computed } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { useRouter, useRoute } from 'vue-router';
@@ -100,6 +102,16 @@
   const permCheckLoading = ref(false);
   const issuedPerm = ref(false);
   const allGenerated = ref(false);
+  const routeQueryProcessTemplateIds = computed(() => {
+    const raw = route.query.processTemplateIds;
+    if (!raw) return [];
+    return (Array.isArray(raw) ? raw : [raw]).map(Number);
+  });
+  const routeQueryCCProcessIds = computed(() => {
+    const raw = route.query.ccProcessIds;
+    if (!raw) return [];
+    return (Array.isArray(raw) ? raw : [raw]).map(Number);
+  });
 
   onMounted(() => {
     getIssuedPerm();

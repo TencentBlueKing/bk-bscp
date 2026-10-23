@@ -4,7 +4,12 @@
       <div class="content">
         <div class="process-range">
           <span class="label">{{ $t('进程范围') }}</span>
-          <FilterProcess :bk-biz-id="bkBizId" :is-issued="true" @search="handleSelectProcessRange" />
+          <FilterProcess
+            :bk-biz-id="bkBizId"
+            :is-issued="true"
+            :process-template-ids="props.processTemplateIds"
+            :cc-process-ids="props.ccProcessIds"
+            @search="handleSelectProcessRange" />
         </div>
         <bk-loading class="process-table-wrap" :loading="pending">
           <ProcessTable
@@ -35,11 +40,19 @@
 
   const router = useRouter();
 
-  const props = defineProps<{
-    bkBizId: string;
-    isShow: boolean;
-    id: number;
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      bkBizId: string;
+      isShow: boolean;
+      id: number;
+      processTemplateIds?: number[];
+      ccProcessIds?: number[];
+    }>(),
+    {
+      processTemplateIds: () => [],
+      ccProcessIds: () => [],
+    },
+  );
   const emits = defineEmits(['update:isShow']);
 
   const filterConditions = ref<Record<string, any>>({});

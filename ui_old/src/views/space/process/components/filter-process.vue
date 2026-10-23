@@ -88,9 +88,13 @@
     defineProps<{
       bkBizId: string;
       isIssued?: boolean; // 是否是配置下发
+      processTemplateIds?: number[]; // 进程模板ID列表
+      ccProcessIds?: number[]; // CC进程ID列表
     }>(),
     {
       isIssued: false,
+      processTemplateIds: () => [],
+      ccProcessIds: () => [],
     },
   );
   const emits = defineEmits(['search']);
@@ -253,7 +257,9 @@
     const requestId = filterRequestId;
     try {
       const res = await getProcessFilter(props.bkBizId, {
-        environment: activeEnv.value
+        environment: activeEnv.value,
+        process_template_ids: props.processTemplateIds?.length ? props.processTemplateIds : [],
+        cc_process_ids: props.ccProcessIds?.length ? props.ccProcessIds : [],
       });
       // 连续切换环境时请求会并发发出，响应可能乱序返回，只接受最后一次请求的结果
       if (requestId !== filterRequestId) return;

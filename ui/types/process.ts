@@ -59,4 +59,6 @@ export interface IProcessFilterItem {
 
 export interface IProcessFilterQuery{
   environment: string;
+  process_template_ids?: number[];
+  cc_process_ids?: number[];
 }
