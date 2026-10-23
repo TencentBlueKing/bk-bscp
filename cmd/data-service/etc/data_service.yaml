@@ -190,7 +190,32 @@ crontab:
     enabled: true
     # watch host update events interval (default: 30s)
     interval: 30s
-  # watch cmdb set/module/process resource task configuration
+  # watch cmdb module/process resource task configuration
+  # 采用常驻长轮询循环（CC resource_watch 短长链设计），CC 变更准实时推送。
+  # 进程事件不区分 create/update/delete，任一进程事件触发受影响业务的全量同步（事件明细仅含 bk_biz_id）；
+  # 模块仅订阅 update 事件用于同步模块名变更。
+  # 可靠性取舍（对齐 gsekit）：游标仅存内存，事件处理失败仅告警、游标照常推进，
+  # 漏掉的变更由一键全量同步兜底
   watchCmdbResource:
-    # whether the watch cmdb resource task is enabled (default: false)
+    # 是否开启 CMDB 资源 watch 任务（默认 false）
     enabled: false
+    # 租户/资源扫描周期，用于发现新租户或新资源、对账增减 watch 链（默认 1m）
+    interval: 1m
+    # 回退探测间隔，仅在 CC 未持有长轮询连接（响应耗时 < 1s）时生效，下限钳制为 1s（默认 1s）
+    idleInterval: 1s
+    # 对 CC 的并发 watch 请求数上限，即 CC watch 会话数上限（每个长轮询请求占用一个 CC 会话，最长 20s）（默认 8）
+    maxConcurrency: 8
+    # watch 请求 QPS 限制，主要用于收敛积压追平时的突发请求；0 表示使用默认值 20（不支持"不限流"）
+    qpsLimit: 20
+    # 每个租户的 process 全量同步 worker 并发数（同步执行队列的 worker 数，与 watch 链解耦）；
+    # 同一资源的事件仍按 FIFO 顺序处理，同一业务不会被并发同步（默认 4）
+    handlerConcurrency: 4
+    # 游标只保存在内存中，进程重启后丢失，因此这是**每次重启**的回溯偏移量（默认 5m）。
+    # 窗口之外漏掉的变更由定时全量同步/一键全量同步补偿；窗口越大重启重放越多，
+    # 上限 1h（超过会在启动期报错）
+    startFromOffset: 5m
+    # 单次长轮询 watch 请求超时，必须 > 20s（CC 持有窗口），校验不通过会在启动期报错（默认 35s）
+    requestTimeout: 35s
+    # 同时运行的 watch 链（租户×资源）上限；超限的链不会运行并告警，多租户场景需调大（默认 100）
+    # 注意：watch 的资源类型固定为 module/process、bk_fields 由代码固定，均不开放配置
+    maxWatchChains: 100

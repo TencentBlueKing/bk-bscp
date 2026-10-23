@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,6 +60,9 @@ var (
 	}
 	clientOnce   sync.Once
 	globalClient *resty.Client
+	// longPollingClients 按 requestTimeout 缓存长轮询客户端，避免重复构建
+	longPollingMu      sync.Mutex
+	longPollingClients = map[time.Duration]*resty.Client{}
 )
 
 // WithRequestIDValue 设置 RequestId 值
@@ -100,6 +104,10 @@ func restyReqToCurl(r *resty.Request) string {
 	headers := ""
 	for key, values := range r.Header {
 		for _, value := range values {
+			switch strings.ToLower(key) {
+			case "authorization", "proxy-authorization", "x-bkapi-authorization", "cookie":
+				value = "<masked>"
+			}
 			headers += fmt.Sprintf(" -H %q", fmt.Sprintf("%s: %s", key, value))
 		}
 	}
@@ -188,24 +196,54 @@ func restyBeforeRequestHook(c *resty.Client, r *resty.Request) error {
 	return nil
 }
 
+// newRestyClient 构建带公共参数的 resty 客户端，cookies 不复用
+func newRestyClient(requestTimeout time.Duration) *resty.Client {
+	return resty.New().
+		SetTimeout(requestTimeout).
+		SetDebug(false).   // 更多详情, 可以开启为 true
+		SetCookieJar(nil). // 后台API去掉 cookie 记录
+		SetDebugBodyLimit(1024).
+		SetPreRequestHook(restyBeforeRequestHook).
+		OnAfterResponse(restyAfterResponseHook).
+		OnError(restyErrHook).
+		// NOCC:gas/tls(设计如此)
+		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}). //nolint:gosec
+		SetHeader("User-Agent", userAgent)
+}
+
 // GetClient : 新建Client, 设置公共参数，每次新建，cookies不复用
 func GetClient() *resty.Client {
-	if globalClient == nil {
-		clientOnce.Do(func() {
-			globalClient = resty.New().
-				SetTimeout(timeout).
-				SetDebug(false).   // 更多详情, 可以开启为 true
-				SetCookieJar(nil). // 后台API去掉 cookie 记录
-				SetDebugBodyLimit(1024).
-				SetPreRequestHook(restyBeforeRequestHook).
-				OnAfterResponse(restyAfterResponseHook).
-				OnError(restyErrHook).
-				// NOCC:gas/tls(设计如此)
-				SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}). //nolint:gosec
-				SetHeader("User-Agent", userAgent)
-		})
-	}
+	clientOnce.Do(func() {
+		globalClient = newRestyClient(timeout)
+	})
 	return globalClient
+}
+
+// defaultLongPollingTimeout 长轮询超时兜底值：必须大于 CC 的 20s hold 窗口
+const defaultLongPollingTimeout = 35 * time.Second
+
+// GetLongPollingClient 返回长轮询专用客户端，与全局客户端共享中间件与鉴权逻辑，
+// 仅超时可配置。全局客户端的 http.Client.Timeout 硬编码 30s 且无法被请求级 ctx
+// 突破，而长轮询（如 CC resource_watch 20s hold）需要更长超时，因此单独构建。
+// 相同超时的客户端按需缓存复用。
+//
+// requestTimeout <= 0 时回退 {@link defaultLongPollingTimeout}：resty 的 Timeout 为 0
+// 表示不超时，一旦调用方传零值会让长轮询请求永久挂起。
+func GetLongPollingClient(requestTimeout time.Duration) *resty.Client {
+	if requestTimeout <= 0 {
+		requestTimeout = defaultLongPollingTimeout
+	}
+
+	longPollingMu.Lock()
+	defer longPollingMu.Unlock()
+
+	if cli, ok := longPollingClients[requestTimeout]; ok {
+		return cli
+	}
+
+	cli := newRestyClient(requestTimeout)
+	longPollingClients[requestTimeout] = cli
+	return cli
 }
 
 // BKAuth 蓝鲸鉴权信息

@@ -21,6 +21,7 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/utils"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -649,10 +650,24 @@ func (dao *processDao) ListByModuleIDAndAliasWithTx(kit *kit.Kit, tx *gen.QueryT
 	return result, nil
 }
 
-// ListDuplicateHostAliasWithTx 查询同 biz 下同主机同别名的冲突进程 ID 列表
+// tenantScopeCondForRawSQL 生成与全局租户钩子（set_tenant_id.go）语义一致的过滤片段，
+// 供原生 SQL 子查询使用：钩子只改写主语句的 WHERE，不会进入 RawCond 的子查询。
+// 空租户/默认租户兼容旧数据（tenant_id 为空字符串或 default）。
+func tenantScopeCondForRawSQL(kit *kit.Kit) (string, []any) {
+	if kit.TenantID == "" || kit.TenantID == constant.DefaultTenantID {
+		return "AND tenant_id IN (?, ?)", []any{constant.DefaultTenantID, ""}
+	}
+	return "AND tenant_id = ?", []any{kit.TenantID}
+}
+
+// ListDuplicateHostAliasWithTx 查询同 biz 下同主机同别名的冲突进程 ID 列表。
+// 租户范围与全局钩子保持一致，避免多租户下不同租户复用同一 bk_biz_id 时互相误标 abnormal。
 func (dao *processDao) ListDuplicateHostAliasWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32) ([]uint32, error) {
 	m := dao.genQ.Process
 	q := tx.Process.WithContext(kit.Ctx)
+
+	tenantCond, tenantArgs := tenantScopeCondForRawSQL(kit)
+	args := append([]any{bizID, table.Deleted.String()}, tenantArgs...)
 
 	var result []uint32
 	if err := q.Select(m.ID).
@@ -660,10 +675,10 @@ func (dao *processDao) ListDuplicateHostAliasWithTx(kit *kit.Kit, tx *gen.QueryT
 		Where(utils.RawCond(
 			`(host_id, alias) IN (
 				SELECT host_id, alias FROM processes
-				WHERE biz_id = ? AND cc_sync_status != ?
+				WHERE biz_id = ? AND cc_sync_status != ? `+tenantCond+`
 				GROUP BY host_id, alias
 				HAVING COUNT(*) > 1
-			)`, bizID, table.Deleted.String(),
+			)`, args...,
 		)).
 		Pluck(m.ID, &result); err != nil {
 		return nil, err
@@ -672,7 +687,7 @@ func (dao *processDao) ListDuplicateHostAliasWithTx(kit *kit.Kit, tx *gen.QueryT
 	return result, nil
 }
 
-// RestoreAbnormalWithTx 将不再冲突的 abnormal 进程恢复为 synced，excludeIDs 是当前仍冲突的进程
+// RestoreAbnormalWithTx 将不再冲突的 abnormal 进程恢复为 synced，excludeIDs 是当前仍冲突的进程。
 func (dao *processDao) RestoreAbnormalWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32, excludeIDs []uint32) error {
 	m := dao.genQ.Process
 	q := tx.Process.WithContext(kit.Ctx).

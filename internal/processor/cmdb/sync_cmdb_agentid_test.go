@@ -53,7 +53,6 @@ func newAgentIDSyncContext() *SyncContext {
 			inst: &fakeEmptyInstanceDao{},
 		},
 		Now:           time.Now(),
-		HostCounter:   make(map[HostProcessKey]int),
 		ModuleCounter: make(map[ModuleAliasKey]int),
 	}
 }
@@ -187,41 +186,73 @@ func TestBuildProcessEntitiesEmptyAgentIDIsAbnormal(t *testing.T) {
 	}
 }
 
-// TestBuildProcessesFromSetsEmptyAgentIDIsAbnormal 拓扑构建落库时空 agent_id 的 agent_status 为 abnormal，
-// 即使主机侧携带的 agent 状态为 normal
-func TestBuildProcessesFromSetsEmptyAgentIDIsAbnormal(t *testing.T) {
-	sets := []Set{
-		{
-			ID:   1,
-			Name: "set1",
-			Module: []Module{
-				{
-					ID:   10,
-					Name: "module1",
-					Host: []Host{
-						{ID: 100, IP: "127.0.0.1", AgentID: "",
-							AgentState: table.AgentStatusNormal.String()},
-					},
-					SvcInst: []SvcInst{
-						{
-							ID:   1,
-							Name: "svc1",
-							ProcInst: []ProcInst{
-								{ID: 1000, HostID: 100, Name: "proc1", ProcNum: 1},
-							},
-						},
-					},
-				},
-			},
-		},
+func TestValidateProcessRelatedInfoRejectsIncompleteIdentity(t *testing.T) {
+	valid := newOsTypeProcessItem(0, "127.0.0.1")
+	cases := []struct {
+		name string
+		item *bkcmdb.ProcessRelatedInfoItem
+	}{
+		{name: "nil association", item: nil},
+		{name: "missing process", item: &bkcmdb.ProcessRelatedInfoItem{}},
+		{name: "negative process ID", item: func() *bkcmdb.ProcessRelatedInfoItem {
+			copy := *valid
+			process := *valid.Process
+			process.BkProcessID = -1
+			copy.Process = &process
+			return &copy
+		}()},
+		{name: "process ID overflow", item: func() *bkcmdb.ProcessRelatedInfoItem {
+			copy := *valid
+			process := *valid.Process
+			process.BkProcessID = 1 << 32
+			copy.Process = &process
+			return &copy
+		}()},
+		{name: "wrong business", item: func() *bkcmdb.ProcessRelatedInfoItem {
+			copy := *valid
+			process := *valid.Process
+			process.BkBizID = 4
+			copy.Process = &process
+			return &copy
+		}()},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := validateProcessRelatedInfo([]*bkcmdb.ProcessRelatedInfoItem{tc.item}, 3); err == nil {
+				t.Fatal("expected invalid process association to fail validation")
+			}
+		})
+	}
+	if err := validateProcessRelatedInfo([]*bkcmdb.ProcessRelatedInfoItem{valid}, 3); err != nil {
+		t.Fatalf("valid association rejected: %v", err)
+	}
+}
+
+// TestValidateProcessRelatedInfoAllowsMissingProcessTemplate 非服务模板创建的进程，
+// CC 可能不返回 process_template（或返回 0）；此类条目应通过校验，落库模板 ID 为 0
+func TestValidateProcessRelatedInfoAllowsMissingProcessTemplate(t *testing.T) {
+	nilTemplate := newOsTypeProcessItem(0, "127.0.0.1")
+	nilTemplate.ProcessTemplate = nil
+
+	zeroTemplate := newOsTypeProcessItem(0, "127.0.0.1")
+	zeroTemplate.ProcessTemplate = &bkcmdb.ProcessTemplateRefInfo{}
+
+	items := map[string]*bkcmdb.ProcessRelatedInfoItem{
+		"nil template":  nilTemplate,
+		"zero template": zeroTemplate,
+	}
+	for name, item := range items {
+		if err := validateProcessRelatedInfo([]*bkcmdb.ProcessRelatedInfoItem{item}, 3); err != nil {
+			t.Fatalf("%s association rejected: %v", name, err)
+		}
 	}
 
-	procs := buildProcessesFromSets("default", 3, sets)
-
+	s := &syncCMDBService{bizID: 3}
+	procs := s.buildProcessEntities(kit.New(), []*bkcmdb.ProcessRelatedInfoItem{nilTemplate}, "default")
 	if len(procs) != 1 {
 		t.Fatalf("processes count = %d, want 1", len(procs))
 	}
-	if got := procs[0].Spec.AgentStatus; got != table.AgentStatusAbnormal {
-		t.Fatalf("agent_status = %q, want abnormal", got)
+	if got := procs[0].Attachment.ProcessTemplateID; got != 0 {
+		t.Fatalf("ProcessTemplateID = %d, want 0", got)
 	}
 }

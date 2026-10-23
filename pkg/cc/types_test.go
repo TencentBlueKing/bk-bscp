@@ -13,6 +13,7 @@
 package cc
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -102,6 +103,140 @@ func TestWatchCmdbResourceCanBeEnabled(t *testing.T) {
 
 	if !conf.WatchCmdbResource.Enabled {
 		t.Fatalf("expected watchCmdbResource to be enabled when configured true")
+	}
+}
+
+func TestWatchCmdbResourceDefaults(t *testing.T) {
+	var conf WatchCmdbResourceConfig
+	conf.trySetDefault()
+
+	if conf.Interval != "1m" {
+		t.Fatalf("interval = %q, want 1m", conf.Interval)
+	}
+	if conf.IdleInterval != "1s" {
+		t.Fatalf("idleInterval = %q, want 1s", conf.IdleInterval)
+	}
+	if conf.MaxConcurrency != 8 {
+		t.Fatalf("maxConcurrency = %d, want 8", conf.MaxConcurrency)
+	}
+	if conf.QpsLimit != 20.0 {
+		t.Fatalf("qpsLimit = %f, want 20", conf.QpsLimit)
+	}
+	if conf.HandlerConcurrency != 4 {
+		t.Fatalf("handlerConcurrency = %d, want 4", conf.HandlerConcurrency)
+	}
+	if conf.StartFromOffset != "5m" {
+		t.Fatalf("startFromOffset = %q, want 5m", conf.StartFromOffset)
+	}
+	if conf.RequestTimeout != "35s" {
+		t.Fatalf("requestTimeout = %q, want 35s", conf.RequestTimeout)
+	}
+	if conf.MaxWatchChains != 100 {
+		t.Fatalf("maxWatchChains = %d, want 100", conf.MaxWatchChains)
+	}
+	if err := conf.validate(); err != nil {
+		t.Fatalf("validate default config failed: %v", err)
+	}
+}
+
+func TestWatchCmdbResourceKeepsConfiguredValues(t *testing.T) {
+	raw := `
+watchCmdbResource:
+  enabled: true
+  interval: 2m
+  idleInterval: 3s
+  maxConcurrency: 16
+  qpsLimit: 40
+  handlerConcurrency: 8
+  startFromOffset: 10m
+  requestTimeout: 40s
+`
+	var conf CrontabConfig
+	if err := yaml.Unmarshal([]byte(raw), &conf); err != nil {
+		t.Fatalf("unmarshal crontab config failed: %v", err)
+	}
+	conf.trySetDefault()
+
+	watch := conf.WatchCmdbResource
+	if watch.MaxConcurrency != 16 {
+		t.Fatalf("maxConcurrency = %d, want 16", watch.MaxConcurrency)
+	}
+	if watch.RequestTimeout != "40s" {
+		t.Fatalf("requestTimeout = %q, want 40s", watch.RequestTimeout)
+	}
+	if err := watch.validate(); err != nil {
+		t.Fatalf("validate configured config failed: %v", err)
+	}
+}
+
+// TestWatchCmdbResourceDisabledSkipsLongPollingTimeout 未启用 watch 时，
+// 历史短超时配置不应阻塞服务启动（运行期不会使用该值）
+func TestWatchCmdbResourceDisabledSkipsLongPollingTimeout(t *testing.T) {
+	conf := WatchCmdbResourceConfig{Enabled: false, RequestTimeout: "10s"}
+	if err := conf.validate(); err != nil {
+		t.Fatalf("disabled watch should not enforce requestTimeout, got: %v", err)
+	}
+}
+
+// TestWatchCmdbResourceIgnoresRemovedResourceConfig watch 资源类型与 bk_fields 已写死在代码内，
+// 存量部署 yaml 中残留的 resources/fields 应被忽略，不影响启动
+func TestWatchCmdbResourceIgnoresRemovedResourceConfig(t *testing.T) {
+	raw := `
+watchCmdbResource:
+  enabled: true
+  resources:
+    - set
+    - module
+  fields:
+    module: ["bk_module_id"]
+`
+	var conf CrontabConfig
+	if err := yaml.Unmarshal([]byte(raw), &conf); err != nil {
+		t.Fatalf("legacy watchCmdbResource keys should be ignored, got: %v", err)
+	}
+	conf.trySetDefault()
+	if err := conf.validate(); err != nil {
+		t.Fatalf("validate legacy config failed: %v", err)
+	}
+}
+
+func TestWatchCmdbResourceValidateRejectsInvalidValues(t *testing.T) {
+	cases := []struct {
+		name string
+		conf WatchCmdbResourceConfig
+	}{
+		{"requestTimeout too short", WatchCmdbResourceConfig{Enabled: true, RequestTimeout: "10s"}},
+		{"requestTimeout at boundary", WatchCmdbResourceConfig{Enabled: true, RequestTimeout: "20s"}},
+		{"invalid interval", WatchCmdbResourceConfig{Interval: "abc"}},
+		{"invalid idleInterval", WatchCmdbResourceConfig{IdleInterval: "xyz"}},
+		{"negative maxConcurrency", WatchCmdbResourceConfig{MaxConcurrency: -1}},
+		{"negative handlerConcurrency", WatchCmdbResourceConfig{HandlerConcurrency: -1}},
+		{"negative qpsLimit", WatchCmdbResourceConfig{QpsLimit: -1}},
+		{"NaN qpsLimit", WatchCmdbResourceConfig{QpsLimit: math.NaN()}},
+		{"infinite qpsLimit", WatchCmdbResourceConfig{QpsLimit: math.Inf(1)}},
+		{"zero interval", WatchCmdbResourceConfig{Interval: "0s"}},
+		{"negative offset", WatchCmdbResourceConfig{StartFromOffset: "-1m"}},
+		{"startFromOffset above cap", WatchCmdbResourceConfig{Enabled: true, StartFromOffset: "2h"}},
+		{"negative maxWatchChains", WatchCmdbResourceConfig{MaxWatchChains: -1}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if err := c.conf.validate(); err == nil {
+				t.Fatalf("expected validate to reject %s", c.name)
+			}
+		})
+	}
+}
+
+// TestWatchCmdbResourceStartFromOffsetCap 游标不落库，startFromOffset 是重启后唯一的
+// 回溯手段：窗口越大重放越多，因此限制上限；上限值本身允许，未启用时不校验。
+func TestWatchCmdbResourceStartFromOffsetCap(t *testing.T) {
+	if err := (WatchCmdbResourceConfig{Enabled: true, StartFromOffset: "1h"}).validate(); err != nil {
+		t.Fatalf("startFromOffset at cap should be accepted, got: %v", err)
+	}
+	// 未启用时不应因运行期不生效的字段阻塞启动
+	if err := (WatchCmdbResourceConfig{Enabled: false, StartFromOffset: "2h"}).validate(); err != nil {
+		t.Fatalf("disabled watch should not enforce startFromOffset cap, got: %v", err)
 	}
 }
 

@@ -15,6 +15,7 @@ package bkcmdb
 
 import (
 	"context"
+	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/client"
 	"github.com/TencentBlueKing/bk-bscp/internal/thirdparty/esb/cmdb"
@@ -73,8 +74,12 @@ type Service interface {
 	SearchBusinessByAccount(ctx context.Context, req SearchSetReq) (*Business, error)
 	// SearchModule 查询模块
 	SearchModule(ctx context.Context, req SearchModuleReq) (*ModuleListResp, error)
-	// ResourceWatch 监听资源变化事件
+	// ResourceWatch 监听资源变化事件。
+	// 监听链请使用 ResourceWatchLongPolling。
 	ResourceWatch(ctx context.Context, req *WatchResourceRequest) (*WatchData, error)
+	// ResourceWatchLongPolling 长轮询监听资源变化事件，requestTimeout 必须 > 20s（CC hold 窗口）
+	ResourceWatchLongPolling(ctx context.Context, req *WatchResourceRequest, requestTimeout time.Duration) (
+		*WatchData, error)
 	ListBizHosts(ctx context.Context, req *ListBizHostsRequest) (*CMDBListData[HostInfo], error)
 	// WatchHostResource 监听主机资源变化
 	WatchHostResource(ctx context.Context, req *WatchResourceRequest) (*WatchResourceData[HostDetail], error)

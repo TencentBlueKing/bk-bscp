@@ -1039,7 +1039,10 @@ type ListHostByServiceTemplateResp struct {
 	Info  []HostInfo `json:"info"`  // 返回结果
 }
 
-// ListProcessRelatedInfoReq 查询进程关联信息请求参数
+// ListProcessRelatedInfoReq 查询进程关联信息请求参数。
+// 注意：进程全量同步（processor/cmdb.SyncBizProcesses）必须拉取业务全量，禁止传过滤条件，
+// 否则全量 diff 会把过滤掉的进程误判为已删除；ProcessPropertyFilter 仅用于按 ID 批量拉取的场景
+// （如配置生成时对齐 gsekit batch_request 语义）。
 type ListProcessRelatedInfoReq struct {
 	BkBizID         int                    `json:"bk_biz_id"`                  // 业务ID (必填)
 	Page            *PageParam             `json:"page,omitempty"`             // 分页参数
@@ -1050,9 +1053,6 @@ type ListProcessRelatedInfoReq struct {
 	// （gsekit 同款用法：{"condition":"AND","rules":[{"field":"bk_process_id","operator":"in","value":[...]}]}）
 	ProcessPropertyFilter *ProcessPropertyFilter `json:"process_property_filter,omitempty"`
 	Fields                []string               `json:"fields,omitempty"` // 指定返回字段列表
-	// Deprecated: json tag 与 CMDB process_related_info 接口不匹配，过滤不会生效（CC 忽略未知字段），
-	// 保留仅为兼容存量调用方，新代码请使用 ProcessPropertyFilter
-	ProcessFilter *ProcessFilter `json:"process,omitempty"` // 进程属性过滤条件
 }
 
 // ProcessPropertyFilter 进程属性过滤条件（对齐 CMDB process_property_filter 格式）
@@ -1081,12 +1081,6 @@ type ModuleFilter struct {
 // ServiceInstanceFilter 服务实例筛选
 type ServiceInstanceFilter struct {
 	IDs []int64 `json:"ids"` // 服务实例ID列表
-}
-
-// ProcessFilter 进程属性过滤条件
-type ProcessFilter struct {
-	BkProcessIDs  []int64  `json:"bk_process_ids"`  // 进程ID列表
-	BkProcessName []string `json:"bk_process_name"` // 进程名称列表
 }
 
 // ListProcessRelatedInfoResponseData 响应数据

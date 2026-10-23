@@ -18,9 +18,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
-	"slices"
 	"sort"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -29,11 +30,11 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/components/gse"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
-	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
-	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 )
 
 // SyncCMDBService 同步cmdb
@@ -43,106 +44,297 @@ type syncCMDBService struct {
 	svc      bkcmdb.Service
 	gseSvc   *gse.Service
 	dao      dao.Set
+	// redLock 同一 (tenant, biz) 全量同步的分布式租约；未注入时退化为进程内互斥
+	redLock syncLocker
+	// lockWait 单次抢锁的等待窗口；<=0 时取 processSyncLockWait（单测可缩短）
+	lockWait time.Duration
+}
+
+// syncLocker 全量同步所需的互斥能力：生产实现为 *lock.TokenLock（带持有者 token 与续期），
+// 单测注入桩实现
+type syncLocker interface {
+	// TryAcquire 尝试获取锁，不等待；获取失败返回 nil
+	TryAcquire(res string) lock.Handle
 }
 
 // NewSyncCMDBService 初始化同步cmdb（多租户：tenantID 为空时按单租户 "default" 处理）
 func NewSyncCMDBService(tenantID string, bizID int, svc bkcmdb.Service,
-	gseSvc *gse.Service, dao dao.Set) *syncCMDBService {
-	return &syncCMDBService{
+	gseSvc *gse.Service, dao dao.Set, redLock *lock.TokenLock) *syncCMDBService {
+	s := &syncCMDBService{
 		tenantID: tenantID,
 		bizID:    bizID,
 		svc:      svc,
 		gseSvc:   gseSvc,
 		dao:      dao,
 	}
-}
-
-// SyncBizProcessesWithMode 同步业务进程
-func (s *syncCMDBService) SyncBizProcessesWithMode(ctx context.Context) error {
-	if cc.G().CMDB.UseNewProcessSync {
-		return s.SyncBizProcesses(ctx)
+	// 显式判空后赋值：typed-nil 指针赋给接口会变成非 nil 接口，
+	// 导致 s.redLock == nil 的降级判断失效并对 nil 锁调用 TryAcquire
+	if redLock != nil {
+		s.redLock = redLock
 	}
-	return s.SyncSingleBiz(ctx)
+	return s
 }
 
-// SyncBizProcessesByIDsWithMode 根据进程ID同步业务进程（增量同步）
-func (s *syncCMDBService) SyncBizProcessesByIDsWithMode(ctx context.Context, processes []bkcmdb.ProcessInfo) (
-	*SyncProcessResult, error) {
-	if cc.G().CMDB.UseNewProcessSync {
-		processIDs := make([]int64, 0, len(processes))
-		for _, p := range processes {
-			processIDs = append(processIDs, int64(p.BkProcessID))
+const (
+	// processSyncLockWait 等待同一业务全量同步锁的最长时间。
+	// 超时说明其他实例正在做同样的全量对账，本次并未执行同步（返回 ErrSyncSkipped）。
+	// 取值不宜过大：watcher 的事件页处理是同步阻塞的，等待锁会一并延迟事件消费。
+	processSyncLockWait = 10 * time.Second
+	// processSyncLockRetryInterval 抢锁重试间隔
+	processSyncLockRetryInterval = time.Second
+	// processSyncLockRenewInterval 续期窗口的兜底值：仅在锁实现未给出建议间隔时使用，
+	// 正常取锁 TTL 的一半（600s TTL → 300s），留出一次续期失败的余量
+	processSyncLockRenewInterval = time.Minute
+)
+
+// bizSyncLocks 进程内互斥锁，仅在未注入分布式锁时使用（单测或未接 Redis 的场景）。
+// 引用计数包含持有者和等待者，最后一个调用退出后删除条目，避免业务 ID 变化时无界增长。
+var bizSyncLocks = struct {
+	sync.Mutex
+	entries map[string]*localSyncLock
+}{entries: make(map[string]*localSyncLock)}
+
+type localSyncLock struct {
+	mu   sync.Mutex
+	refs int
+}
+
+// lockBizSyncLocal 获取 (tenant, biz) 维度的进程内互斥锁，已有同步在跑时阻塞等待。
+func lockBizSyncLocal(tenantID string, bizID int) func() {
+	key := fmt.Sprintf("%s-%d", tenantID, bizID)
+	bizSyncLocks.Lock()
+	entry := bizSyncLocks.entries[key]
+	if entry == nil {
+		entry = &localSyncLock{}
+		bizSyncLocks.entries[key] = entry
+	}
+	entry.refs++
+	bizSyncLocks.Unlock()
+	if !entry.mu.TryLock() {
+		logs.Infof("[SyncBizProcesses] wait for running sync, bizID=%d, tenant=%s", bizID, tenantID)
+		entry.mu.Lock()
+	}
+	var once sync.Once
+	return func() {
+		once.Do(func() {
+			entry.mu.Unlock()
+			bizSyncLocks.Lock()
+			entry.refs--
+			if entry.refs == 0 {
+				delete(bizSyncLocks.entries, key)
+			}
+			bizSyncLocks.Unlock()
+		})
+	}
+}
+
+// processSyncLockResource 构造全量同步锁的资源名（锁实现内部会统一加 "Lock:" 前缀）。
+// 以 tenant + biz 为维度：不同业务可并行，同一业务跨实例串行。
+func processSyncLockResource(tenantID string, bizID int) string {
+	return fmt.Sprintf("cmdb:process:sync:%s:%d", tenantID, bizID)
+}
+
+// ErrSyncSkipped 本次全量同步未执行：等待窗口内没抢到同一业务的全量同步锁。
+//
+// 调用方必须把它与「已执行且无变更」区分开：跳过时 CMDB 快照没有被重新拉取，
+// 遗留的变更要靠后续的定时全量同步或一键同步覆盖，不能当成「已同步」上报：
+//   - 事件驱动（watcher）路径：其他入口正在同步，本轮跳过即可，游标照常推进；
+//   - 任务驱动（一键同步）路径：应如实上报「未执行」，不能当作成功。
+var ErrSyncSkipped = errors.New("process full sync skipped: lock is held by another instance")
+
+// IsSyncSkipped 判断错误是否表示「本轮全量同步未执行」（未抢到锁），而非执行失败
+func IsSyncSkipped(err error) bool {
+	return errors.Is(err, ErrSyncSkipped)
+}
+
+// lockProcessSync 获取 (tenant, biz) 维度的全量同步租约，返回受租约控制的 context 与解锁函数。
+//
+// watcher 事件、定时任务、一键同步等多个入口可能同时触发同一业务的全量同步，
+// 并发执行会让两次全量 diff 互相覆盖（重复实例、重复进程行），大事务互锁还会引发回滚。
+// 优先使用 Redis 分布式租约协调多实例；redLock 未注入时退化为进程内互斥。
+//
+// 锁在拉取全量数据之前获取，覆盖分页拉取、GSE 查询、事务内 diff 与写库，
+// 大业务耗时可能超过锁 TTL，因此持锁期间按 TTL 的一半续期（见 keepProcessSyncLock）；
+// 释放只作用于本次写入的 token，锁过期被接管后不会误删新持有者的锁。
+//
+// 错误语义：
+//   - ErrSyncSkipped：等待超过 lockWait 仍抢不到锁，本次同步未执行，调用方需按「未执行」处理；
+//   - 其他错误（如 ctx 取消）：调用方应直接返回，避免 shutdown 期间继续排队。
+func (s *syncCMDBService) lockProcessSync(ctx context.Context, tenantID string) (context.Context, func(), error) {
+	if s.redLock == nil {
+		return ctx, lockBizSyncLocal(tenantID, s.bizID), nil
+	}
+
+	wait := s.lockWait
+	if wait <= 0 {
+		wait = processSyncLockWait
+	}
+	res := processSyncLockResource(tenantID, s.bizID)
+	deadline := time.Now().Add(wait)
+	for {
+		if handle := s.redLock.TryAcquire(res); handle != nil {
+			return s.keepProcessSyncLock(ctx, handle)
 		}
-		return s.SyncBizProcessesByIDs(ctx, processIDs)
+
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+		if time.Now().After(deadline) {
+			return nil, nil, ErrSyncSkipped
+		}
+
+		// 重试间隔内响应 ctx 取消，避免 shutdown 时最长空转；间隔不超过整个等待窗口，
+		// 避免窗口小于重试间隔时空转到窗口外才判定超时
+		select {
+		case <-ctx.Done():
+			return nil, nil, ctx.Err()
+		case <-time.After(min(processSyncLockRetryInterval, wait)):
+		}
 	}
-	return s.SyncByProcessIDs(ctx, processes)
 }
 
-// SyncBizProcesses 同步业务进程
-func (s *syncCMDBService) SyncBizProcesses(ctx context.Context) error {
-	kt := kit.MustGetKit(ctx)
-
-	tenantID := s.getTenantID()
-
-	// 1. 获取业务下全量的进程相关信息
-	processData, err := s.fetchAllProcessRelatedInfo(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("[SyncBizProcesses] failed to fetch process related info: %v", err)
+// keepProcessSyncLock 在持锁期间按 TTL 的一半续期；续期失败或父 context 取消会取消返回的工作 context。
+//
+// 全量同步的耗时随业务规模增长（分页拉取 + GSE 状态查询 + 上万行的事务内 diff 与写库），
+// 不续期时一旦超过锁 TTL，其他实例会按「过期」接管，两个全量 diff 同时写同一业务。
+// 返回的解锁函数先停掉续期 goroutine 再释放锁，保证释放发生时不再有并发续期。
+func (s *syncCMDBService) keepProcessSyncLock(ctx context.Context, handle lock.Handle) (context.Context, func(), error) {
+	interval := handle.RenewInterval()
+	if interval <= 0 {
+		interval = processSyncLockRenewInterval
 	}
 
-	processes := s.buildProcessEntities(kt, processData, tenantID)
-	if len(processes) == 0 {
-		logs.Warnf("[SyncBizProcesses] no process to sync, bizID=%d", s.bizID)
-		return nil
-	}
+	lockCtx, cancel := context.WithCancel(ctx)
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-lockCtx.Done():
+				return
+			case <-stop:
+				return
+			case <-ticker.C:
+				if err := handle.Renew(lockCtx); err != nil {
+					logs.Errorf("[SyncBizProcesses] renew process sync lock failed, bizID=%d, tenant=%s, err: %v",
+						s.bizID, s.getTenantID(), err)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
 
-	if err := s.fillServiceTemplateID(ctx, processes); err != nil {
-		return fmt.Errorf("[SyncBizProcesses] fill template id failed: %w", err)
+	var once sync.Once
+	unlock := func() {
+		once.Do(func() {
+			close(stop)
+			<-done
+			cancel()
+			handle.Release()
+		})
 	}
-
-	if _, err := s.syncProcessesWithTx(kt, processes); err != nil {
-		return err
-	}
-
-	logs.Infof("[SyncBizProcesses] success bizID=%d count=%d", s.bizID, len(processes))
-	return nil
+	return lockCtx, unlock, nil
 }
 
-// SyncBizProcessesByIDs 根据进程ID同步业务进程
-func (s *syncCMDBService) SyncBizProcessesByIDs(ctx context.Context, processIDs []int64) (*SyncProcessResult, error) {
+// SyncBizProcesses 全量同步业务进程：拉取业务全量进程后与库内数据做全量 diff，
+// 返回同步结果供调用方派发进程状态同步任务。
+// 注意：diff 的删除语义基于「新列表即业务全量」（SyncProcessData 会删除新列表外的存量进程），
+// 禁止在此按进程 ID 做增量拉取——子集新列表会导致子集外的存量进程被全部误删。
+//
+// 返回的 error 为 ErrSyncSkipped 时表示本轮未执行（锁被其他实例占用），
+// 调用方不能把它当成「已同步且无变更」处理。
+func (s *syncCMDBService) SyncBizProcesses(ctx context.Context) (*SyncProcessResult, error) {
 	kt := kit.MustGetKit(ctx)
-
 	tenantID := s.getTenantID()
 
-	if len(processIDs) == 0 {
-		logs.Warnf("[SyncBizProcessesByIDs] empty processIDs, skip sync, bizID=%d", s.bizID)
-		return nil, nil
-	}
-
-	// 1. 获取业务下全量的进程相关信息
-	processData, err := s.fetchAllProcessRelatedInfo(ctx, processIDs)
+	// 同一 (tenant, biz) 跨实例串行执行，避免并发全量 diff 互相覆盖；
+	// 锁被占用超时则本轮不执行，由调用方按「未执行」处理（watcher 跳过、任务如实上报）
+	ctx, unlock, err := s.lockProcessSync(ctx, tenantID)
 	if err != nil {
-		return nil, fmt.Errorf("[SyncBizProcessesByIDs] failed to fetch process related info: %v", err)
+		if errors.Is(err, ErrSyncSkipped) {
+			logs.Warnf("[SyncBizProcesses] another instance is syncing, this round is NOT executed, "+
+				"bizID=%d, tenant=%s", s.bizID, tenantID)
+			return nil, fmt.Errorf("[SyncBizProcesses] bizID=%d tenant=%s: %w", s.bizID, tenantID, ErrSyncSkipped)
+		}
+		return nil, fmt.Errorf("[SyncBizProcesses] acquire sync lock failed: %w", err)
+	}
+	defer unlock()
+	kt.Ctx = ctx
+
+	logs.Infof("[SyncBizProcesses] start, bizID=%d, tenant=%s", s.bizID, tenantID)
+
+	// 1. 获取业务的进程相关信息（全量）
+	processData, err := s.fetchAllProcessRelatedInfo(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("[SyncBizProcesses] failed to fetch process related info: %w", err)
+	}
+	if errC := ctx.Err(); errC != nil {
+		return nil, fmt.Errorf("[SyncBizProcesses] sync lock lost or context canceled: %w", errC)
+	}
+	if errV := validateProcessRelatedInfo(processData, s.bizID); errV != nil {
+		return nil, fmt.Errorf("[SyncBizProcesses] invalid process related info: %w", errV)
 	}
 
+	// 2. 构建进程表数据
 	processes := s.buildProcessEntities(kt, processData, tenantID)
 	if len(processes) == 0 {
-		logs.Warnf("[SyncBizProcessesByIDs] no process to sync, bizID=%d", s.bizID)
-		return &SyncProcessResult{}, nil
+		if errB := checkEmptyProcessBuild(s.bizID, len(processData), len(processes)); errB != nil {
+			return nil, errB
+		}
+		// 成功的空列表即「该业务在 CMDB 已无进程」：空列表不能提前返回，必须交给 diff
+		// 按删除语义收敛库内存活行，否则最后一个进程被删除（或整业务进程被清空）后，
+		// 本地行会一直停留在 synced，定时全量同步也反复走到这里
+		logs.Warnf("[SyncBizProcesses] CMDB returned no process, bizID=%d, tenant=%s, "+
+			"stored processes of this biz will be marked deleted", s.bizID, tenantID)
 	}
 
-	if err = s.fillServiceTemplateID(ctx, processes); err != nil {
-		return nil, fmt.Errorf("[SyncBizProcessesByIDs] fill template id failed: %w", err)
+	// 3. 回填服务模板 ID
+	if errF := s.fillServiceTemplateID(ctx, processes); errF != nil {
+		return nil, fmt.Errorf("[SyncBizProcesses] fill template id failed: %w", errF)
 	}
+	if errC := ctx.Err(); errC != nil {
+		return nil, fmt.Errorf("[SyncBizProcesses] sync lock lost or context canceled: %w", errC)
+	}
+
+	// 4. diff 落库
 	res, err := s.syncProcessesWithTx(kt, processes)
 	if err != nil {
 		return nil, err
 	}
 
-	logs.Infof("[SyncBizProcessesByIDs] success bizID=%d count=%d", s.bizID, len(processes))
+	logs.Infof("[SyncBizProcesses] success, bizID=%d, count=%d", s.bizID, len(processes))
 	return res, nil
 }
 
+// checkEmptyProcessBuild 判断「构建后的进程列表为空」是否为异常，作为独立于「CC 成功空页」的信号：
+//   - fetched == 0：CC 成功返回空列表，代表该业务在 CMDB 已无进程，返回 nil，
+//     由调用方把空列表交给 diff 按删除语义收敛库内存活行；
+//   - fetched > 0 但 built == 0：拉到了关联信息却一条进程都没构建出来（如 source_data
+//     序列化失败逐条跳过），属构建阶段整体失败，必须返回错误放弃本轮，不能按删除处理。
+//
+// CC 权限、限流、接口异常不在此判断：它们由 fetchAllProcessRelatedInfo 的错误返回拦截。
+func checkEmptyProcessBuild(bizID, fetched, built int) error {
+	if built > 0 || fetched <= 0 {
+		return nil
+	}
+	return fmt.Errorf("[SyncBizProcesses] fetched %d process related info but built none, bizID=%d",
+		fetched, bizID)
+}
+
+// syncProcessesWithTx 在单个事务内完成「旧进程盘点 → diff → 落库 → 冲突检查」：
+//  1. ListProcByBizIDWithTx 拉取库内该业务全部进程行（含软删除行，由 diffProcesses 内部区分）；
+//     多租户模式下由全局租户钩子 + 下方显式过滤双重限定为当前租户，只对比本租户的进程；
+//  2. SyncProcessData 做全量 diff 并写库（删除/新增/更新/实例扩缩容）；
+//  3. CheckAndMarkHostAliasConflicts 做同主机同别名冲突检查与标记。
+//
+// 任一步骤失败整体回滚；调用方需保证 newProcesses 为业务全量（否则子集外进程会被误删）。
+//
+// legacy 数据（tenant_id 为空串）仅允许 default 租户参与 diff，与 DAO 租户钩子一致，
+// 避免同号 bk_biz_id 的多个租户争抢同一批历史行。
 func (s *syncCMDBService) syncProcessesWithTx(kt *kit.Kit, newProcesses []*table.Process) (*SyncProcessResult, error) {
 	tx := s.dao.GenQuery().Begin()
 	committed := false
@@ -159,11 +351,11 @@ func (s *syncCMDBService) syncProcessesWithTx(kt *kit.Kit, newProcesses []*table
 		return nil, fmt.Errorf("[syncProcesses] list old failed: %w", err)
 	}
 
-	// 多租户：只处理当前租户的进程
+	// 只处理当前租户的进程，default 同时兼容历史空租户行。
 	if s.tenantID != "" {
 		filtered := make([]*table.Process, 0, len(oldProcesses))
 		for _, p := range oldProcesses {
-			if p != nil && p.Attachment != nil && p.Attachment.TenantID == s.tenantID {
+			if p != nil && p.Attachment != nil && sameOrLegacyTenant(p.Attachment.TenantID, s.getTenantID()) {
 				filtered = append(filtered, p)
 			}
 		}
@@ -175,8 +367,15 @@ func (s *syncCMDBService) syncProcessesWithTx(kt *kit.Kit, newProcesses []*table
 		return nil, fmt.Errorf("[syncProcesses] sync failed: %w", err)
 	}
 
-	if err = CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
-		return nil, fmt.Errorf("[syncProcesses] conflict check failed: %w", err)
+	// 无变更时跳过冲突检查：冲突检查会对本业务进程做两次批量 UPDATE，
+	// 而事件驱动的全量同步绝大多数是无变更场景，无谓写会放大数据库压力
+	if res.Changed {
+		if err = CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
+			return nil, fmt.Errorf("[syncProcesses] conflict check failed: %w", err)
+		}
+	}
+	if err = kt.Ctx.Err(); err != nil {
+		return nil, fmt.Errorf("[syncProcesses] sync lock lost or context canceled before commit: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -188,45 +387,51 @@ func (s *syncCMDBService) syncProcessesWithTx(kt *kit.Kit, newProcesses []*table
 	return res, nil
 }
 
+// buildProcessEntities 将 CC 的进程关联信息列表转换为 BSCP 进程表实体。
+//
+// 输入 data 为 list_process_related_info 的原始条目，每个条目是一条
+// (set, module, host, service_instance, process_template, process) 关联记录，
+// 即「某进程在某服务实例/主机上的一个部署点」；同一 bk_process_id 绑定多个服务实例时会产出多条。
+//
+// 处理细节：
+//   - agent 状态：先收集全部 bk_agent_id 批量查 GSE ListAgentState（失败不阻断主流程，
+//     默认按 Abnormal 处理），再逐条回填；agent_id 为空的进程强制 Abnormal（见 resolveAgentStatus）；
+//   - source_data：仅聚合进程操作相关字段（工作路径/启停命令/超时等，见 buildSourceData），
+//     作为后续 diff 的配置一致性对比基准；
+//   - os_type：CC 该接口不返回，置空，由 BuildProcessChanges 的 resolveOsType 沿用库内旧值；
+//   - 单条构建失败（如 source_data 序列化异常）只跳过该条并告警，不影响其余条目。
+//
 //nolint:unparam // tenantID 在多租户场景下由 getTenantID() 动态返回，单租户部署时恒为 "default" 属预期行为
 func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.ProcessRelatedInfoItem, tenantID string) []*table.Process {
 
 	now := time.Now()
 	result := make([]*table.Process, 0, len(data))
 
-	// 处理 agent 状态
-	// 收集所有 agent 的 id
-	agentIDs := make([]string, 0, len(data))
-	for _, h := range data {
-		if h.Host.BkAgentID != "" {
-			agentIDs = append(agentIDs, h.Host.BkAgentID)
-		}
-	}
-
-	// 只有在 agentIDs 不为空时才查询
-	var agentStatus []*gse.ListAgentStateData
-	if len(agentIDs) > 0 {
-		var err error
-		agentStatus, err = s.gseSvc.ListAgentState(kt.Ctx, &gse.ListAgentStateReq{
-			AgentIDList: agentIDs,
+	// 处理 agent 状态：同一主机上的进程会重复命中同一 agent_id，先去重再分批查询，
+	// 避免单次请求携带上万条重复 ID 触发 GSE 参数上限
+	agentIDs := uniqueAgentIDs(data)
+	statusMap := make(map[string]int, len(agentIDs))
+	for start := 0; start < len(agentIDs); start += agentStateBatchLimit {
+		end := min(start+agentStateBatchLimit, len(agentIDs))
+		agentStatus, err := s.gseSvc.ListAgentState(kt.Ctx, &gse.ListAgentStateReq{
+			AgentIDList: agentIDs[start:end],
 		})
 		if err != nil {
-			logs.Errorf("fetch agent status failed, err: %v, agentIDs size: %d", err, len(agentIDs))
-			// agent 状态查询失败不影响主流程，默认 AgentStatus 为 Abnormal
-		}
-	}
-
-	statusMap := make(map[string]int, len(agentStatus))
-	for _, s := range agentStatus {
-		if s.BkAgentID == "" {
+			logs.Errorf("fetch agent status failed, err: %v, agentIDs size: %d", err, end-start)
+			// agent 状态查询失败不影响主流程，该批 agent 默认 AgentStatus 为 Abnormal
 			continue
 		}
-		statusMap[s.BkAgentID] = s.StatusCode
+		for _, st := range agentStatus {
+			if st.BkAgentID == "" {
+				continue
+			}
+			statusMap[st.BkAgentID] = st.StatusCode
+		}
 	}
 
 	for _, item := range data {
 		agentState := table.AgentStatusAbnormal
-		if code, ok := statusMap[item.Host.BkAgentID]; ok && code == 2 {
+		if code, ok := statusMap[item.Host.BkAgentID]; ok && code == gseAgentStatusRunning {
 			agentState = table.AgentStatusNormal
 		}
 		agentState = resolveAgentStatus(item.Host.BkAgentID, agentState)
@@ -235,6 +440,12 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 		if err != nil {
 			logs.Errorf("[buildProcessEntities] source data failed: %v", err)
 			continue
+		}
+
+		// 非服务模板创建的进程，CC 可能不返回 process_template，此时模板 ID 落 0
+		processTemplateID := uint32(0)
+		if item.ProcessTemplate != nil {
+			processTemplateID = uint32(item.ProcessTemplate.ID)
 		}
 
 		proc := &table.Process{
@@ -248,7 +459,7 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 				HostID:            uint32(item.Host.BkHostID),
 				CloudID:           uint32(item.Host.BkCloudID),
 				AgentID:           item.Host.BkAgentID,
-				ProcessTemplateID: uint32(item.ProcessTemplate.ID),
+				ProcessTemplateID: processTemplateID,
 			},
 			Spec: &table.ProcessSpec{
 				SetName:      item.Set.BkSetName,
@@ -277,6 +488,47 @@ func (s *syncCMDBService) buildProcessEntities(kt *kit.Kit, data []*bkcmdb.Proce
 	}
 
 	return result
+}
+
+// validateProcessRelatedInfo prevents incomplete CMDB responses from becoming a partial
+// full-sync input, which would make the diff mark valid stored processes as deleted.
+//
+// 必填关联：process / set / module / host / service_instance，且各 ID 必须在 (0, MaxUint32] 内。
+// process_template 不强制要求：CC 对非服务模板创建的进程可能不返回该对象（或返回 0），
+// 此时进程落库的 ProcessTemplateID 为 0；仅当取到非 0 值时校验其取值范围。
+func validateProcessRelatedInfo(data []*bkcmdb.ProcessRelatedInfoItem, bizID int) error {
+	for i, item := range data {
+		if item == nil || item.Set == nil || item.Module == nil || item.Host == nil ||
+			item.ServiceInstance == nil || item.Process == nil {
+			return fmt.Errorf("item %d has missing process association", i)
+		}
+		ids := []struct {
+			name string
+			id   int64
+		}{
+			{"biz", item.Process.BkBizID},
+			{"process", item.Process.BkProcessID},
+			{"set", item.Set.BkSetID},
+			{"module", item.Module.BkModuleID},
+			{"host", item.Host.BkHostID},
+			{"service instance", item.ServiceInstance.ID},
+		}
+		for _, id := range ids {
+			if id.id <= 0 || uint64(id.id) > math.MaxUint32 {
+				return fmt.Errorf("item %d has invalid %s ID %d", i, id.name, id.id)
+			}
+		}
+		// 进程模板非必需，仅校验非 0 值的范围
+		if item.ProcessTemplate != nil {
+			if tplID := item.ProcessTemplate.ID; tplID != 0 && (tplID < 0 || uint64(tplID) > math.MaxUint32) {
+				return fmt.Errorf("item %d has invalid process template ID %d", i, tplID)
+			}
+		}
+		if item.Process.BkBizID != int64(bizID) {
+			return fmt.Errorf("item %d belongs to biz %d, expected %d", i, item.Process.BkBizID, bizID)
+		}
+	}
+	return nil
 }
 
 func (s *syncCMDBService) buildSourceData(item *bkcmdb.ProcessRelatedInfoItem) (string, error) {
@@ -319,6 +571,30 @@ func normalizeProcNum(n int) uint {
 		return 1
 	}
 	return uint(n)
+}
+
+const (
+	// gseAgentStatusRunning GSE agent 运行中状态码
+	gseAgentStatusRunning = 2
+	// agentStateBatchLimit 单次 ListAgentState 请求携带的 agent 数量上限
+	agentStateBatchLimit = 500
+)
+
+// uniqueAgentIDs 收集去重后的非空 agent id，保持首次出现顺序
+func uniqueAgentIDs(data []*bkcmdb.ProcessRelatedInfoItem) []string {
+	ids := make([]string, 0, len(data))
+	seen := make(map[string]struct{}, len(data))
+	for _, item := range data {
+		if item == nil || item.Host == nil || item.Host.BkAgentID == "" {
+			continue
+		}
+		if _, ok := seen[item.Host.BkAgentID]; ok {
+			continue
+		}
+		seen[item.Host.BkAgentID] = struct{}{}
+		ids = append(ids, item.Host.BkAgentID)
+	}
+	return ids
 }
 
 const findModuleBatchLimit = 500
@@ -383,819 +659,19 @@ func (s *syncCMDBService) fillServiceTemplateID(ctx context.Context, processes [
 
 func (s *syncCMDBService) getTenantID() string {
 	if s.tenantID == "" {
-		return "default"
+		return constant.DefaultTenantID
 	}
 	return s.tenantID
 }
 
-// SyncSingleBiz 对单个业务执行全量进程同步
-//
-// 同步内容：
-//   - 集群(Set)
-//   - 模块(Module)
-//   - 主机(Host)
-//   - 服务实例(ServiceInstance)
-//   - 进程(Process) & 实例(ProcessInstance)
-//
-// 特点：
-//   - 全量拉取 CC 数据
-//   - 构建完整业务拓扑
-//   - 通过 SyncProcessData 统一落库
-//
-// nolint: funlen,gocyclo
-func (s *syncCMDBService) SyncSingleBiz(ctx context.Context) error {
-	kt := kit.MustGetKit(ctx)
-	logs.Infof("[SyncSingleBiz][Start] bizID=%d tenantID=%s", s.bizID, s.tenantID)
-
-	// 1. 获取集群
-	listSets, err := s.fetchAllSets(ctx)
-	if err != nil {
-		return fmt.Errorf("[SyncSingleBiz][FetchSet] bizID=%d failed: %v", s.bizID, err)
+// syncTenantID 归一化本轮同步的生效租户，与写入侧 getTenantID 保持一致：
+// 单租户模式下 kit 租户为空，写入落在 default（兼容 legacy 空串），
+// 删除扫描按同一归一化结果比对，避免把本租户行误判为其他租户
+func syncTenantID(kt *kit.Kit) string {
+	if kt == nil || kt.TenantID == "" {
+		return constant.DefaultTenantID
 	}
-
-	var sets []Set
-	for _, set := range listSets {
-		sets = append(sets, Set{ID: set.BkSetID, Name: set.BkSetName, SetEnv: set.BkSetEnv})
-	}
-
-	// 2. 模块
-	for i := range listSets {
-		listModules, errM := s.fetchAllModules(ctx, sets[i].ID)
-		if errM != nil {
-			return fmt.Errorf(
-				"[SyncSingleBiz][FetchModule] bizID=%d setID=%d failed: %v",
-				s.bizID, sets[i].ID, errM,
-			)
-		}
-		for _, m := range listModules {
-			module := Module{ID: m.BkModuleID, Name: m.BkModuleName, ServiceTemplateID: m.ServiceTemplateID}
-			sets[i].Module = append(sets[i].Module, module)
-		}
-	}
-
-	// 3. 主机
-	setTemplateIDs := []int{}
-	for _, set := range listSets {
-		if !slices.Contains(setTemplateIDs, set.SetTemplateID) {
-			setTemplateIDs = append(setTemplateIDs, set.SetTemplateID)
-		}
-	}
-	listHosts, err := s.fetchAllHostsBySetTemplate(ctx, setTemplateIDs)
-	if err != nil {
-		return fmt.Errorf(
-			"[SyncSingleBiz][FetchHost] bizID=%d failed: %v",
-			s.bizID, err,
-		)
-	}
-
-	// 4. 初始化 hosts，默认全部异常
-	hosts := make([]Host, 0, len(listHosts))
-	for _, h := range listHosts {
-		hosts = append(hosts, Host{
-			ID:         h.BkHostID,
-			IP:         h.BkHostInnerIP,
-			IPV6:       h.BkHostInnerIPV6,
-			CloudId:    h.BkCloudID,
-			AgentID:    h.BkAgentID,
-			OsType:     "",
-			AgentState: table.AgentStatusAbnormal.String(),
-		})
-	}
-
-	// 5. 收集 agentID
-	agentIDs := make([]string, 0, len(listHosts))
-	for _, h := range listHosts {
-		if h.BkAgentID != "" {
-			agentIDs = append(agentIDs, h.BkAgentID)
-		}
-	}
-
-	// 6. 只有在 agentIDs 不为空时才查询
-	var agentStatus []*gse.ListAgentStateData
-	if len(agentIDs) > 0 {
-		agentStatus, err = s.gseSvc.ListAgentState(ctx, &gse.ListAgentStateReq{
-			AgentIDList: agentIDs,
-		})
-		if err != nil {
-			logs.Errorf("fetch agent status failed, err: %v, agentIDs size: %d", err, len(agentIDs))
-			return err
-		}
-	}
-
-	statusMap := make(map[string]int, len(agentStatus))
-	for _, s := range agentStatus {
-		if s.BkAgentID == "" {
-			continue
-		}
-		statusMap[s.BkAgentID] = s.StatusCode
-	}
-
-	for i := range hosts {
-		agentID := hosts[i].AgentID
-		if agentID == "" {
-			continue
-		}
-		if code, ok := statusMap[agentID]; ok && code == 2 {
-			hosts[i].AgentState = table.AgentStatusNormal.String()
-		}
-	}
-
-	// 7. 服务实例
-	var moduleIDs []int
-	for _, set := range sets {
-		for _, m := range set.Module {
-			moduleIDs = append(moduleIDs, m.ID)
-		}
-	}
-
-	listSvcInsts, err := s.fetchAllServiceInstances(ctx, moduleIDs)
-	if err != nil {
-		return fmt.Errorf(
-			"[SyncSingleBiz][FetchServiceInstance] bizID=%d failed: %v",
-			s.bizID, err,
-		)
-	}
-
-	moduleSvcMap := map[int][]SvcInst{}
-	for _, inst := range listSvcInsts {
-		moduleSvcMap[inst.BkModuleID] = append(moduleSvcMap[inst.BkModuleID], SvcInst{
-			ID: inst.ID, Name: inst.Name,
-		})
-	}
-
-	// 8. 进程
-	procInstBySvcID := make(map[int][]ProcInst)
-	for _, inst := range listSvcInsts {
-		procs, errL := s.svc.ListProcessInstance(ctx, &bkcmdb.ListProcessInstanceReq{
-			BkBizID: s.bizID, ServiceInstanceID: inst.ID,
-		})
-		if errL != nil {
-			return fmt.Errorf(
-				"[SyncSingleBiz][FetchProcessInstance] bizID=%d serviceInstanceID=%d failed: %v",
-				s.bizID, inst.ID, errL,
-			)
-		}
-
-		for _, proc := range procs {
-			procInstBySvcID[inst.ID] = append(procInstBySvcID[inst.ID], ProcInst{
-				ID:                proc.Property.BkProcessID,
-				HostID:            proc.Relation.BkHostID,
-				ProcessTemplateID: proc.Relation.ProcessTemplateID,
-				Name:              proc.Property.BkProcessName,
-				FuncName:          proc.Property.BkFuncName,
-				ProcNum:           proc.Property.ProcNum,
-				Priority:          proc.Property.Priority,
-				ProcessInfo: table.ProcessInfo{
-					WorkPath:       proc.Property.WorkPath,
-					PidFile:        proc.Property.PidFile,
-					User:           proc.Property.User,
-					ReloadCmd:      proc.Property.ReloadCmd,
-					RestartCmd:     proc.Property.RestartCmd,
-					StartCmd:       proc.Property.StartCmd,
-					StopCmd:        proc.Property.StopCmd,
-					FaceStopCmd:    proc.Property.FaceStopCmd,
-					Timeout:        proc.Property.Timeout,
-					StartCheckSecs: proc.Property.BkStartCheckSecs,
-				},
-			})
-		}
-	}
-
-	// 9. 拼装
-	for si := range sets {
-		for mi := range sets[si].Module {
-			svcList := moduleSvcMap[sets[si].Module[mi].ID]
-			for sj := range svcList {
-				svcList[sj].ProcInst = procInstBySvcID[svcList[sj].ID]
-			}
-			sets[si].Module[mi].SvcInst = svcList
-			sets[si].Module[mi].Host = hosts
-		}
-	}
-
-	// 构建并立即入库（多租户：写入时带上 tenantID）
-	tenantID := s.getTenantID()
-	newProcesses := buildProcessesFromSets(tenantID, s.bizID, sets)
-
-	tx := s.dao.GenQuery().Begin()
-
-	oldProcesses, err := s.dao.Process().ListProcByBizIDWithTx(kt, tx, uint32(s.bizID))
-	if err != nil {
-		return fmt.Errorf(
-			"[SyncSingleBiz][ListOldProcess] bizID=%d failed: %v",
-			s.bizID, err,
-		)
-	}
-	// 多租户：只处理当前租户的进程
-	if s.tenantID != "" {
-		filtered := make([]*table.Process, 0, len(oldProcesses))
-		for _, p := range oldProcesses {
-			if p != nil && p.Attachment != nil && p.Attachment.TenantID == s.tenantID {
-				filtered = append(filtered, p)
-			}
-		}
-		oldProcesses = filtered
-	}
-
-	_, err = SyncProcessData(
-		kt,
-		s.dao,
-		tx,
-		uint32(s.bizID),
-		oldProcesses,
-		newProcesses,
-	)
-	if err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			logs.Errorf(
-				"[SyncSingleBiz][Rollback] bizID=%d failed: %v",
-				s.bizID, rbErr,
-			)
-		}
-		return fmt.Errorf(
-			"[SyncSingleBiz][SyncFailed] bizID=%d: %v",
-			s.bizID, err,
-		)
-	}
-
-	if err := CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			logs.Errorf("[SyncSingleBiz][Rollback] bizID=%d failed: %v", s.bizID, rbErr)
-		}
-		return fmt.Errorf("[SyncSingleBiz][ConflictCheck] bizID=%d: %v", s.bizID, err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf(
-			"[SyncSingleBiz][CommitFailed] bizID=%d: %v",
-			s.bizID, err,
-		)
-	}
-
-	logs.Infof(
-		"[SyncSingleBiz][Success] bizID=%d processCount=%d",
-		s.bizID, len(newProcesses),
-	)
-
-	return nil
-}
-
-// SyncByProcessIDs 按进程ID增量同步 CMDB 进程数据
-//
-// 使用场景：
-//   - 监听到「进程新增」事件
-//   - 已明确知道受影响的 process_id 列表
-//
-// 设计说明：
-//   - 这是一个【增量同步】入口，不做全业务扫描
-//   - 仅围绕给定的 process_id 反查：
-//     进程 -> 服务实例 -> 模块 -> 集群(set)
-//   - 最终仍然复用统一的 SyncProcessData 做落库
-//
-// 行为语义：
-//   - 只会构建“包含变更进程的最小业务拓扑”
-//   - 不负责清理无关进程（由全量同步或其他任务处理）
-//
-// 返回值：
-//   - SyncProcessResult：描述本次同步中新增 / 更新 / 删除的统计信息
-//
-// nolint: funlen,gocyclo
-func (s *syncCMDBService) SyncByProcessIDs(ctx context.Context, processes []bkcmdb.ProcessInfo) (*SyncProcessResult, error) {
-	if len(processes) == 0 {
-		return &SyncProcessResult{}, nil
-	}
-
-	// 1. 按 ServiceInstance 归并进程
-	svcProcMap := make(map[int][]ProcInst, len(processes))
-	svcInstIDs := make([]int64, 0, len(processes))
-
-	for _, p := range processes {
-		svcInstIDs = append(svcInstIDs, int64(p.ServiceInstanceID))
-		svcProcMap[p.ServiceInstanceID] = append(
-			svcProcMap[p.ServiceInstanceID],
-			ProcInst{
-				ID:       p.BkProcessID,
-				Name:     p.BkProcessName,
-				FuncName: p.BkFuncName,
-				ProcNum:  p.ProcNum,
-				Priority: p.Priority,
-				ProcessInfo: table.ProcessInfo{
-					WorkPath:       p.WorkPath,
-					PidFile:        p.PidFile,
-					User:           p.User,
-					ReloadCmd:      p.ReloadCmd,
-					RestartCmd:     p.RestartCmd,
-					StartCmd:       p.StartCmd,
-					StopCmd:        p.StopCmd,
-					FaceStopCmd:    p.FaceStopCmd,
-					Timeout:        p.Timeout,
-					StartCheckSecs: p.BkStartCheckSecs,
-				},
-			},
-		)
-	}
-
-	// 去重
-	svcInstIDs = tools.UniqInt64s(svcInstIDs)
-	// 2. 拉取服务实例
-	allSvcInsts := make([]bkcmdb.ServiceInstanceInfo, 0, len(svcInstIDs))
-	for _, chunk := range chunkInts(svcInstIDs, 1000) {
-		resp, err := s.svc.ListServiceInstanceDetail(ctx, &bkcmdb.ListServiceInstanceReq{
-			BizID:              int64(s.bizID),
-			ServiceInstanceIDs: chunk,
-			Page:               bkcmdb.PageParam{Start: 0, Limit: 1000},
-		})
-		if err != nil {
-			return nil, err
-		}
-		allSvcInsts = append(allSvcInsts, resp.Info...)
-	}
-
-	if len(allSvcInsts) == 0 {
-		return &SyncProcessResult{}, nil
-	}
-
-	// 3. 构建 Module → ServiceInstance
-	moduleSvcMap := make(map[int][]SvcInst)
-	moduleIDSet := make(map[int]struct{})
-	svcTemplateIDs := make([]int64, 0)
-
-	for _, svc := range allSvcInsts {
-		procs, ok := svcProcMap[svc.ID]
-		if !ok {
-			continue
-		}
-
-		// 构建 processID -> ProcessTemplateID 映射
-		procTemplateIDMap := make(map[int]int)
-		for _, pi := range svc.ProcessInstances {
-			if pi.Relation != nil {
-				procTemplateIDMap[pi.Relation.BkProcessID] = pi.Relation.ProcessTemplateID
-			}
-		}
-
-		for i := range procs {
-			procs[i].HostID = svc.BkHostID
-			procs[i].ProcessTemplateID = procTemplateIDMap[procs[i].ID]
-		}
-
-		moduleSvcMap[svc.BkModuleID] = append(
-			moduleSvcMap[svc.BkModuleID],
-			SvcInst{
-				ID:       svc.ID,
-				Name:     svc.Name,
-				ProcInst: procs,
-			},
-		)
-
-		moduleIDSet[svc.BkModuleID] = struct{}{}
-		svcTemplateIDs = append(svcTemplateIDs, int64(svc.ServiceTemplateID))
-	}
-
-	// 4. 拉取 Host
-	svcTemplateIDs = tools.UniqInt64s(svcTemplateIDs)
-
-	hosts := make([]Host, 0)
-	for _, chunk := range chunkInts(svcTemplateIDs, 500) {
-		resp, err := s.svc.FindHostByServiceTemplate(ctx,
-			&bkcmdb.ListHostByServiceTemplateReq{
-				BizID:              int64(s.bizID),
-				ServiceTemplateIDs: chunk,
-				Fields: []string{
-					"bk_host_id",
-					"bk_host_innerip",
-					"bk_host_innerip_v6",
-					"bk_cloud_id",
-					"bk_agent_id",
-					"bk_os_type",
-				},
-				Page: bkcmdb.PageParam{Start: 0, Limit: 500},
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, h := range resp.Info {
-			hosts = append(hosts, Host{
-				ID:      h.BkHostID,
-				IP:      h.BkHostInnerIP,
-				IPV6:    h.BkHostInnerIPV6,
-				CloudId: h.BkCloudID,
-				AgentID: h.BkAgentID,
-				OsType:  "",
-			})
-		}
-	}
-
-	// 5. 收集 agentIDs（顺便去重）
-	agentIDSet := make(map[string]struct{}, len(hosts))
-	agentIDs := make([]string, 0, len(hosts))
-
-	for _, h := range hosts {
-		if h.AgentID == "" {
-			continue
-		}
-		if _, ok := agentIDSet[h.AgentID]; !ok {
-			agentIDSet[h.AgentID] = struct{}{}
-			agentIDs = append(agentIDs, h.AgentID)
-		}
-	}
-
-	// 6. 查询 agent 状态（有才查）
-	var agentStatus []*gse.ListAgentStateData
-	if len(agentIDs) > 0 {
-		var err error
-		agentStatus, err = s.gseSvc.ListAgentState(ctx, &gse.ListAgentStateReq{
-			AgentIDList: agentIDs,
-		})
-		if err != nil {
-			logs.Errorf("fetch agent status failed, err: %v, agentIDs size: %d", err, len(agentIDs))
-			return nil, err
-		}
-	}
-
-	statusMap := make(map[string]int, len(agentStatus))
-	for _, s := range agentStatus {
-		if s.BkAgentID == "" {
-			continue
-		}
-		statusMap[s.BkAgentID] = s.StatusCode
-	}
-
-	for i := range hosts {
-		hosts[i].AgentState = table.AgentStatusAbnormal.String() // 默认异常
-
-		agentID := hosts[i].AgentID
-		if agentID == "" {
-			continue
-		}
-
-		if code, ok := statusMap[agentID]; ok && code == 2 {
-			hosts[i].AgentState = table.AgentStatusNormal.String()
-		}
-	}
-
-	// 7. Module → Host 映射
-	moduleHostMap := buildModuleHosts(allSvcInsts, hosts)
-
-	// 8. 构建 Set → Module
-	listModules, err := s.fetchAllModules(ctx, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	setModules := make(map[int][]Module)
-	setIDs := make([]int, 0)
-
-	for _, m := range listModules {
-		if _, ok := moduleIDSet[m.BkModuleID]; !ok {
-			continue
-		}
-
-		setModules[m.BkSetID] = append(setModules[m.BkSetID], Module{
-			ID:                m.BkModuleID,
-			Name:              m.BkModuleName,
-			ServiceTemplateID: m.ServiceTemplateID,
-			SvcInst:           moduleSvcMap[m.BkModuleID],
-			Host:              moduleHostMap[m.BkModuleID],
-		})
-		setIDs = append(setIDs, m.BkSetID)
-	}
-
-	setIDs = tools.UniqInts(setIDs)
-
-	// 9. 拉取 Set
-	setsResp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
-		BkBizID: s.bizID,
-		Fields: []string{
-			"bk_set_id",
-			"bk_set_name",
-			"bk_set_env",
-		},
-		Filter: &bkcmdb.Filter{
-			Condition: "AND",
-			Rules: []bkcmdb.Rule{
-				{Field: "bk_set_id", Operator: "in", Value: setIDs},
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	sets := make([]Set, 0, len(setsResp.Info))
-	for _, s := range setsResp.Info {
-		sets = append(sets, Set{
-			ID:     s.BkSetID,
-			Name:   s.BkSetName,
-			SetEnv: s.BkSetEnv,
-			Module: setModules[s.BkSetID],
-		})
-	}
-
-	tenantID := s.getTenantID()
-	processBatch := buildProcessesFromSets(tenantID, s.bizID, sets)
-
-	kt := kit.MustGetKit(ctx)
-	tx := s.dao.GenQuery().Begin()
-	res, err := SyncProcessData(kt, s.dao, tx, uint32(s.bizID), nil, processBatch)
-	if err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v", rErr)
-		}
-		return nil, err
-	}
-
-	if err := CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
-		if rErr := tx.Rollback(); rErr != nil {
-			logs.Errorf("transaction rollback failed, err: %v", rErr)
-		}
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	logs.Infof("[syncCMDB] bizID=%d tenantID=%s synced, %d processes", s.bizID, s.tenantID, len(processBatch))
-
-	return res, nil
-
-}
-
-// UpdateProcess 处理进程更新事件，同步 CMDB 中的进程及实例数据
-//
-// 使用场景：
-//   - 监听到 CC 的进程变更事件（属性变更 / 实例数变更等）
-//   - 将事件数据转换为内部 Process 模型
-//   - 统一走 SyncProcessData 做差异计算与落库
-func (s *syncCMDBService) UpdateProcess(ctx context.Context, processes []bkcmdb.ProcessInfo) (*SyncProcessResult, error) {
-	if len(processes) == 0 {
-		return &SyncProcessResult{}, nil
-	}
-
-	kt := kit.MustGetKit(ctx)
-
-	// 1. 构建 newProcesses（来自事件）
-	newProcesses := make([]*table.Process, 0, len(processes))
-	oldProcesses := make([]*table.Process, 0)
-	for _, p := range processes {
-		// 查询 DB 中已有进程（作为更新基准）
-		oldP, err := s.dao.Process().GetProcByBizScvProc(kt, uint32(p.BkBizID), uint32(p.ServiceInstanceID), uint32(p.BkProcessID))
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			logs.Errorf(
-				"[UpdateProcess][QueryOldProcess] bizID=%d serviceInstanceID=%d ccProcessID=%d failed: %v",
-				p.BkBizID, p.ServiceInstanceID, p.BkProcessID, err,
-			)
-			continue
-		}
-
-		// 更新事件，但 DB 中不存在 → 异常数据，直接跳过
-		if oldP == nil {
-			logs.Warnf(
-				"[UpdateProcess][ProcessNotFound] bizID=%d serviceInstanceID=%d ccProcessID=%d skip",
-				p.BkBizID, p.ServiceInstanceID, p.BkProcessID,
-			)
-			continue
-		}
-
-		oldProcesses = append(oldProcesses, oldP)
-
-		// 2. 构建新的 Spec（基于旧值更新）
-		info := table.ProcessInfo{
-			WorkPath:       p.WorkPath,
-			PidFile:        p.PidFile,
-			User:           p.User,
-			ReloadCmd:      p.ReloadCmd,
-			RestartCmd:     p.RestartCmd,
-			StartCmd:       p.StartCmd,
-			StopCmd:        p.StopCmd,
-			FaceStopCmd:    p.FaceStopCmd,
-			Timeout:        p.Timeout,
-			StartCheckSecs: p.BkStartCheckSecs,
-		}
-
-		sourceData, err := json.Marshal(info)
-		if err != nil {
-			logs.Errorf(
-				"[UpdateProcess][MarshalSpec] bizID=%d ccProcessID=%d failed: %v, data=%+v",
-				p.BkBizID, p.BkProcessID, err, info,
-			)
-			continue
-		}
-
-		now := time.Now().UTC()
-
-		newSpec := *oldP.Spec
-		newSpec.Alias = p.BkProcessName
-		newSpec.ProcNum = normalizeProcNum(p.ProcNum)
-		newSpec.SourceData = string(sourceData)
-		newSpec.Priority = p.Priority
-
-		// 事件不含主机信息，attachment 直接复用 DB 旧值，
-		// 因此 agent_id 不会在这条链路上刷新，需要靠全量同步纠正
-		newProcess := &table.Process{
-			Attachment: oldP.Attachment,
-			Spec:       &newSpec,
-			Revision: &table.Revision{
-				UpdatedAt: now,
-			},
-		}
-
-		newProcess.Attachment.CcProcessID = uint32(p.BkProcessID)
-		newProcess.Attachment.ServiceInstanceID = uint32(p.ServiceInstanceID)
-
-		newProcesses = append(newProcesses, newProcess)
-	}
-
-	if len(newProcesses) == 0 {
-		return &SyncProcessResult{}, nil
-	}
-
-	// 开启事务并入库（kit 已带 TenantID，SyncProcessData 内按租户回填 ProcessID）
-	tx := s.dao.GenQuery().Begin()
-
-	res, err := SyncProcessData(kt, s.dao, tx, uint32(s.bizID), oldProcesses, newProcesses)
-	if err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			logs.Errorf("[UpdateProcess][ERROR] rollback failed for bizID=%d: %v", s.bizID, rbErr)
-		}
-		return nil, fmt.Errorf(
-			"[UpdateProcess][SyncFailed] bizID=%d: %v",
-			s.bizID, err,
-		)
-	}
-
-	if err := CheckAndMarkHostAliasConflicts(kt, s.dao, tx, uint32(s.bizID)); err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
-			logs.Errorf("[UpdateProcess][ERROR] rollback failed for bizID=%d: %v", s.bizID, rbErr)
-		}
-		return nil, fmt.Errorf("[UpdateProcess][ConflictCheck] bizID=%d: %v", s.bizID, err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf(
-			"[UpdateProcess][CommitFailed] bizID=%d: %v",
-			s.bizID, err,
-		)
-	}
-
-	logs.Infof("[UpdateProcess][Success] bizID=%d tenantID=%s process data synced, %d processes written", s.bizID, s.tenantID, len(newProcesses))
-
-	return res, nil
-}
-
-// buildProcessesFromSets 根据业务拓扑信息构建进程表数据
-//
-// 该函数是一个“纯 Builder”，只负责将内存中的业务拓扑结构：
-//
-//	Set -> Module -> ServiceInstance -> ProcessInstance -> Host
-//
-// 转换为可直接写入数据库的 []*table.Process 模型。
-//
-// 设计约束：
-//  1. 不访问数据库
-//  2. 不涉及事务控制
-//  3. 单条数据异常不会中断整体构建流程
-//
-// 异常处理策略：
-//   - 进程关联的 Host 不存在：记录 WARN，跳过该进程
-//   - 进程 SourceData 序列化失败：记录 ERROR，跳过该进程
-//
-// 返回值：
-//   - 返回构建完成的进程列表
-func buildProcessesFromSets(tenantID string, bizID int, sets []Set) []*table.Process {
-	if tenantID == "" {
-		tenantID = "default"
-	}
-	now := time.Now()
-
-	processBatch := make([]*table.Process, 0)
-
-	for _, set := range sets {
-		for _, mod := range set.Module {
-
-			// 构建 HostID -> HostInfo 映射
-			hostMap := make(map[int]Host, len(mod.Host))
-			for _, h := range mod.Host {
-				hostMap[h.ID] = h
-			}
-
-			for _, svc := range mod.SvcInst {
-				for _, proc := range svc.ProcInst {
-
-					h, ok := hostMap[proc.HostID]
-					if !ok {
-						logs.Warnf(
-							"[syncCMDB][WARN] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d not found",
-							bizID, set.Name, mod.Name, svc.Name, proc.Name, proc.HostID,
-						)
-						continue
-					}
-
-					sourceData, err := proc.Value()
-					if err != nil {
-						logs.Errorf(
-							"[syncCMDB][ERROR] bizID=%d, set=%s, module=%s, svc=%s, proc=%s, hostID=%d: marshal process info failed: %v",
-							bizID, set.Name, mod.Name, svc.Name, proc.Name, proc.HostID, err,
-						)
-						continue
-					}
-
-					processBatch = append(processBatch, &table.Process{
-						Attachment: &table.ProcessAttachment{
-							TenantID:          tenantID,
-							BizID:             uint32(bizID),
-							CcProcessID:       uint32(proc.ID),
-							SetID:             uint32(set.ID),
-							ModuleID:          uint32(mod.ID),
-							ServiceInstanceID: uint32(svc.ID),
-							HostID:            uint32(proc.HostID),
-							CloudID:           uint32(h.CloudId),
-							AgentID:           h.AgentID,
-							ProcessTemplateID: uint32(proc.ProcessTemplateID),
-							ServiceTemplateID: uint32(mod.ServiceTemplateID),
-						},
-						Spec: &table.ProcessSpec{
-							SetName:              set.Name,
-							ModuleName:           mod.Name,
-							ServiceName:          svc.Name,
-							Environment:          set.SetEnv,
-							Alias:                proc.Name,
-							InnerIP:              h.IP,
-							InnerIPV6:            h.IPV6,
-							CcSyncStatus:         table.Synced,
-							ProcessStateSyncedAt: nil,
-							SourceData:           sourceData,
-							PrevData:             "{}",
-							ProcNum:              normalizeProcNum(proc.ProcNum),
-							FuncName:             proc.FuncName,
-							OsType:               "",
-							AgentStatus:          resolveAgentStatus(h.AgentID, table.AgentStatus(h.AgentState)),
-							Priority:             proc.Priority,
-						},
-						Revision: &table.Revision{
-							CreatedAt: now,
-							UpdatedAt: now,
-						},
-					})
-				}
-			}
-		}
-	}
-
-	return processBatch
-}
-
-// buildModuleHosts 根据 ServiceInstance 信息，
-// 将 Host 去重后映射到对应的 Module
-func buildModuleHosts(allSvcInsts []bkcmdb.ServiceInstanceInfo, hosts []Host) map[int][]Host {
-	// hostID -> Host
-	hostMap := make(map[int]Host, len(hosts))
-	for _, h := range hosts {
-		hostMap[h.ID] = h
-	}
-
-	// moduleID -> hostID set
-	moduleHostIDs := make(map[int]map[int]struct{})
-
-	for _, svc := range allSvcInsts {
-		modID := svc.BkModuleID
-		hostID := svc.BkHostID
-		if hostID == 0 {
-			continue
-		}
-
-		if _, ok := moduleHostIDs[modID]; !ok {
-			moduleHostIDs[modID] = make(map[int]struct{})
-		}
-		moduleHostIDs[modID][hostID] = struct{}{}
-	}
-
-	// moduleID -> []Host
-	moduleHosts := make(map[int][]Host, len(moduleHostIDs))
-	for modID, hostIDs := range moduleHostIDs {
-		for hid := range hostIDs {
-			if h, ok := hostMap[hid]; ok {
-				moduleHosts[modID] = append(moduleHosts[modID], h)
-			}
-		}
-	}
-
-	return moduleHosts
-}
-
-func chunkInts(src []int64, size int) [][]int64 {
-	var res [][]int64
-	for i := 0; i < len(src); i += size {
-		end := i + size
-		if end > len(src) {
-			end = len(src)
-		}
-		res = append(res, src[i:end])
-	}
-	return res
+	return kt.TenantID
 }
 
 func chunkIntIDs(src []int, size int) [][]int {
@@ -1213,127 +689,76 @@ func chunkIntIDs(src []int, size int) [][]int {
 	return res
 }
 
-func (s *syncCMDBService) fetchAllSets(ctx context.Context) ([]bkcmdb.SetInfo, error) {
-	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.SetInfo, int, error) {
-		resp, err := s.svc.SearchSet(ctx, bkcmdb.SearchSetReq{
-			BkBizID: s.bizID,
-			Fields:  []string{"bk_biz_id", "bk_set_id", "bk_set_name", "bk_set_env", "set_template_id"},
-			Page:    page,
-		})
+const (
+	// pageFetcherLimit 每页请求条数；CC 可能对页大小设上限，实际以返回条数为准
+	pageFetcherLimit = 500
+	// maxPageFetcherPages 单次聚合拉取的翻页上限（约 10 万条），防止 CC 分页异常导致无限翻页
+	maxPageFetcherPages = 200
+)
 
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return resp.Info, resp.Count, nil
-	})
-}
-
-func (s *syncCMDBService) fetchAllModules(ctx context.Context, setID int) ([]bkcmdb.ModuleInfo, error) {
-	return PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.ModuleInfo, int, error) {
-		resp, err := s.svc.SearchModule(ctx, bkcmdb.SearchModuleReq{
-			BkBizID: s.bizID,
-			BkSetID: setID,
-			Fields:  []string{"bk_module_id", "bk_module_name", "service_template_id", "bk_set_id"},
-		})
-		if err != nil {
-			return nil, 0, err
-		}
-
-		return resp.Info, resp.Count, nil
-	})
-}
-
-func (s *syncCMDBService) fetchAllHostsBySetTemplate(ctx context.Context, setTemplateIDs []int) (
-	[]bkcmdb.HostInfo, error) {
-	var all []bkcmdb.HostInfo
-
-	for _, id := range setTemplateIDs {
-		hosts, err := PageFetcher(func(page *bkcmdb.PageParam) ([]bkcmdb.HostInfo, int, error) {
-			resp, err := s.svc.FindHostBySetTemplate(ctx, bkcmdb.FindHostBySetTemplateReq{
-				BkBizID:          s.bizID,
-				BkSetTemplateIDs: []int{id},
-				Fields: []string{
-					"bk_host_id",
-					"bk_host_name",
-					"bk_host_innerip",
-					"bk_host_innerip_v6",
-					"bk_cloud_id",
-					"bk_agent_id",
-					"bk_os_type",
-				},
-				Page: page,
-			})
-			if err != nil {
-				return nil, 0, err
-			}
-
-			return resp.Info, resp.Count, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		all = append(all, hosts...)
-	}
-
-	return all, nil
-}
-
-func (s *syncCMDBService) fetchAllServiceInstances(ctx context.Context, moduleID []int) (
-	[]*bkcmdb.ServiceInstanceInfo, error) {
-	var all []*bkcmdb.ServiceInstanceInfo
-
-	for _, id := range moduleID {
-		svcInst, err := PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.ServiceInstanceInfo, int, error) {
-			resp, err := s.svc.ListServiceInstance(ctx, &bkcmdb.ServiceInstanceListReq{
-				BkBizID:    s.bizID,
-				BkModuleID: id,
-				Page:       page,
-			})
-			if err != nil {
-				return nil, 0, err
-			}
-
-			return resp.Info, resp.Count, nil
-		})
-		if err != nil {
-			return nil, err
-		}
-		all = append(all, svcInst...)
-	}
-
-	return all, nil
-}
-
-// PageFetcher 封装分页逻辑的通用函数
+// PageFetcher 封装 CC 分页接口的聚合拉取：从 start=0 起按页请求，
+// 总数可信时取满 total 为止，总数不可信（count <= 0）时翻到空页为止。
+//
+// 推进策略：以「实际返回条数 len(data)」推进 start，而不是请求的 limit——CC 部分接口对页大小
+// 有上限（实际返回 < limit），按 limit 推进会跳页漏数据；对全量 diff 场景，漏段会被误判为
+// 「CMDB 已删除」而触发批量删除，必须避免。len(data)==0 时退出，防止 CC 对越界 start 重复
+// 返回尾页导致死循环。
+//
+// 失败语义：无法确认已取满全量时必须返回错误，禁止返回部分数据。调用方的删除语义基于
+// 「返回列表即业务全量」，部分数据会把漏掉的进程误判为已删除并批量软删。
+//
+// 泛型适配同构的 CC 分页响应（count + info），已被进程、集群、服务模板等拉取复用。
 func PageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([]T, error) {
 	var (
 		start = 0
-		limit = 500 // ← 固定每页500条
-		all   []T   // ← 内部维护的全量切片
-		total = 0
+		all   []T
+		total = -1 // 首页返回的总数；<= 0 视为 CC 未提供可靠总数
 	)
 
-	for {
-		page := &bkcmdb.PageParam{
-			Start: start,
-			Limit: limit,
-		}
-		data, count, err := fetch(page)
+	for pages := 1; ; pages++ {
+		data, count, err := fetch(&bkcmdb.PageParam{Start: start, Limit: pageFetcherLimit})
 		if err != nil {
 			return nil, err
 		}
 
 		all = append(all, data...)
-		if total == 0 {
+		if pages == 1 {
 			total = count
+			// count 恰好等于首页条数且首页已取满 limit 时，无法区分「总数」与「本页条数」：
+			// 保守地视为总数不可信，翻到空页为止（多一次请求，换取不漏页导致误删）
+			if total > 0 && total == len(data) && len(data) >= pageFetcherLimit {
+				total = -1
+			}
 		}
 
-		if len(all) >= count {
+		if len(data) == 0 {
+			// 空页但总数未取满：CC 分页在拉取过程中返回了空页（抖动/限流/越界），
+			// 无法确认已取满全量，返回错误而不是部分数据
+			if total > 0 && len(all) < total {
+				return nil, fmt.Errorf("page fetcher got empty page before total reached: total=%d, fetched=%d",
+					total, len(all))
+			}
 			break
 		}
-		start += limit
+
+		// 总数可靠时以总数为准；总数不可靠（CC 返回 0/负数）时继续翻页直到空页，
+		// 不能以「短页」判断结束：CC 可能把页大小截断到 limit 以下，提前结束会漏段，
+		// 而全量 diff 会把漏段的进程误判为「CMDB 已删除」并批量删除
+		if total > 0 && len(all) >= total {
+			break
+		}
+
+		// 以实际返回条数推进游标：CC 返回条数可能小于请求的 limit，
+		// 按 limit 推进会跳页漏数据；len(data) == 0 已在上面退出，不会死循环
+		if pages >= maxPageFetcherPages {
+			// 达到翻页上限仍无法确认取满：返回错误，由调用方放弃本轮同步，
+			// 绝不能把部分列表当作全量交给 diff（会批量误删）
+			return nil, fmt.Errorf("page fetcher reached max pages %d before total reached: total=%d, fetched=%d",
+				maxPageFetcherPages, total, len(all))
+		}
+		start += len(data)
 	}
+
 	return all, nil
 }
 
@@ -1347,6 +772,8 @@ func PageFetcher[T any](fetch func(page *bkcmdb.PageParam) ([]T, int, error)) ([
 // 返回值：
 //   - ProcessDiff：包含进程与实例的所有变更集合
 //   - error：构建 diff 过程中任一阶段失败
+//
+// nolint:funlen,gocyclo // diff 规则（新增/更新/删除/软删除恢复/重复行收敛）集中在此，拆分反而降低可读性
 func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 	newProcesses []*table.Process) (*ProcessDiff, error) {
 
@@ -1354,11 +781,36 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 		ModulesToReorder: make(map[ModuleAliasKey]struct{}),
 	}
 
+	// 0. 过滤残缺记录（Spec / Attachment 为空）：既无法参与 diff，后续字段访问还会 panic
+	validProcesses := make([]*table.Process, 0, len(dbProcesses))
+	for i, p := range dbProcesses {
+		if p == nil || p.Spec == nil || p.Attachment == nil {
+			logs.Errorf("[ProcessDiff] skip invalid db process record, index=%d", i)
+			continue
+		}
+		// 索引前限定租户，避免同号 CC 进程优先匹配到其他租户的行。
+		if !sameOrLegacyTenant(p.Attachment.TenantID, syncTenantID(ctx.Kit)) {
+			continue
+		}
+		validProcesses = append(validProcesses, p)
+	}
+	dbProcesses = validProcesses
+
 	// 1. 构建进程索引（以 CcProcessID 为主键）
-	// dbProcesses 索引：cc_process_id -> process
-	dbProcessByCCID := make(map[uint32]*table.Process, len(dbProcesses))
+	// 存活进程索引：cc_process_id -> 进程列表。唯一键为
+	// (tenant_id, biz_id, cc_process_id, cc_sync_status, alias)，同 cc_process_id 可能存在多条
+	// 不同别名的存活行（别名重建残留），因此用切片保留全部候选，由 pickProcessMatch 做确定性选择
+	dbProcessesByCCID := make(map[uint32][]*table.Process, len(dbProcesses))
+	// 软删除记录单独索引：CMDB 进程命中软删除记录时走「原地恢复」而不是新增，
+	// 避免同 cc_process_id 出现重复存活行（此前误删的进程靠它恢复）
+	deletedProcessByCCID := make(map[uint32]*table.Process)
 	for _, p := range dbProcesses {
-		dbProcessByCCID[p.Attachment.CcProcessID] = p
+		if p.Spec != nil && p.Spec.CcSyncStatus == table.Deleted {
+			deletedProcessByCCID[p.Attachment.CcProcessID] = p
+			continue
+		}
+		dbProcessesByCCID[p.Attachment.CcProcessID] = append(
+			dbProcessesByCCID[p.Attachment.CcProcessID], p)
 	}
 
 	// newProcesses 索引：cc_process_id -> process
@@ -1369,10 +821,70 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 
 	// 2. 遍历 newProcesses，计算新增 / 更新 / 实例变更
 	for _, newP := range newProcesses {
-		oldP, exists := dbProcessByCCID[newP.Attachment.CcProcessID]
+		matches := dbProcessesByCCID[newP.Attachment.CcProcessID]
+		oldP, exists := pickProcessMatch(matches, newP.Spec.Alias)
+
+		// 2.0 同 cc_process_id 的多条存活行（唯一键含 alias，别名重建会留下多条 synced 行）：
+		// 保留与 CMDB 别名一致的基准行，其余在「实例全部停止且未托管」时收敛为 deleted，
+		// 否则保留并告警（存在运行中实例时不可贸然删除）
+		if exists {
+			for _, dup := range matches {
+				if dup.ID == oldP.ID {
+					continue
+				}
+				// 租户一致性保护：单租户模式下列表未按租户过滤，禁止把其他租户的行当重复行删掉
+				if dup.Attachment == nil ||
+					!sameOrLegacyTenant(dup.Attachment.TenantID, newP.Attachment.TenantID) {
+					logs.Warnf("[ProcessDiff][DupConverge] skip duplicate of other tenant, bizID=%d, "+
+						"ccProcessID=%d, processID=%d, tenant=%s, currentTenant=%s",
+						dup.Attachment.BizID, dup.Attachment.CcProcessID, dup.ID,
+						dup.Attachment.TenantID, newP.Attachment.TenantID)
+					continue
+				}
+				if !convergeDuplicateProcess(ctx, dup) {
+					continue
+				}
+				diff.ToDeleteProcesses = append(diff.ToDeleteProcesses, dup)
+				diff.ModulesToReorder[ModuleAliasKey{
+					ModuleID: int(dup.Attachment.ModuleID),
+					Alias:    dup.Spec.Alias,
+				}] = struct{}{}
+			}
+		}
 
 		// 2.1 新增进程
 		if !exists {
+			// 同 cc_process_id 存在软删除记录（此前误删或别名重建残留）：
+			// 原地恢复该记录，否则会在恢复后出现同 cc_process_id 的重复存活行。
+			// 显式属于其他租户的记录不恢复，避免跨租户把外部数据改成本租户数据
+			delP, hasDeleted := deletedProcessByCCID[newP.Attachment.CcProcessID]
+			if hasDeleted && (delP.Attachment == nil ||
+				!sameOrLegacyTenant(delP.Attachment.TenantID, newP.Attachment.TenantID)) {
+				logs.Warnf("[ProcessDiff][RestoreDeleted] skip deleted record of other tenant, bizID=%d, "+
+					"ccProcessID=%d, processID=%d, tenant=%s, currentTenant=%s",
+					delP.Attachment.BizID, newP.Attachment.CcProcessID, delP.ID,
+					delP.Attachment.TenantID, newP.Attachment.TenantID)
+				hasDeleted = false
+			}
+			if hasDeleted {
+				restored, toAdd, toDelete, reorder, rErr := restoreDeletedProcess(ctx, delP, newP)
+				if rErr != nil {
+					logs.Errorf("[ProcessDiff][RestoreDeleted] bizID=%d ccProcessID=%d failed: %v",
+						newP.Attachment.BizID, newP.Attachment.CcProcessID, rErr)
+					return nil, rErr
+				}
+				// 该软删除记录已被本次恢复占用：同 cc_process_id 的后续条目不能再复用它，
+				// 否则会对同一行重复产出更新、重复创建实例
+				delete(deletedProcessByCCID, newP.Attachment.CcProcessID)
+				diff.ToUpdateProcesses = append(diff.ToUpdateProcesses, restored)
+				diff.ToAddInstances = append(diff.ToAddInstances, toAdd...)
+				diff.ToDeleteInstanceIDs = append(diff.ToDeleteInstanceIDs, toDelete...)
+				if reorder != nil {
+					diff.ModulesToReorder[*reorder] = struct{}{}
+				}
+				continue
+			}
+
 			newP.Revision = &table.Revision{CreatedAt: ctx.Now}
 			diff.ToAddProcesses = append(diff.ToAddProcesses, newP)
 
@@ -1447,13 +959,134 @@ func diffProcesses(ctx *SyncContext, dbProcesses []*table.Process,
 	}
 
 	// 3. db 中存在，但 new 中不存在 → 删除进程
+	// 租户一致性保护与 2.0 收敛、restoreDeletedProcess 走同一判定：多租户模式下列表已按租户过滤，
+	// 这层是重复保护；单租户模式下 syncProcessesWithTx 的显式过滤不生效（s.tenantID 为空），
+	// 这里才是实际生效的一层，禁止把显式属于其他租户的行按删除语义收敛。
+	// legacy 空租户行（归属历史数据）照常参与，见 sameOrLegacyTenant。
+	tenantID := syncTenantID(ctx.Kit)
 	for _, oldP := range dbProcesses {
-		if _, ok := newProcessByCCID[oldP.Attachment.CcProcessID]; !ok {
-			diff.ToDeleteProcesses = append(diff.ToDeleteProcesses, oldP)
+		if _, ok := newProcessByCCID[oldP.Attachment.CcProcessID]; ok {
+			continue
 		}
+		if !sameOrLegacyTenant(oldP.Attachment.TenantID, tenantID) {
+			logs.Warnf("[ProcessDiff][Delete] skip process of other tenant, bizID=%d, ccProcessID=%d, "+
+				"processID=%d, tenant=%s, currentTenant=%s",
+				oldP.Attachment.BizID, oldP.Attachment.CcProcessID, oldP.ID,
+				oldP.Attachment.TenantID, tenantID)
+			continue
+		}
+		// 已软删除的行不需要重复标记：全量清理（如业务进程被清空）后这些行会长期留在库内，
+		// 每轮同步都对它们重写 cc_sync_status 会让无变更的轮次持续产生写放大
+		if oldP.Spec.CcSyncStatus == table.Deleted {
+			continue
+		}
+		diff.ToDeleteProcesses = append(diff.ToDeleteProcesses, oldP)
 	}
 
 	return diff, nil
+}
+
+// sameOrLegacyTenant 判断库内行的租户是否可与当前同步数据合并：
+// 空租户视为默认租户的历史遗留数据，与 DAO 租户钩子保持一致；
+// 显式属于其他租户的行禁止参与删除/恢复，避免单租户模式（列表不按租户过滤）跨租户改动数据。
+func sameOrLegacyTenant(oldTenant, newTenant string) bool {
+	return oldTenant == newTenant || (oldTenant == "" && newTenant == constant.DefaultTenantID)
+}
+
+// pickProcessMatch 从同 cc_process_id 的存活行中确定性挑选 diff 基准行：
+// 优先别名与 CMDB 一致的一条（避免把「别名已变更」误判为配置变更），
+// 否则取 ID 最小的一条；不依赖数据库返回顺序，保证多次同步结果一致。
+func pickProcessMatch(matches []*table.Process, alias string) (*table.Process, bool) {
+	if len(matches) == 0 {
+		return nil, false
+	}
+	picked := matches[0]
+	for _, p := range matches {
+		if p.Spec != nil && p.Spec.Alias == alias {
+			return p, true
+		}
+		if p.ID < picked.ID {
+			picked = p
+		}
+	}
+	return picked, true
+}
+
+// convergeDuplicateProcess 判断同 cc_process_id 的多余存活行能否安全收敛为 deleted：
+// 仅当其实例全部处于「已停止/无状态」且「未托管/无托管状态」时允许收敛，
+// 否则保留并告警（可能存在运行中实例，删除会影响业务）。
+func convergeDuplicateProcess(ctx *SyncContext, dup *table.Process) bool {
+	safe, err := isSafeToUpdateProcess(ctx, dup.Attachment.BizID, dup.ID)
+	if err != nil {
+		logs.Errorf("[ProcessDiff][DupConverge] check safe failed, bizID=%d, processID=%d: %v",
+			dup.Attachment.BizID, dup.ID, err)
+		return false
+	}
+	if !safe {
+		logs.Warnf("[ProcessDiff][DupConverge] keep duplicate process, bizID=%d, ccProcessID=%d, "+
+			"processID=%d, alias=%s: running or managed instances exist",
+			dup.Attachment.BizID, dup.Attachment.CcProcessID, dup.ID, dup.Spec.Alias)
+		return false
+	}
+
+	logs.Infof("[ProcessDiff][DupConverge] duplicate process marked deleted, bizID=%d, ccProcessID=%d, "+
+		"processID=%d, alias=%s",
+		dup.Attachment.BizID, dup.Attachment.CcProcessID, dup.ID, dup.Spec.Alias)
+	return true
+}
+
+// restoreDeletedProcess 原地恢复软删除的进程记录：以 CMDB 当前数据刷新规格与拓扑附件，
+// 并按 ProcNum 对存量实例扩缩容。返回恢复后的进程（作为更新落库，保留原进程 ID 与实例历史）。
+// 适用场景：此前误删/别名重建残留的软删除记录，在 CMDB 侧进程仍存在时的全量同步恢复
+func restoreDeletedProcess(ctx *SyncContext, delP, newP *table.Process) (
+	*table.Process, []*table.ProcessInstance, []uint32, *ModuleAliasKey, error) {
+
+	// 整体覆盖 Spec 前先留存需要继承的字段
+	prevSourceData := delP.Spec.SourceData
+	prevOsType := delP.Spec.OsType
+	prevStateSyncedAt := delP.Spec.ProcessStateSyncedAt
+
+	delP.Spec = newP.Spec
+	delP.Spec.PrevData = prevSourceData
+	// 清除删除时记录的新别名，恢复为已同步状态
+	delP.Spec.NewAlias = ""
+	delP.Spec.CcSyncStatus = table.Synced
+	// 同步取不到 os_type 时沿用旧值，避免恢复时把已有类型覆盖为空
+	delP.Spec.OsType = resolveOsType(newP.Spec.OsType, prevOsType)
+	// 保留原有的状态同步时间，避免恢复后监控出现「从未同步」的假象
+	delP.Spec.ProcessStateSyncedAt = prevStateSyncedAt
+	delP.Attachment = newP.Attachment
+	delP.Revision = &table.Revision{UpdatedAt: ctx.Now}
+
+	// 查询恢复进程的存量实例（标记删除时仅清理 stopped/unmanaged 实例，运行中的实例仍在）
+	existingInsts, err := processInstances(ctx, delP.Attachment.BizID, delP.ID)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// 按 ProcNum 扩缩容实例
+	res, err := reconcileProcessInstances(ctx, &ReconcileInstancesParams{
+		BizID:       delP.Attachment.BizID,
+		ProcessID:   delP.ID,
+		HostID:      delP.Attachment.HostID,
+		ModuleID:    delP.Attachment.ModuleID,
+		CcProcessID: delP.Attachment.CcProcessID,
+		Alias:       newP.Spec.Alias,
+		OldNum:      len(existingInsts),
+		NewNum:      int(newP.Spec.ProcNum),
+	})
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	var reorder *ModuleAliasKey
+	if len(res.ToAdd) > 0 || len(res.ToDelete) > 0 {
+		reorder = &ModuleAliasKey{
+			ModuleID: int(delP.Attachment.ModuleID),
+			Alias:    newP.Spec.Alias,
+		}
+	}
+	return delP, res.ToAdd, res.ToDelete, reorder, nil
 }
 
 // compareProcessInfo returns true if jsonStr (旧的 JSON 字符串) 等价于 jsonStr2 (新的 JSON 字符串).
@@ -1525,8 +1158,7 @@ func reconcileProcessInstances(ctx *SyncContext, params *ReconcileInstancesParam
 		}
 
 		// 查询当前进程在该主机上已有的 HostInstSeq 列表
-		existInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(
-			ctx.Kit, ctx.Tx, params.BizID, params.ProcessID)
+		existInsts, err := processInstances(ctx, params.BizID, params.ProcessID)
 		if err != nil {
 			return nil, err
 		}
@@ -1564,10 +1196,18 @@ type BuildProcessChangesResult struct {
 }
 
 // BuildProcessChanges 根据 CMDB 新旧进程数据，计算进程及其实例的变更结果：
-// - 是否需要新增进程
-// - 是否需要更新进程
-// - 是否需要删除旧进程
-// - 是否需要新增/删除/更新进程实例
+//   - 是否需要新增进程（ToAddProcess）
+//   - 是否需要更新进程（ToUpdateProcess）
+//   - 是否需要删除旧进程（ToDeleteProcess，仅别名变更重建场景）
+//   - 是否需要新增/删除进程实例（扩缩容），以及是否需要重排 ModuleInstSeq
+//
+// 变更检测维度（任一变化即进入更新流程，全部未变则返回空结果）：
+// 别名 / source_data 配置内容 / proc_num / agent_id / agent 状态 / os_type /
+// 集群名、模块名、服务实例名与集群环境类型（拓扑）/ 启动优先级。
+//
+// 注意：本函数会**原地修改** oldP（把 CMDB 新值写入旧记录再落库），并可能在
+// 别名变更时产出一对「新增新别名进程 + 删除旧别名进程」的重建结果；
+// 重建是否安全由 isSafeToUpdateProcess 判定（存量实例全部停止且未托管才允许原地改别名）。
 //
 // nolint: funlen,gocyclo
 func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*BuildProcessChangesResult, error) {
@@ -1591,8 +1231,14 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 	osTypeChanged := newP.Spec.OsType != "" && newP.Spec.OsType != oldP.Spec.OsType
 	// 启动优先级只影响操作编排顺序，不属于进程启动配置，因此单独 diff 而不并入 source_data 的一致性对比
 	priorityChanged := newP.Spec.Priority != oldP.Spec.Priority
-	// 仅同步服务实例名称与集群环境类型两个拓扑字段；集群名称/模块名称本期不做 diff（范围决策 2026-07-21）
-	topoChanged := newP.Spec.ServiceName != oldP.Spec.ServiceName ||
+	// 拓扑字段同步集群名称、模块名称、服务实例名称与集群环境类型：watch 链已不再订阅 set 资源
+	// （resources() 固定为 module/process），集群名变更只能由全量同步的 diff 覆盖；
+	// 模块名虽由 module 事件单独更新（见 handleModuleEvent），但事件处理失败时游标仍会推进，
+	// 漏掉的一次改名不会自行修复，因此同样纳入全量同步 diff 兜底；代价是一次改名会让该模块下
+	// 所有进程产出更新并各派发一次状态同步任务，改名频率极低，可接受
+	topoChanged := newP.Spec.SetName != oldP.Spec.SetName ||
+		newP.Spec.ModuleName != oldP.Spec.ModuleName ||
+		newP.Spec.ServiceName != oldP.Spec.ServiceName ||
 		newP.Spec.Environment != oldP.Spec.Environment
 
 	if !nameChanged && !infoChanged && !numChanged && !osTypeChanged &&
@@ -1610,6 +1256,8 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 
 	// 直接以 CMDB 值覆盖（含覆盖为空）
 	if topoChanged {
+		oldP.Spec.SetName = newP.Spec.SetName
+		oldP.Spec.ModuleName = newP.Spec.ModuleName
 		oldP.Spec.ServiceName = newP.Spec.ServiceName
 		oldP.Spec.Environment = newP.Spec.Environment
 	}
@@ -1623,7 +1271,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 	}
 
 	// 是否安全
-	safe, err := isSafeToUpdateProcess(ctx.Kit, ctx.Dao, ctx.Tx, oldP.Attachment.BizID, oldP.ID)
+	safe, err := isSafeToUpdateProcess(ctx, oldP.Attachment.BizID, oldP.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -1657,6 +1305,8 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 				reusableProc.Spec.AgentStatus = newP.Spec.AgentStatus
 			}
 			// 恢复 deleted 记录时同步刷新拓扑字段，避免残留旧值
+			reusableProc.Spec.SetName = newP.Spec.SetName
+			reusableProc.Spec.ModuleName = newP.Spec.ModuleName
 			reusableProc.Spec.ServiceName = newP.Spec.ServiceName
 			reusableProc.Spec.Environment = newP.Spec.Environment
 			reusableProc.Spec.Priority = newP.Spec.Priority
@@ -1664,8 +1314,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 			reusableProc.Revision = &table.Revision{UpdatedAt: ctx.Now}
 
 			// 查询恢复进程的现有实例
-			existingInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(
-				ctx.Kit, ctx.Tx, reusableProc.Attachment.BizID, reusableProc.ID)
+			existingInsts, err := processInstances(ctx, reusableProc.Attachment.BizID, reusableProc.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -1766,7 +1415,7 @@ func BuildProcessChanges(ctx *SyncContext, params *BuildProcessChangesParams) (*
 		oldP.Spec.ProcNum = newP.Spec.ProcNum
 
 		// 真实实例数
-		allInsts, err := ctx.Dao.ProcessInstance().ListByProcessIDTx(ctx.Kit, ctx.Tx, oldP.Attachment.BizID, oldP.ID)
+		allInsts, err := processInstances(ctx, oldP.Attachment.BizID, oldP.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -1824,9 +1473,7 @@ func buildInstances(ctx *SyncContext, params *BuildInstancesParams) []*table.Pro
 
 	instances := make([]*table.ProcessInstance, 0, newCount)
 
-	// 维度 key： (ccProcessID, hostID) 用于 HostInstSeq
-	// (moduleID, alias) 用于 ModuleInstSeq，使同模块同别名共享序列
-	hostKey := HostProcessKey{CcProcessID: int(params.CcProcessID), HostID: int(params.HostID)}
+	// 维度 key：(moduleID, alias) 用于 ModuleInstSeq，使同模块同别名共享序列
 	modKey := ModuleAliasKey{ModuleID: int(params.ModuleID), Alias: params.Alias}
 
 	startModuleInstSeq := ctx.ModuleCounter[modKey]
@@ -1863,10 +1510,6 @@ func buildInstances(ctx *SyncContext, params *BuildInstancesParams) []*table.Pro
 				UpdatedAt: ctx.Now,
 			},
 		})
-	}
-
-	if len(hostSeqsToAssign) > 0 {
-		ctx.HostCounter[hostKey] = hostSeqsToAssign[len(hostSeqsToAssign)-1]
 	}
 
 	return instances
@@ -1923,34 +1566,34 @@ type ProcessDiff struct {
 
 	// 需要重新编排 ModuleInstSeq 的模块 (moduleID, alias) 集合
 	ModulesToReorder map[ModuleAliasKey]struct{}
-
-	// side effect
-	NeedSyncGSE bool
 }
 
 // SyncProcessData 对比并同步进程及进程实例数据
 //
 // 同步策略：
-//  1. 基于 oldProcesses / newProcesses 做差异计算
+//  1. 基于 oldProcesses / newProcesses 做差异计算（diffProcesses 内部会识别软删除记录，
+//     CMDB 进程命中软删除记录时走原地恢复而不是新增）
 //  2. 先删除实例（缩容）
 //  3. 再删除进程（包含兜底删除 stopped / unmanaged 实例）
 //  4. 新增进程
-//  5. 更新进程
+//  5. 更新进程（含原地恢复的软删除记录）
 //  6. 回填 ProcessID 到新增实例
 //  7. 新增实例（扩容 / 新进程）
+//  8. 重排受影响模块的 ModuleInstSeq
+//
+// 入参 newProcesses 必须是业务在 CMDB 的全量进程列表，空列表表示「该业务已无进程」：
+// 此时 diff 会把库内全部存活行按删除语义收敛（软删 + 清理 stopped/unmanaged 实例），
+// 不能把空列表当成「本轮无数据」提前返回，否则最后一个进程被删除后本地行会永久残留。
+// 允许调用方用空列表触发清理的前提是「能确认 CMDB 侧确实为空」，由调用方保证
+// （CMDB 接口失败、分页无法确认取满时必须返回错误，不得以空列表交给本函数）。
 //
 // 返回值：
 //   - SyncProcessResult：本次新增/更新的进程及其新增实例
 //   - error：任一阶段失败则直接返回
 //
-// nolint:funlen
+// nolint:funlen,gocyclo
 func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, oldProcesses,
 	newProcesses []*table.Process) (*SyncProcessResult, error) {
-
-	// 没有新进程数据，直接返回空结果
-	if len(newProcesses) == 0 {
-		return &SyncProcessResult{}, nil
-	}
 
 	// 创建同步上下文
 	ctx := &SyncContext{
@@ -1958,8 +1601,14 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 		Dao:           dao,
 		Tx:            tx,
 		Now:           time.Now().UTC(),
-		HostCounter:   make(map[HostProcessKey]int),
 		ModuleCounter: make(map[ModuleAliasKey]int),
+	}
+
+	// 预取旧进程的实例快照：diff 阶段需要按进程判定「是否可安全变更」和实例数量，
+	// 逐进程查库在万级进程业务上会产生上万次查询，显著拉长事务
+	if err := prefetchProcessInstances(ctx, bizID, oldProcesses); err != nil {
+		logs.Errorf("[ProcessSync][PrefetchInstances] bizID=%d failed: %v", bizID, err)
+		return nil, err
 	}
 
 	diff, err := diffProcesses(ctx, oldProcesses, newProcesses)
@@ -1969,6 +1618,16 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 			bizID, err,
 		)
 		return nil, err
+	}
+
+	// 无任何变更时直接返回，跳过后续写库（事件驱动的全量同步绝大多数是无变更场景）
+	result := &SyncProcessResult{
+		Changed: len(diff.ToAddProcesses) > 0 || len(diff.ToUpdateProcesses) > 0 ||
+			len(diff.ToDeleteProcesses) > 0 || len(diff.ToAddInstances) > 0 ||
+			len(diff.ToDeleteInstanceIDs) > 0 || len(diff.ModulesToReorder) > 0,
+	}
+	if !result.Changed {
+		return result, nil
 	}
 
 	// 1. 先删实例（缩容）
@@ -2017,14 +1676,28 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 	buildKey := func(tenantID string, bizID uint32, ccProcessID uint32) string {
 		return fmt.Sprintf("%s-%d-%d", tenantID, bizID, ccProcessID)
 	}
-	for _, p := range diff.ToAddProcesses {
+	// 实例表中按 cc_process_id 关联进程，同 key 出现多条进程（不同别名的重建残留）时
+	// 无法确定实例归属，直接失败回滚，避免把实例挂到错误的进程上
+	addProcessID := func(p *table.Process) error {
 		key := buildKey(p.Attachment.TenantID, bizID, p.Attachment.CcProcessID)
+		if existID, ok := processIDByKey[key]; ok && existID != p.ID {
+			return fmt.Errorf(
+				"[ProcessSync][FillProcessID] bizID=%d ccProcessID=%d matched multiple processes: %d, %d",
+				bizID, p.Attachment.CcProcessID, existID, p.ID)
+		}
 		processIDByKey[key] = p.ID
+		return nil
+	}
+	for _, p := range diff.ToAddProcesses {
+		if err := addProcessID(p); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, p := range diff.ToUpdateProcesses {
-		key := buildKey(p.Attachment.TenantID, bizID, p.Attachment.CcProcessID)
-		processIDByKey[key] = p.ID
+		if err := addProcessID(p); err != nil {
+			return nil, err
+		}
 	}
 
 	// 6. 回填 ProcessID 到新增实例
@@ -2094,9 +1767,6 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 		}
 	}
 
-	// 汇总返回结果
-	result := &SyncProcessResult{}
-
 	// 新增进程
 	for _, p := range diff.ToAddProcesses {
 		result.Items = append(result.Items, &ProcessWithInstances{
@@ -2116,7 +1786,10 @@ func SyncProcessData(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32, o
 	return result, nil
 }
 
-// replaceProcessAndCleanInstancesTx 更新进程别名以及状态数据并清理相关实例
+// replaceProcessAndCleanInstancesTx 将一批进程标记为软删除（cc_sync_status=deleted），
+// 并把别名更新为删除时记录的 new_alias（别名重建场景用于后续按新别名恢复）。
+// 同时清理这些进程下 stopped/unmanaged 状态的实例；运行中的实例保留，
+// 待进程后续被恢复（restoreDeletedProcess）时按 ProcNum 重新对齐。
 func replaceProcessAndCleanInstancesTx(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, bizID uint32,
 	process []*table.Process) error {
 	// 1. 将 process 表中的数据标记为 deleted 状态 且更新别名为新别名
@@ -2155,20 +1828,65 @@ func MarkProcessDeletedAndCleanInstancesTx(kit *kit.Kit, dao dao.Set, tx *gen.Qu
 	return nil
 }
 
-func isSafeToUpdateProcess(
-	kit *kit.Kit,
-	dao dao.Set,
-	tx *gen.QueryTx,
-	bizID uint32,
-	processID uint32,
-) (bool, error) {
+// processInstancePrefetchBatchLimit 预取实例时单次 IN 查询的进程数量上限
+const processInstancePrefetchBatchLimit = 500
 
-	insts, err := dao.ProcessInstance().ListByProcessIDTx(kit, tx, bizID, processID)
+// prefetchProcessInstances 一次性预取旧进程的实例快照，供 diff 阶段内存判定。
+// 逐进程查库在万级进程业务上会产生上万次事务内查询，显著拉长事务与锁持有时间。
+func prefetchProcessInstances(ctx *SyncContext, bizID uint32, processes []*table.Process) error {
+	processIDs := make([]uint32, 0, len(processes))
+	for _, p := range processes {
+		if p == nil || p.Attachment == nil || p.ID == 0 {
+			continue
+		}
+		processIDs = append(processIDs, p.ID)
+	}
+	if len(processIDs) == 0 {
+		ctx.InstancesByProcessID = make(map[uint32][]*table.ProcessInstance)
+		return nil
+	}
+
+	grouped := make(map[uint32][]*table.ProcessInstance, len(processIDs))
+	for start := 0; start < len(processIDs); start += processInstancePrefetchBatchLimit {
+		end := min(start+processInstancePrefetchBatchLimit, len(processIDs))
+		insts, err := ctx.Dao.ProcessInstance().ListByProcessIDsWithTx(ctx.Kit, ctx.Tx, bizID, processIDs[start:end])
+		if err != nil {
+			return err
+		}
+		for _, inst := range insts {
+			if inst == nil || inst.Attachment == nil {
+				continue
+			}
+			grouped[inst.Attachment.ProcessID] = append(grouped[inst.Attachment.ProcessID], inst)
+		}
+	}
+
+	ctx.InstancesByProcessID = grouped
+	return nil
+}
+
+// processInstances 返回某进程的实例列表：优先使用预取快照（未预取时为 nil map 则回退查库）。
+func processInstances(ctx *SyncContext, bizID, processID uint32) ([]*table.ProcessInstance, error) {
+	if ctx.InstancesByProcessID != nil {
+		return ctx.InstancesByProcessID[processID], nil
+	}
+	return ctx.Dao.ProcessInstance().ListByProcessIDTx(ctx.Kit, ctx.Tx, bizID, processID)
+}
+
+// isSafeToUpdateProcess 判断进程是否可以安全地原地变更（别名重建/原地更新）：
+// 仅当其全部实例都处于「已停止或无状态」且「未托管或无托管状态」时视为安全；
+// 存在运行中或已托管实例时返回 false，调用方应走「新增新记录 + 标记旧记录删除」的重建路径，
+// 避免影响正在运行的实例。
+func isSafeToUpdateProcess(ctx *SyncContext, bizID, processID uint32) (bool, error) {
+	insts, err := processInstances(ctx, bizID, processID)
 	if err != nil {
 		return false, err
 	}
 
 	for _, inst := range insts {
+		if inst == nil || inst.Spec == nil {
+			continue
+		}
 		// 进程不是停止和空都是不安全
 		if inst.Spec.Status != table.ProcessStatusStopped && inst.Spec.Status != "" {
 			return false, nil
@@ -2311,18 +2029,12 @@ func calcModuleInstSeqUpdatesTx(kit *kit.Kit, dao dao.Set, tx *gen.QueryTx, para
 	return collectSeqUpdates(instances), nil
 }
 
-// fetchAllProcessRelatedInfo 返回所有进程相关信息
-func (s *syncCMDBService) fetchAllProcessRelatedInfo(ctx context.Context, processIDs []int64) ([]*bkcmdb.ProcessRelatedInfoItem, error) {
+// fetchAllProcessRelatedInfo 分页拉取业务全量进程关联信息
+func (s *syncCMDBService) fetchAllProcessRelatedInfo(ctx context.Context) ([]*bkcmdb.ProcessRelatedInfoItem, error) {
 	return PageFetcher(func(page *bkcmdb.PageParam) ([]*bkcmdb.ProcessRelatedInfoItem, int, error) {
 		req := &bkcmdb.ListProcessRelatedInfoReq{
 			BkBizID: s.bizID,
 			Page:    page,
-		}
-		// 只有在有值时才设置过滤条件
-		if len(processIDs) > 0 {
-			req.ProcessFilter = &bkcmdb.ProcessFilter{
-				BkProcessIDs: processIDs,
-			}
 		}
 		resp, err := s.svc.ListProcessRelatedInfo(ctx, req)
 		if err != nil {

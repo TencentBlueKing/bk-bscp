@@ -16,6 +16,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"slices"
@@ -1362,9 +1363,38 @@ type WatchHostUpdatesConfig struct {
 }
 
 // WatchCmdbResourceConfig defines watch cmdb resource task configuration options.
+// watch 任务采用常驻长轮询循环（CC resource_watch 短长链设计），替代旧的固定 tick 轮询。
 type WatchCmdbResourceConfig struct {
 	// Enabled defines whether the watch cmdb resource task is enabled
 	Enabled bool `yaml:"enabled"`
+	// Interval defines the scan period for discovering new tenants or resources
+	Interval string `yaml:"interval"`
+	// IdleInterval defines the fallback probe interval, only effective when CC does NOT
+	// hold the long-polling connection (response without events costs < 1s).
+	// It is clamped to >= 1s to avoid a tight request loop.
+	IdleInterval string `yaml:"idleInterval"`
+	// MaxConcurrency defines the max number of concurrent watch requests to CC.
+	// Each long-polling request holds one CC watch session for up to 20s, so this
+	// value is also the CC watch session limit.
+	MaxConcurrency int `yaml:"maxConcurrency"`
+	// QpsLimit defines the QPS limit for watch requests to CC, mainly converging
+	// bursts when catching up event backlogs
+	QpsLimit float64 `yaml:"qpsLimit"`
+	// HandlerConcurrency defines the concurrent full-sync workers of the per-tenant process sync queue.
+	// Events of the same resource are still handled in FIFO order, and the same biz is never synced concurrently.
+	HandlerConcurrency int `yaml:"handlerConcurrency"`
+	// StartFromOffset defines the lookback offset used when the cursor is lost or expired.
+	// The cursor is kept in memory only, so this is also the replay window on every
+	// restart; it must not exceed 1h (maxWatchStartFromOffset) and is enforced by validate.
+	StartFromOffset string `yaml:"startFromOffset"`
+	// RequestTimeout defines the timeout of a single long-polling watch request.
+	// It must be > 20s (CC long-polling hold window) and is enforced by validate.
+	RequestTimeout string `yaml:"requestTimeout"`
+	// MaxWatchChains limits the number of concurrently running watch chains
+	// (tenant x resource). Chains beyond the limit will NOT run; when there are
+	// many tenants, increase this value explicitly.
+	// 注意：watch 的资源类型（module/process）与 bk_fields 由代码固定，不开放配置
+	MaxWatchChains int `yaml:"maxWatchChains"`
 }
 
 // SyncCmdbGseConfig defines sync cmdb and gse task configuration options.
@@ -1478,6 +1508,10 @@ func (c CrontabConfig) validate() error {
 		return err
 	}
 
+	if err := c.WatchCmdbResource.validate(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1525,6 +1559,113 @@ func (c *WatchHostUpdatesConfig) trySetDefault() {
 	}
 }
 
+// maxWatchStartFromOffset 限制游标回溯窗口的上限。
+// 游标只存在于内存，进程重启后必然按 startFromOffset 回溯，窗口越大重放的事件越多
+// （每个受影响业务都会触发一次全量同步）；CC 事件保留期约 3h 且不可依赖，
+// 因此不允许把回溯窗口顶到保留期边界。
+const maxWatchStartFromOffset = time.Hour
+
+// validate if the watch cmdb resource config is valid or not.
+func (c WatchCmdbResourceConfig) validate() error {
+	durations := []struct {
+		name  string
+		value string
+	}{
+		{"interval", c.Interval},
+		{"idleInterval", c.IdleInterval},
+		{"startFromOffset", c.StartFromOffset},
+		{"requestTimeout", c.RequestTimeout},
+	}
+	for _, d := range durations {
+		if d.value == "" {
+			continue
+		}
+		if duration, err := time.ParseDuration(d.value); err != nil || duration <= 0 {
+			return fmt.Errorf("invalid watchCmdbResource %s duration: %s", d.name, d.value)
+		}
+	}
+
+	// CC long-polling holds the connection up to 20s, the request timeout must cover it.
+	// 仅在启用 watch 时强校验：未启用的存量配置可能带有历史短超时值，
+	// 不应因为一个运行期不生效的配置项阻塞整个服务启动
+	if c.Enabled && c.RequestTimeout != "" {
+		timeout, err := time.ParseDuration(c.RequestTimeout)
+		if err != nil {
+			return fmt.Errorf("invalid watchCmdbResource requestTimeout duration: %s", c.RequestTimeout)
+		}
+		if timeout <= 20*time.Second {
+			return fmt.Errorf("invalid watchCmdbResource requestTimeout value: %s, should > 20s"+
+				" (CC long-polling hold window)", c.RequestTimeout)
+		}
+	}
+
+	// 游标不落库，startFromOffset 是重启后唯一的回溯手段：窗口越大，每次重启重放的
+	// 事件越多（每个受影响业务都会触发一次全量同步），因此设置上限
+	if c.Enabled && c.StartFromOffset != "" {
+		offset, err := time.ParseDuration(c.StartFromOffset)
+		if err != nil {
+			return fmt.Errorf("invalid watchCmdbResource startFromOffset duration: %s", c.StartFromOffset)
+		}
+		if offset > maxWatchStartFromOffset {
+			return fmt.Errorf("invalid watchCmdbResource startFromOffset value: %s, should <= %s"+
+				" (window is replayed on every restart)", c.StartFromOffset, maxWatchStartFromOffset)
+		}
+	}
+
+	if c.MaxConcurrency < 0 {
+		return fmt.Errorf("invalid watchCmdbResource maxConcurrency value: %d, should >= 0", c.MaxConcurrency)
+	}
+
+	if c.HandlerConcurrency < 0 {
+		return fmt.Errorf("invalid watchCmdbResource handlerConcurrency value: %d, should >= 0", c.HandlerConcurrency)
+	}
+
+	if c.MaxWatchChains < 0 {
+		return fmt.Errorf("invalid watchCmdbResource maxWatchChains value: %d, should >= 0", c.MaxWatchChains)
+	}
+
+	if c.QpsLimit < 0 || math.IsNaN(c.QpsLimit) || math.IsInf(c.QpsLimit, 0) {
+		return fmt.Errorf("invalid watchCmdbResource qpsLimit value: %f, should >= 0", c.QpsLimit)
+	}
+
+	return nil
+}
+
+// trySetDefault try set the default value of watch cmdb resource config
+func (c *WatchCmdbResourceConfig) trySetDefault() {
+	if c.Interval == "" {
+		c.Interval = "1m" // tenant/resource scan period
+	}
+
+	if c.IdleInterval == "" {
+		c.IdleInterval = "1s" // fallback probe interval when CC does not hold
+	}
+
+	if c.MaxConcurrency == 0 {
+		c.MaxConcurrency = 8 // also the CC watch session limit
+	}
+
+	if c.QpsLimit == 0 {
+		c.QpsLimit = 20.0 // 20 QPS
+	}
+
+	if c.HandlerConcurrency == 0 {
+		c.HandlerConcurrency = 4
+	}
+
+	if c.MaxWatchChains == 0 {
+		c.MaxWatchChains = 100
+	}
+
+	if c.StartFromOffset == "" {
+		c.StartFromOffset = "5m"
+	}
+
+	if c.RequestTimeout == "" {
+		c.RequestTimeout = "35s" // must cover the 20s CC long-polling hold window
+	}
+}
+
 // validate if the sync cmdb gse config is valid or not.
 func (c SyncCmdbGseConfig) validate() error {
 	if c.Interval != "" {
@@ -1566,6 +1707,7 @@ func (c *CrontabConfig) trySetDefault() {
 	c.WatchBizHostRelation.trySetDefault()
 	c.WatchHostUpdates.trySetDefault()
 	c.SyncCmdbGse.trySetDefault()
+	c.WatchCmdbResource.trySetDefault()
 }
 
 // RateLimiter defines the rate limiter options for traffic control.
@@ -2311,8 +2453,6 @@ type CMDBConfig struct {
 	WebHost           string                `yaml:"webHost"`
 	BkSupplierAccount string                `yaml:"bkSupplierAccount"`
 	RenderCache       CMDBRenderCacheConfig `yaml:"renderCache"`
-	// 是否启用新的进程同步逻辑
-	UseNewProcessSync bool `yaml:"useNewProcessSync"`
 }
 
 // CMDBRenderCacheConfig defines render-time CMDB aggregation cache settings.

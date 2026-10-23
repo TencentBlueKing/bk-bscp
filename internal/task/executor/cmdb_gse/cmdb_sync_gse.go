@@ -14,6 +14,7 @@ package cmdbGse
 
 import (
 	"context"
+	"fmt"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/dao"
 	processorcmdb "github.com/TencentBlueKing/bk-bscp/internal/processor/cmdb"
 	"github.com/TencentBlueKing/bk-bscp/internal/processor/gse"
+	"github.com/TencentBlueKing/bk-bscp/internal/runtime/lock"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
@@ -35,20 +37,23 @@ const (
 
 // NewSyncCMDBExecutor new sync cmdb gse executor
 func NewSyncCmdbGseExecutor(gseSvc *gseSvc.Service, cmdbSvc bkcmdb.Service,
-	dao dao.Set, renderCache processorcmdb.RenderCache) *syncCmdbGseExecutor {
+	dao dao.Set, redLock *lock.TokenLock, renderCache processorcmdb.RenderCache) *syncCmdbGseExecutor {
 	return &syncCmdbGseExecutor{
 		cmdbSvc:     cmdbSvc,
 		dao:         dao,
 		gseSvc:      gseSvc,
+		redLock:     redLock,
 		renderCache: renderCache,
 	}
 }
 
 // syncCmdbGseExecutor sync cmdb gse executor
 type syncCmdbGseExecutor struct {
-	cmdbSvc     bkcmdb.Service
-	gseSvc      *gseSvc.Service
-	dao         dao.Set
+	cmdbSvc bkcmdb.Service
+	gseSvc  *gseSvc.Service
+	dao     dao.Set
+	// redLock 同一业务全量进程同步的分布式锁（跨实例互斥，持锁期间续期，释放校验持有者 token）
+	redLock     *lock.TokenLock
 	renderCache processorcmdb.RenderCache
 }
 
@@ -74,8 +79,18 @@ func (s *syncCmdbGseExecutor) SyncCMDB(c *istep.Context) error {
 
 	// 同步cc数据
 	kt := kit.NewWithTenant(payload.TenantID)
-	syncSvc := processorcmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.gseSvc, s.dao)
-	if err := syncSvc.SyncBizProcessesWithMode(kt.Ctx); err != nil {
+	syncSvc := processorcmdb.NewSyncCMDBService(payload.TenantID, int(payload.BizID), s.cmdbSvc, s.gseSvc, s.dao,
+		s.redLock)
+	if _, err := syncSvc.SyncBizProcesses(kt.Ctx); err != nil {
+		if processorcmdb.IsSyncSkipped(err) {
+			// 未执行（其他实例正在同步同一业务）：不能当作成功返回，
+			// 否则一键同步会显示成功而 CMDB 数据实际未刷新。
+			// 返回可识别的错误让步骤失败，由任务框架的重试策略再次执行，
+			// 重试耗尽时任务状态如实反映「未执行」而不是「已完成」。
+			logs.Warnf("tenant: %s biz: %d sync cmdb not executed: %v", payload.TenantID, payload.BizID, err)
+			return fmt.Errorf("sync cmdb not executed for biz %d (another instance is syncing): %w",
+				payload.BizID, err)
+		}
 		logs.Errorf("tenant: %s biz: %d sync cmdb data failed: %v", payload.TenantID, payload.BizID, err)
 		return err
 	}

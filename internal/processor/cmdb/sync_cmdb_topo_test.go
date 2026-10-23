@@ -26,13 +26,14 @@ func newTopoSyncContext(daoSet *fakeReusableDaoSet) *SyncContext {
 		Kit:           kit.New(),
 		Dao:           daoSet,
 		Now:           time.Now(),
-		HostCounter:   make(map[HostProcessKey]int),
 		ModuleCounter: make(map[ModuleAliasKey]int),
 	}
 }
 
-// TestBuildProcessChangesTopoFields 校验 F-001：一键同步只对 service_name / environment 两个拓扑字段
-// 做增量 diff 与直接覆盖写回；set_name / module_name 变化不触发更新（范围决策 2026-07-21）
+// TestBuildProcessChangesTopoFields 校验 F-001：一键同步对 set_name / module_name / service_name /
+// environment 四个拓扑字段做增量 diff 与直接覆盖写回（watch 链已不再订阅 set 资源，集群名只能由全量同步
+// 覆盖；module_name 虽由 module 事件更新，但事件处理失败后游标照常推进，同样需要全量同步兜底）
+// （范围决策 2026-07-21，2026-10 增补 set_name，2026-10 增补 module_name）
 func TestBuildProcessChangesTopoFields(t *testing.T) {
 	cases := []struct {
 		name            string
@@ -45,6 +46,8 @@ func TestBuildProcessChangesTopoFields(t *testing.T) {
 		oldModuleName   string
 		newModuleName   string
 		wantUpdate      bool
+		wantSetName     string
+		wantModuleName  string
 		wantServiceName string
 		wantEnvironment string
 	}{
@@ -63,25 +66,36 @@ func TestBuildProcessChangesTopoFields(t *testing.T) {
 			wantServiceName: "svc", wantEnvironment: "3",
 		},
 		{
-			name:           "T3 only set_name/module_name changed",
+			name:           "T3 only set_name changed",
 			oldServiceName: "svc", newServiceName: "svc",
 			oldEnvironment: "1", newEnvironment: "1",
 			oldSetName: "set-old", newSetName: "set-new",
-			oldModuleName: "mod-old", newModuleName: "mod-new",
-			wantUpdate: false,
+			wantUpdate:  true,
+			wantSetName: "set-new", wantServiceName: "svc", wantEnvironment: "1",
 		},
 		{
-			name:           "T4 topo fields unchanged",
+			name:           "T4 only module_name changed",
 			oldServiceName: "svc", newServiceName: "svc",
 			oldEnvironment: "1", newEnvironment: "1",
+			oldModuleName: "mod-old", newModuleName: "mod-new",
+			wantUpdate:     true,
+			wantModuleName: "mod-new", wantServiceName: "svc", wantEnvironment: "1",
+		},
+		{
+			name:           "T5 topo fields unchanged",
+			oldServiceName: "svc", newServiceName: "svc",
+			oldEnvironment: "1", newEnvironment: "1",
+			oldSetName: "set", newSetName: "set",
 			wantUpdate: false,
 		},
 		{
-			name:           "T5 both fields overwritten to empty",
+			name:           "T6 all fields overwritten to empty",
 			oldServiceName: "svc-old", newServiceName: "",
 			oldEnvironment: "1", newEnvironment: "",
-			wantUpdate:      true,
-			wantServiceName: "", wantEnvironment: "",
+			oldSetName: "set-old", newSetName: "",
+			oldModuleName: "mod-old", newModuleName: "",
+			wantUpdate:  true,
+			wantSetName: "", wantModuleName: "", wantServiceName: "", wantEnvironment: "",
 		},
 	}
 	for _, c := range cases {
@@ -133,19 +147,25 @@ func TestBuildProcessChangesTopoFields(t *testing.T) {
 			if res.ToUpdateProcess == nil {
 				t.Fatal("expected ToUpdateProcess non-nil")
 			}
+			if got := res.ToUpdateProcess.Spec.SetName; got != c.wantSetName {
+				t.Fatalf("SetName = %q, want %q", got, c.wantSetName)
+			}
+			if got := res.ToUpdateProcess.Spec.ModuleName; got != c.wantModuleName {
+				t.Fatalf("ModuleName = %q, want %q", got, c.wantModuleName)
+			}
 			if got := res.ToUpdateProcess.Spec.ServiceName; got != c.wantServiceName {
 				t.Fatalf("ServiceName = %q, want %q", got, c.wantServiceName)
 			}
 			if got := res.ToUpdateProcess.Spec.Environment; got != c.wantEnvironment {
 				t.Fatalf("Environment = %q, want %q", got, c.wantEnvironment)
 			}
-			// set_name / module_name 不属于同步范围：不因它们触发更新，也不做断言写回
 		})
 	}
 }
 
-// TestBuildProcessChangesReusableRefreshesTopoFields 校验 TR-001：别名 + 两个拓扑字段同时变更且命中
-// 可复用 deleted 记录时，恢复进程的 service_name / environment 刷新为 CMDB 新值、不残留旧值
+// TestBuildProcessChangesReusableRefreshesTopoFields 校验 TR-001：别名 + 拓扑字段同时变更且命中
+// 可复用 deleted 记录时，恢复进程的 set_name / module_name / service_name / environment
+// 刷新为 CMDB 新值、不残留旧值
 func TestBuildProcessChangesReusableRefreshesTopoFields(t *testing.T) {
 	reusable := &table.Process{
 		ID:         9,
@@ -153,6 +173,8 @@ func TestBuildProcessChangesReusableRefreshesTopoFields(t *testing.T) {
 		Spec: &table.ProcessSpec{
 			Alias:       "new-alias",
 			SourceData:  "{}",
+			SetName:     "set-stale",
+			ModuleName:  "mod-stale",
 			ServiceName: "svc-stale",
 			Environment: "1",
 		},
@@ -168,6 +190,8 @@ func TestBuildProcessChangesReusableRefreshesTopoFields(t *testing.T) {
 		Spec: &table.ProcessSpec{
 			Alias:       "new-alias",
 			SourceData:  "{}",
+			SetName:     "set-new",
+			ModuleName:  "mod-new",
 			ServiceName: "svc-new",
 			Environment: "3",
 		},
@@ -189,6 +213,12 @@ func TestBuildProcessChangesReusableRefreshesTopoFields(t *testing.T) {
 	}
 	if res.ToUpdateProcess == nil {
 		t.Fatal("expected ToUpdateProcess (restored reusable process)")
+	}
+	if got := res.ToUpdateProcess.Spec.SetName; got != "set-new" {
+		t.Fatalf("restored SetName = %q, want set-new", got)
+	}
+	if got := res.ToUpdateProcess.Spec.ModuleName; got != "mod-new" {
+		t.Fatalf("restored ModuleName = %q, want mod-new", got)
 	}
 	if got := res.ToUpdateProcess.Spec.ServiceName; got != "svc-new" {
 		t.Fatalf("restored ServiceName = %q, want svc-new", got)

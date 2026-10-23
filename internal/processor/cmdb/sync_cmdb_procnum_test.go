@@ -60,36 +60,3 @@ func TestBuildProcessEntitiesNormalizesProcNum(t *testing.T) {
 		t.Fatalf("ProcNum = %d, want 1 (normalized from 0)", got)
 	}
 }
-
-// TestBuildProcessesFromSetsNormalizesProcNum 校验 buildProcessesFromSets（旧同步链路）
-// 在 CMDB proc_num 为 0 时归一化为 1
-func TestBuildProcessesFromSetsNormalizesProcNum(t *testing.T) {
-	sets := []Set{
-		{
-			ID: 1, Name: "set1", SetEnv: "1",
-			Module: []Module{
-				{
-					ID: 10, Name: "module1",
-					Host: []Host{{ID: 100, IP: "127.0.0.1"}},
-					SvcInst: []SvcInst{
-						{
-							ID: 1, Name: "svc1",
-							ProcInst: []ProcInst{
-								{ID: 1000, HostID: 100, Name: "proc1", ProcNum: 0},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	procs := buildProcessesFromSets("default", 3, sets)
-
-	if len(procs) != 1 {
-		t.Fatalf("processes count = %d, want 1", len(procs))
-	}
-	if got := procs[0].Spec.ProcNum; got != 1 {
-		t.Fatalf("ProcNum = %d, want 1 (normalized from 0)", got)
-	}
-}

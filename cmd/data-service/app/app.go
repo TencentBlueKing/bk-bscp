@@ -112,6 +112,8 @@ type dataService struct {
 	cmdb            bkcmdb.Service
 	cmdbRenderCache processorcmdb.RenderCache
 	gseSvc          *gse.Service
+	// cmdbSyncLock 同一 (tenant, biz) 全量进程同步的分布式锁（跨实例互斥，持锁期间续期）
+	cmdbSyncLock *lock.TokenLock
 }
 
 // prepare do prepare jobs before run data service.
@@ -248,7 +250,12 @@ func (ds *dataService) initTaskManager() error {
 	}
 	ds.cmdbRenderCache = processorcmdb.NewRedisCMDBRenderCache(bds, renderCacheOptions)
 	redLock := lock.NewRedisLock(bds, 60)
-	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock, pm, ds.cmdbRenderCache)
+	// cmdb 全量进程同步的事务链路较长（全量拉取 + 全量 diff + 批量写），单次耗时随业务规模增长且无法预估：
+	// 使用带持有者 token 的锁，持锁期间按 TTL 的一半续期，超大业务不会被其他实例按「过期」抢锁；
+	// 释放只删除自己写入的锁，进程异常退出时残留锁在 600s 后自然过期
+	ds.cmdbSyncLock = lock.NewTokenLock(bds, 600)
+	register.RegisterExecutor(gseService, ds.cmdb, ds.daoSet, ds.repo, redLock, ds.cmdbSyncLock, pm,
+		ds.cmdbRenderCache)
 
 	taskManager, err := task.NewTaskMgr(
 		context.Background(),
@@ -595,7 +602,8 @@ func (ds *dataService) startCronTasks() {
 
 	// 监听cmdb资源变化
 	if crontabConfig.WatchCmdbResource.Enabled {
-		watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service, ds.taskManager)
+		watchCmdb := crontab.NewCmdbResourceWatcher(ds.daoSet, ds.sd, ds.cmdb, ds.gseSvc, ds.service, ds.taskManager,
+			ds.cmdbSyncLock, crontabConfig.WatchCmdbResource)
 		watchCmdb.Run()
 	}
 

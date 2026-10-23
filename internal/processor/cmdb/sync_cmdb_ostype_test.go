@@ -134,7 +134,6 @@ func TestBuildProcessChangesReusableResolvesOsType(t *testing.T) {
 				Kit:           kit.New(),
 				Dao:           daoSet,
 				Now:           time.Now(),
-				HostCounter:   make(map[HostProcessKey]int),
 				ModuleCounter: make(map[ModuleAliasKey]int),
 			}
 			newP := &table.Process{

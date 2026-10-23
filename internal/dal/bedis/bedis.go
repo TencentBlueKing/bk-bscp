@@ -108,6 +108,8 @@ type Client interface {
 	ZAdd(ctx context.Context, key string, score float64, value interface{}) (int64, error)
 	ZRangeByScoreWithScores(ctx context.Context, key string, zRangeBy *redis.ZRangeBy) ([]redis.Z, error)
 	ZRem(ctx context.Context, key string, members ...interface{}) (int64, error)
+	// Do 执行原始 redis 命令，用于 EVAL 等封装层未单独提供的能力（如需要原子比较的锁操作）
+	Do(ctx context.Context, args ...interface{}) (interface{}, error)
 }
 
 // NewRedisCache create a redis cluster client.

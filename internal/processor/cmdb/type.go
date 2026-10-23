@@ -22,65 +22,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 )
 
-// Set 集群
-type Set struct {
-	ID     int
-	Name   string
-	SetEnv string
-	Module []Module
-}
-
-// Module 模块
-type Module struct {
-	ID                int
-	ServiceTemplateID int
-	Name              string
-	Host              []Host
-	SvcInst           []SvcInst
-}
-
-// Host 主机
-type Host struct {
-	ID         int
-	IP         string
-	IPV6       string // 内网 IPv6，同步自 CC bk_host_innerip_v6
-	CloudId    int
-	AgentID    string
-	OsType     string // "linux": 1, "win": 2
-	AgentState string
-}
-
-// SvcInst 服务实例
-type SvcInst struct {
-	ID       int
-	Name     string
-	ProcInst []ProcInst
-}
-
-// ProcInst 进程实例
-type ProcInst struct {
-	ID                int
-	HostID            int
-	ProcessTemplateID int
-	Name              string
-	FuncName          string
-	ProcNum           int
-	// Priority 启动优先级，来源 CMDB 进程属性，不参与 source_data 的配置一致性对比
-	Priority int
-	table.ProcessInfo
-}
-
-// HostInfo 构建 HostID -> HostInfo 映射
-type HostInfo struct {
-	IP      string
-	IPV6    string
-	CloudId int
-	AgentID string
-}
-
-// Bizs 业务
-type Bizs map[int][]Set
-
 // ProcessSyncItem 一次同步中单个进程的结果
 type ProcessWithInstances struct {
 	Process   *table.Process
@@ -90,6 +31,9 @@ type ProcessWithInstances struct {
 // SyncProcessResult 表示一次进程同步任务的汇总结果
 type SyncProcessResult struct {
 	Items []*ProcessWithInstances
+	// Changed 表示本次 diff 是否产生了实际变更（增删改进程或实例、重排序列）。
+	// 为 false 时调用方应跳过后续的冲突检查等全表级写操作，避免事件驱动的全量同步产生无意义写。
+	Changed bool
 }
 
 // ModuleAliasKey 用于 moduleCounter 的 key，表示 (moduleID, alias) 组合
@@ -98,20 +42,17 @@ type ModuleAliasKey struct {
 	Alias    string
 }
 
-// HostProcessKey 用于 HostCounter 的 key，表示 (ccProcessID, hostID) 组合
-type HostProcessKey struct {
-	CcProcessID int
-	HostID      int
-}
-
 // SyncContext 同步过程中的共享上下文
 type SyncContext struct {
 	Kit           *kit.Kit
 	Dao           dao.Set
 	Tx            *gen.QueryTx
 	Now           time.Time
-	HostCounter   map[HostProcessKey]int // key: HostProcessKey{ccProcessID, hostID}
 	ModuleCounter map[ModuleAliasKey]int // key: ModuleAliasKey{moduleID, alias}
+	// InstancesByProcessID 事务开始时的进程实例快照（processID -> instances），
+	// 由 SyncProcessData 预取，供 diff 阶段内存判定，避免逐进程查库（N+1）。
+	// 为 nil 表示未预取，调用方回退到数据库查询。
+	InstancesByProcessID map[uint32][]*table.ProcessInstance
 }
 
 // BuildInstancesParams buildInstances 函数的参数

@@ -31,7 +31,8 @@ import (
 // RegisterExecutor 中可以补充参数，比如执行器依赖的配置，执行器依赖的第三方服务等
 // nolint: revive
 func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao dao.Set, repo repository.Provider,
-	redLock *lock.RedisLock, pm pushmanager.Service, renderCache processorcmdb.RenderCache) {
+	redLock *lock.RedisLock, cmdbSyncLock *lock.TokenLock, pm pushmanager.Service,
+	renderCache processorcmdb.RenderCache) {
 	// 注册 process 执行器
 	processExecutor := process.NewProcessExecutor(gseService, bkcmdbService, pm, dao)
 	process.RegisterExecutor(processExecutor)
@@ -45,7 +46,7 @@ func RegisterExecutor(gseService *gse.Service, bkcmdbService bkcmdb.Service, dao
 	process.RegisterDeleteExecutor(deleteExecutor)
 
 	// 注册 同步cmdb和gse 执行器
-	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(gseService, bkcmdbService, dao, renderCache)
+	cmdbGseExecutor := cmdbGse.NewSyncCmdbGseExecutor(gseService, bkcmdbService, dao, cmdbSyncLock, renderCache)
 	cmdbGse.RegisterExecutor(cmdbGseExecutor)
 
 	gseSyncExecutor := gseSync.NewProcessStateSyncExecutor(bkcmdbService, gseService, dao)
