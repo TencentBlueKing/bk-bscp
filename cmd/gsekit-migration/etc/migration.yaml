@@ -1,0 +1,64 @@
+migration:
+  multi_tenant: false
+  tenant_id: ""
+  creator: ""
+  reviser: ""
+  biz_ids: []
+  batch_size: 500
+  continue_on_error: false
+  # config_templates.id 的预留基线：[1, base) 复用 GSEKit 的 config_template_id，
+  # [base, ∞) 留给 BSCP 自建模版。GSEKit 水位涨到基线时迁移会硬失败，届时调大此值。
+  config_template_id_reserve_base: 20000
+  # 自建业务：align-template-id 整批搬到预留区且不做名字匹配，
+  # precheck-align-template-id 整批跳过。0 或不填表示没有例外业务。
+  native_biz_id: 11111
+
+source:
+  mysql:
+    endpoints: ["127.0.0.1:33060"]
+    database: ""
+    user: ""
+    password: ""
+
+target:
+  mysql:
+    endpoints: ["127.0.0.1:3306"]
+    database: ""
+    user: ""
+    password: ""
+
+repository:
+  storage_type: ""
+  bk_repo:
+    endpoint: ""
+    project: ""
+    username: ""
+    password: ""
+  # s3:
+  #   endpoint: ""
+  #   access_key_id: ""
+  #   secret_access_key: ""
+  #   bucket_name: ""
+  #   use_ssl: 
+
+cmdb:
+  endpoint: ""
+  app_code: ""
+  app_secret: ""
+  username: ""
+
+# GSEKit API 配置（仅 compare-render 命令需要）
+gsekit:
+  endpoint: ""
+  app_code: ""
+  app_secret: ""
+  bk_ticket: ""
+
+# GSE API 配置（必填，迁移进程时查询 agent 状态并写入 agent_status）
+gse:
+  endpoint: ""
+  app_code: ""
+  app_secret: ""
+
+log:
+  level: "info"
