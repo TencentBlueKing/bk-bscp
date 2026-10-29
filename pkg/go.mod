@@ -26,7 +26,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.9
 	go.uber.org/atomic v1.11.0
 	golang.org/x/sync v0.19.0
-	golang.org/x/text v0.32.0
+	golang.org/x/text v0.34.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217
 	google.golang.org/grpc v1.79.3
@@ -37,6 +37,11 @@ require (
 )
 
 require github.com/bluele/gcache v0.0.2
+
+require (
+	github.com/TencentBlueKing/bk-kms-sdk/go v1.0.0
+	github.com/emmansun/gmsm v0.41.1 // indirect
+)
 
 require (
 	github.com/TencentBlueKing/bk-bscp v0.0.0-20260211040059-8dd6f4ab49a1
@@ -76,8 +81,8 @@ require (
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/crypto v0.46.0 // indirect
-	golang.org/x/net v0.48.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )

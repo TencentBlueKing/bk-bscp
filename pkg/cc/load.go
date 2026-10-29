@@ -16,11 +16,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
+	"k8s.io/klog/v2"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kms"
 )
 
 // LoadSettings load service's configuration
@@ -37,8 +40,11 @@ func LoadSettings(sys *SysOption) error {
 	if err != nil {
 		return err
 	}
+	if err := overlayKMS(conf); err != nil {
+		return err
+	}
 	// configure file is configured, then load configuration from file.
-	s, err := loadFromFile(conf)
+	s, err := loadFromMap(conf)
 	if err != nil {
 		return err
 	}
@@ -63,8 +69,8 @@ func LoadSettings(sys *SysOption) error {
 	return nil
 }
 
-// mergeConfigFile 合并多个配置文件
-func mergeConfigFile(filenames []string) ([]byte, error) {
+// mergeConfigFile 合并多个配置文件，保留 map 以便在反序列化前覆盖 KMS 凭据。
+func mergeConfigFile(filenames []string) (map[string]interface{}, error) {
 	masterConf := map[string]interface{}{}
 
 	for _, filename := range filenames {
@@ -84,8 +90,47 @@ func mergeConfigFile(filenames []string) ([]byte, error) {
 		}
 	}
 
-	// 合并后的配置
-	return yaml.Marshal(masterConf)
+	return masterConf, nil
+}
+
+// overlayKMS 在 kms.enabled 时解密运行时凭据并写入配置 map。失败时返回错误，调用方应退出进程。
+func overlayKMS(conf map[string]interface{}) error {
+	raw, ok := conf["kms"]
+	if !ok || raw == nil {
+		return nil
+	}
+	kmsConf, ok := raw.(map[string]interface{})
+	if !ok {
+		return errors.New("kms config must be a mapping")
+	}
+	enabled, _ := kmsConf["enabled"].(bool)
+	if !enabled {
+		return nil
+	}
+
+	envelopeFile, _ := kmsConf["envelopeFile"].(string)
+	secrets, err := kms.Load(envelopeFile, os.Getenv(kms.PrivateKeyEnv))
+	if err != nil {
+		return fmt.Errorf("load kms runtime credential: %w", err)
+	}
+	if secrets == nil {
+		return errors.New("kms.enabled is true but runtime credential is empty")
+	}
+
+	paths := kms.Apply(conf, secrets)
+	klog.Infof("kms overrode %d config path(s): %s", len(paths), strings.Join(paths, ", "))
+	return nil
+}
+
+func loadFromMap(conf map[string]interface{}) (Setting, error) {
+	if len(conf) == 0 {
+		return nil, errors.New("file name is not set")
+	}
+	raw, err := yaml.Marshal(conf)
+	if err != nil {
+		return nil, fmt.Errorf("marshal merged setting failed, err: %v", err)
+	}
+	return loadFromFile(raw)
 }
 
 // loadFromFile load service's configuration from local config file.
@@ -119,13 +164,13 @@ func loadFromFile(conf []byte) (Setting, error) {
 	}
 
 	if err := yaml.Unmarshal(conf, s); err != nil {
-		return nil, fmt.Errorf("unmarshal Setting yaml from conf:\n%s failed, err: %v", conf, err)
+		return nil, fmt.Errorf("unmarshal Setting yaml failed, err: %v", err)
 	}
 
 	// 初始化全局配置
 	g := new(GlobalSettings)
 	if err := yaml.Unmarshal(conf, g); err != nil {
-		return nil, fmt.Errorf("unmarshal global Setting yaml from conf:\n%s failed, err: %v", conf, err)
+		return nil, fmt.Errorf("unmarshal global Setting yaml failed, err: %v", err)
 	}
 	g.TaskFramework.trySetDefault()
 	g.BaseConf.trySetDefault()

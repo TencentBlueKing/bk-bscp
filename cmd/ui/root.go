@@ -17,6 +17,7 @@ import (
 	"errors"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/oklog/run"
@@ -30,6 +31,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/cmd/ui/service"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/kms"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/pkg/version"
 )
@@ -165,7 +167,40 @@ func initConfig() {
 	if err := config.G.ReadFromViper(viper.GetViper()); err != nil {
 		cobra.CheckErr(err)
 	}
+	if err := overlayUIFromKMS(); err != nil {
+		klog.Errorf("load kms runtime credential failed: %v", err)
+		os.Exit(1)
+	}
 
 	// 日志配置已经Ready, 后面都需要使用日志
 	klog.Infof("Using config file:%s", viper.ConfigFileUsed())
+}
+
+// overlayUIFromKMS 用运行时凭据覆盖 UI 的 base_conf。未注入私钥时保持原配置。
+func overlayUIFromKMS() error {
+	privateKey := strings.TrimSpace(os.Getenv(kms.PrivateKeyEnv))
+	if privateKey == "" {
+		return nil
+	}
+
+	secrets, err := kms.Load(kms.EnvelopeFile, privateKey)
+	if err != nil {
+		return err
+	}
+	if secrets == nil {
+		return errors.New("kms private key is set but runtime credential is empty")
+	}
+
+	code, secret := secrets.DefaultApp()
+	var paths []string
+	if code != nil {
+		config.G.Base.AppCode = *code
+		paths = append(paths, "base_conf.app_code")
+	}
+	if secret != nil {
+		config.G.Base.AppSecret = *secret
+		paths = append(paths, "base_conf.app_secret")
+	}
+	klog.Infof("kms overrode %d config path(s): %s", len(paths), strings.Join(paths, ", "))
+	return nil
 }
