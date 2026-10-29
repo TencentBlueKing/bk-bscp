@@ -6,6 +6,14 @@ export enum EnvType {
   DEVELOPMENT = 'dev',
 }
 
+// 后端字段 - 环境类型枚举
+export enum EnvFieldType {
+  PRODUCTION_FIELD = 'prod_environments',
+  STAGING_FIELD = 'staging_environments',
+  TESTING_FIELD = 'test_environments',
+  DEVELOPMENT_FIELD = 'dev_environments',
+}
+
 export interface IUpdateEnvItem {
   type: EnvType;
   name: string;
@@ -35,6 +43,9 @@ export interface IEnvItem {
     create_at: string;
     update_at?: string;
   };
+  prem_view?: boolean;
+  prem_update?: boolean;
+  prem_delete?: boolean;
 }
 
 // 按类型分组的环境列表项（用于环境选择器）

@@ -4,7 +4,12 @@
     <div class="project-manage-content">
         <div class="operate-area">
           <div class="btns">
-            <bk-button theme="primary" @click="handleCreateProject">
+            <bk-button
+              v-cursor="{ active: !hasCreateProjectPerm }"
+              theme="primary"
+              :class="{ 'bk-button-with-no-perm': !hasCreateProjectPerm }"
+              :disabled="createPermLoading"
+              @click="handleCreateProject">
               <Plus class="button-icon" />
               {{ t('新增项目') }}
             </bk-button>
@@ -61,10 +66,17 @@
                 :show-overflow-tooltip="false" fixed="right">
                 <template #default="{ row }">
                   <div class="action-btns">
-                    <bk-button text theme="primary" @click="handleEditProject(row)">{{ t('编辑项目') }}</bk-button>
                     <bk-button
+                      v-cursor="{ active: !row.prem_update }"
                       text
                       theme="primary"
+                      :class="{ 'bk-text-with-no-perm': !row.prem_update }"
+                      @click="handleEditProject(row)">{{ t('编辑项目') }}</bk-button>
+                    <bk-button
+                      v-cursor="{ active: !row.prem_delete }"
+                      text
+                      theme="primary"
+                      :class="{ 'bk-text-with-no-perm': !row.prem_delete }"
                       :disabled="row.spec?.is_default"
                       @click="handleDeleteProject(row)">{{ t('删除项目') }}</bk-button>
                   </div>
@@ -110,12 +122,14 @@
   import SearchSelector from '../../../components/search-selector.vue';
   import { InfoBox } from 'bkui-vue';
   import { getProjectList, deleteProject } from '../../../api/project';
+  import { permissionCheck } from '../../../api';
   import type { IProjectItem } from '../../../../types/project';
-  import { datetimeFormat, copyToClipBoard } from '../../../utils';
+  import type { ResourcePermMap } from '../../../../types/index';
+  import { datetimeFormat, copyToClipBoard, hasResourcePerm } from '../../../utils';
 
   const { t } = useI18n();
   const router = useRouter();
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const { pagination, updatePagination } = useTablePagination('projectList');
 
   const listLoading = ref(false);
@@ -123,6 +137,9 @@
   const isSearchEmpty = ref(false);
   const isFormDialogShow = ref(false);
   const editingItem = ref<Partial<IProjectItem>>({});
+  const permMap = ref<ResourcePermMap>({});
+  const hasCreateProjectPerm = ref(false);
+  const createPermLoading = ref(false);
   const searchSelectorRef = ref();
   const searchField = [
     { field: 'name', label: t('项目名称') },
@@ -135,12 +152,38 @@
     async () => {
       pagination.value.current = 1;
       await loadProjectList();
+      getCreateProjectPerm();
     },
   );
 
   onMounted(() => {
     loadProjectList();
+    getCreateProjectPerm();
   });
+
+  // 查询新增项目权限，仅保存在当前页面
+  const getCreateProjectPerm = async () => {
+    createPermLoading.value = true;
+    try {
+      const res = await permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'project',
+              action: 'create',
+            },
+          },
+        ],
+      });
+      hasCreateProjectPerm.value = res.is_allowed;
+    } catch (e) {
+      console.error(e);
+      hasCreateProjectPerm.value = false;
+    } finally {
+      createPermLoading.value = false;
+    }
+  };
 
   // 加载项目列表
   const loadProjectList = async (searchConditions?: { [key: string]: string }) => {
@@ -153,7 +196,12 @@
         search_condition: searchConditions || {},
       };
       const res = await getProjectList(spaceId.value, params);
-      tableData.value = res.data?.projects || [];
+      permMap.value = res.web_annotations?.perms || {};
+      tableData.value = (res.data?.projects || []).map((project: IProjectItem) => ({
+        ...project,
+        prem_update: hasResourcePerm(permMap.value, project.id, 'update'),
+        prem_delete: hasResourcePerm(permMap.value, project.id, 'delete'),
+      }));
       pagination.value.count = res.data?.count || 0;
     } catch (e) {
       console.error(e);
@@ -182,20 +230,49 @@
     isSearchEmpty.value = false;
   };
 
+  // 无权限时弹出权限申请弹窗
+  const openPermDialog = (action: string, projectId?: number | string) => {
+    permissionQuery.value = {
+      resources: [
+        {
+          biz_id: spaceId.value,
+          basic: {
+            type: 'project',
+            action,
+          },
+          ...(projectId ? { project_id: projectId } : {}),
+        },
+      ],
+    };
+    showApplyPermDialog.value = true;
+  };
+
   // 创建项目
   const handleCreateProject = () => {
+    if (!hasCreateProjectPerm.value) {
+      openPermDialog('create');
+      return;
+    }
     editingItem.value = {};
     isFormDialogShow.value = true;
   };
 
   // 编辑项目
   const handleEditProject = (row: IProjectItem) => {
+    if (!row.prem_update) {
+      openPermDialog('update', row.id);
+      return;
+    }
     editingItem.value = { ...row };
     isFormDialogShow.value = true;
   };
 
   // 删除项目
   const handleDeleteProject = (row: IProjectItem) => {
+    if (!row.prem_delete) {
+      openPermDialog('delete', row.id);
+      return;
+    }
     InfoBox({
       title: t('确认删除该项目'),
       subTitle: () => (

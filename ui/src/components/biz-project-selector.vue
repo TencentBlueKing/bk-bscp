@@ -33,7 +33,13 @@
                 v-slot="{ item }">
                 <div
                   v-cursor="{ active: !item.permission }"
-                  :class="['column-item', { active: (tempSelectedBizId || selectedBizId) === item.space_id }]"
+                  :class="[
+                    'column-item',
+                    {
+                      active: (tempSelectedBizId || selectedBizId) === item.space_id,
+                      'no-perm': !item.permission,
+                    }
+                  ]"
                   @click="handleSelectBiz($event, item)">
                   <div class="name-wrapper">
                     <span v-overflow-title class="name">{{ item.space_name }}</span>
@@ -77,7 +83,14 @@
                   class="virtual-scroller"
                   v-slot="{ item }">
                 <div
-                  :class="['column-item', { active: selectedProjectId === String(item.id) }]"
+                  v-cursor="{ active: !item.prem_view }"
+                  :class="[
+                    'column-item',
+                    {
+                      active: selectedProjectId === String(item.id),
+                      'no-perm': !item.prem_view,
+                    },
+                  ]"
                   @click="handleSelectProject($event, item)">
                     <div v-overflow-title class="project-item-name">{{ item.spec.name }}</div>
                   </div>
@@ -301,6 +314,7 @@
     const space = spaceList.value.find((item: ISpaceDetail) => item.space_id === id);
     if (space) {
       if (!space.permission) {
+        isOpen.value = false;
         permissionQuery.value = {
           resources: [
             {
@@ -324,22 +338,19 @@
 
   const handleSelectBiz = async (event: MouseEvent, biz: ISpaceDetail) => {
     event.stopPropagation();
+
+    // 只更新本地状态，等待用户选择项目后才更新全局 spaceId 并跳转
+    const res = await handleSelectSpace(biz.space_id);
+    if (!res) return;
+
     // 暂存用户点击的业务ID，不立即更新全局状态
     tempSelectedBizId.value = biz.space_id;
     // 如果不显示项目列（无项目概念），直接选中业务并跳转
     if (!props.showProject) {
-      const res = await handleSelectSpace(biz.space_id);
-      if (res) {
-        navigateToModule(biz.space_id);
-        selectedProjectId.value = '';
-        closePanel();
-      }
-      return;
-    }
-    // 只更新本地状态，等待用户选择项目后才更新全局 spaceId 并跳转
-    const res = await handleSelectSpace(biz.space_id);
-
-    if (res) {
+      navigateToModule(biz.space_id);
+      selectedProjectId.value = '';
+      closePanel();
+    } else {
       projectSearch.value = '';
       // 使用公共方法获取项目列表
       await fetchProjectList(biz.space_id);
@@ -348,6 +359,23 @@
 
   const handleSelectProject = (event: MouseEvent, proj: IProjectItem) => {
     event.stopPropagation();
+    if (!proj.prem_view) {
+      isOpen.value = false;
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: tempSelectedBizId.value || selectedBizId.value,
+            basic: {
+              type: 'project',
+              action: 'view',
+            },
+            project_id: +proj.id,
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
+      return;
+    }
     // 选择项目后，才更新业务ID和项目ID
     const strProjectId = String(proj.id);
     selectedBizId.value = tempSelectedBizId.value;
@@ -603,6 +631,10 @@
       .arrow {
         color: #3a84ff;
       }
+    }
+
+    &.no-perm {
+      color:  #cccccc;
     }
 
     .name-wrapper {

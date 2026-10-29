@@ -1,5 +1,6 @@
 import { getProjectList } from '../api/project';
 import type { ISpaceProject, IProjectItem } from '../../types/project';
+import { hasResourcePerm } from './index';
 
 /**
  * 模块级缓存：某空间的全部项目列表
@@ -17,7 +18,11 @@ export const getCachedProjectList = (spaceId: string): Promise<IProjectItem[]> =
     return Promise.resolve(projectListCache[spaceId]);
   }
   return getProjectList(spaceId, { all: true }).then((res) => {
-    const projects = res.data?.projects || [];
+    const permMap = res.web_annotations?.perms || {};
+    const projects = (res.data?.projects || []).map((project: IProjectItem) => ({
+      ...project,
+      prem_view: hasResourcePerm(permMap, project.id, 'view'),
+    }));
     projectListCache[spaceId] = projects;
     return projects;
   });

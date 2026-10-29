@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import { storeToRefs } from 'pinia';
 import useUserStore from '../store/user';
 import { localT } from '../i18n/index';
+import type { ResourcePermMap } from '../../types/index';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -152,4 +153,21 @@ export const timeAgo = (dateString: string | null) => {
   const unit = units.find((u) => diff >= u.sec);
   const value = Math.floor(diff / unit!.sec);
   return `${value} ${unit!.name} ${localT('前')}`;
+};
+
+/**
+ * 通用资源权限判断
+ * @param permMap web_annotations.perms
+ * @param resourceId 资源id（环境id / 项目id）
+ * @param action 权限标识：view / update / delete ...
+ */
+export const hasResourcePerm = (
+  permMap: ResourcePermMap | undefined | null,
+  resourceId: number | string | undefined | null,
+  action: string
+): boolean => {
+  if (!permMap || resourceId == null || action == null) return false;
+  const perm = permMap[resourceId];
+  if (!perm) return false;
+  return !!perm[action];
 };

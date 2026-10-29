@@ -1,10 +1,13 @@
 import http from '../request';
-import type { IUpdateEnvItem, IEnvQuery } from '../../types/env';
+import type { IUpdateEnvItem, IEnvQuery, IEnvItem, EnvFieldType } from '../../types/env';
+import type { ResourceListResp } from '../../types/index';
 
 /**
  * 获取环境列表
  */
-export function getEnvList(biz_id: string, project_id: string, query: IEnvQuery) {
+export function getEnvList(biz_id: string, project_id: string, query: IEnvQuery): Promise<
+  ResourceListResp<Record<EnvFieldType, IEnvItem[]>>
+> {
   return http.post(`/config/biz/${biz_id}/projects/${project_id}/envs/list`, {
     ...query,
   });

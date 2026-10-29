@@ -41,6 +41,8 @@ export interface IPermissionQueryResourceItem {
     action: string;
     resource_id?: number | string;
   };
+  project_id?: number | string;
+  environment_id?: number | string
 }
 
 // 权限申请资源信息
@@ -62,4 +64,15 @@ export interface ITenantUser {
   data_source_type: string;
   owner_tenant_id: string;
   organization_paths: string[];
+}
+
+// 环境、项目接口权限
+type ResourcePerm = Record<string, boolean>
+export type ResourcePermMap = Record<number | string, ResourcePerm>
+
+export interface ResourceListResp<T> {
+  web_annotations?: {
+    perms: ResourcePermMap
+  }
+  data: T
 }
