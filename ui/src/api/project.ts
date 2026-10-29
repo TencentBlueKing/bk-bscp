@@ -1,5 +1,6 @@
 import http from '../request';
-import { IProjectQuery, IProjectEditArg } from '../../types/project';
+import { IProjectQuery, IProjectEditArg, IProjectData } from '../../types/project';
+import type { ResourceListResp } from '../../types/index';
 
 /**
  * 获取项目列表
@@ -7,7 +8,9 @@ import { IProjectQuery, IProjectEditArg } from '../../types/project';
  * @param params 查询参数
  * @returns
  */
-export const getProjectList = (biz_id: string, params: IProjectQuery) =>
+export const getProjectList = (biz_id: string, params: IProjectQuery): Promise<
+  ResourceListResp<IProjectData>
+> =>
   http.post(`/config/biz/${biz_id}/projects/list`, params);
 
 /**

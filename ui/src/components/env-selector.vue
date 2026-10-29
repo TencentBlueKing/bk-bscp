@@ -1,5 +1,6 @@
 <template>
   <bk-select
+    ref="selectorRef"
     v-model="selectedEnvId"
     :popover-options="{ extCls: 'env-selector-popover', offset }"
     :clearable="false"
@@ -67,6 +68,12 @@
           :id="String(env.id)"
           :name="env.spec?.name || ''"
           :disabled="props.disabledEnvIds?.includes(String(env.id))">
+          <div
+            v-cursor="{ active: !env.prem_view }"
+            :class="['env-option-item', { 'no-perm': !env.prem_view }]"
+            @click="handleOptionClick(env, $event)">
+            <span class="env-name">{{ env.spec?.name || '' }}</span>
+          </div>
         </bk-option>
       </div>
     </bk-option-group>
@@ -86,10 +93,12 @@
   import { useI18n } from 'vue-i18n';
   import { useRouter } from 'vue-router';
   import { AngleUpFill, AngleDown } from 'bkui-vue/lib/icon';
-  import { EnvType, IEnvItem, IEnvGroupItem } from '../../types/env';
+  import { ResourcePermMap } from '../../types/index';
+  import { EnvType, IEnvItem, IEnvGroupItem, EnvFieldType } from '../../types/env';
   import { ENV_TYPE_CONFIG } from '../constants/env';
   import { getEnvList } from '../api/env';
   import useGlobalStore from '../store/global';
+  import { hasResourcePerm } from '../utils/index';
 
   const slots = useSlots();
   const hasTriggerSlot = computed(() => !!slots.trigger);
@@ -97,7 +106,7 @@
   const { t } = useI18n();
   const router = useRouter();
   const globalStore = useGlobalStore();
-  const { spaceId: bizId, projectId } = storeToRefs(globalStore);
+  const { spaceId: bizId, projectId, showApplyPermDialog, permissionQuery } = storeToRefs(globalStore);
 
   const props = withDefaults(
     defineProps<{
@@ -126,6 +135,7 @@
   }>();
 
   const selectedEnvId = ref<string>(props.modelValue);
+  const selectorRef = ref();
 
   // 每个 group 的折叠状态，默认全部展开
   const collapsedGroups = ref<Record<EnvType, boolean>>({
@@ -152,6 +162,7 @@
 
   // 环境分组数据
   const envGroups = ref<IEnvGroupItem[]>([]);
+  const permMap = ref<ResourcePermMap>({});
   const isLoading = ref(false);
 
   // 获取环境列表并分组
@@ -165,24 +176,28 @@
     try {
       const res = await getEnvList(bizId.value, projectId.value, { all: true });
       const data = res.data || {};
+      permMap.value = res.web_annotations?.perms || {};
 
       const groups: IEnvGroupItem[] = [];
 
       // 字段名到 EnvType 的映射
-      const fieldMapping: Array<{ field: string; type: EnvType }> = [
-        { field: 'prod_environments', type: EnvType.PRODUCTION },
-        { field: 'staging_environments', type: EnvType.STAGING },
-        { field: 'test_environments', type: EnvType.TESTING },
-        { field: 'dev_environments', type: EnvType.DEVELOPMENT },
+      const fieldMapping: Array<{ field: EnvFieldType; type: EnvType }> = [
+        { field: EnvFieldType.PRODUCTION_FIELD, type: EnvType.PRODUCTION },
+        { field: EnvFieldType.STAGING_FIELD, type: EnvType.STAGING },
+        { field: EnvFieldType.TESTING_FIELD, type: EnvType.TESTING },
+        { field: EnvFieldType.DEVELOPMENT_FIELD, type: EnvType.DEVELOPMENT },
       ];
 
       for (const { field, type } of fieldMapping) {
-        const envList = data[field] as IEnvItem[] | undefined;
+        const envList = data[field];
         if (Array.isArray(envList)) {
           groups.push({
             type,
             name: getEnvTypeName(type),
-            envs: envList,
+            envs: envList.map(item => ({
+              ...item,
+              prem_view: hasResourcePerm(permMap.value, item.id, 'view')
+            })),
           });
         }
       }
@@ -197,7 +212,7 @@
       if (firstGroup && props.isUseFirstEnv && !isCurrentEnvValid) {
         // 跳过已禁用的环境
         const firstAvailableEnv = firstGroup.envs.find(
-          (env) => !props.disabledEnvIds?.includes(String(env.id)),
+          (env) => env.prem_view && !props.disabledEnvIds?.includes(String(env.id)),
         );
         if (firstAvailableEnv) {
           selectedEnvId.value = String(firstAvailableEnv.id);
@@ -253,6 +268,28 @@
     const info = selectedEnvInfo.value;
     if (info) {
       emits('change', info.env, isManual);
+    }
+  };
+
+  // 点击无查看权限的环境，阻止选中并弹出业务访问权限申请弹窗
+  const handleOptionClick = (env: IEnvItem, event: Event) => {
+    if (!env.prem_view) {
+      selectorRef.value?.hidePopover();
+      event.stopPropagation();
+      permissionQuery.value = {
+        resources: [
+          {
+            biz_id: bizId.value,
+            basic: {
+              type: 'environment',
+              action: 'view',
+            },
+            project_id: +projectId.value,
+            environment_id: env.id
+          },
+        ],
+      };
+      showApplyPermDialog.value = true;
     }
   };
 
@@ -352,12 +389,17 @@
       padding: 0 !important;
     }
     .bk-select-option {
-      padding: 0 12px !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
     }
     .env-option-item {
+      flex: 1;
+      min-height: inherit;
       display: flex;
       align-items: center;
       gap: 8px;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
       .env-type-dot {
         width: 8px;
         height: 8px;
@@ -368,6 +410,9 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+      &.no-perm {
+        color: #cccccc !important;
       }
     }
     .env-group-label {

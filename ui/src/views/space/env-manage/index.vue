@@ -9,7 +9,12 @@
     <div class="env-manage-content">
       <div class="operate-area">
         <div class="btns">
-          <bk-button theme="primary" @click="handleCreateEnv">
+          <bk-button
+            v-cursor="{ active: !hasCreateEnvPerm }"
+            theme="primary"
+            :class="{ 'bk-button-with-no-perm': !hasCreateEnvPerm }"
+            :disabled="createPermLoading"
+            @click="handleCreateEnv">
             <Plus class="button-icon" />
             {{ t('新增环境') }}
           </bk-button>
@@ -56,10 +61,17 @@
                         <div class="service-count">{{ t('共N个服务', { count: item.spec.app_count }) }}</div>
                       </div>
                       <div class="action-btns">
-                        <bk-button text theme="primary" @click="handleEditEnv(item)">{{ t('编辑环境') }}</bk-button>
                         <bk-button
+                          v-cursor="{ active: !item.prem_update }"
                           text
                           theme="primary"
+                          :class="{ 'bk-text-with-no-perm': !item.prem_update }"
+                          @click="handleEditEnv(item)">{{ t('编辑环境') }}</bk-button>
+                        <bk-button
+                          v-cursor="{ active: !item.prem_delete }"
+                          text
+                          theme="primary"
+                          :class="{ 'bk-text-with-no-perm': !item.prem_delete }"
                           :disabled="item.spec?.is_default"
                           @click="handleDeleteEnv(item)">{{ t('删除环境') }}</bk-button>
                       </div>
@@ -111,12 +123,14 @@
   import tableEmpty from '../../../components/table/table-empty.vue';
   import useBizProjectText from '../../../utils/hooks/use-biz-project-text';
   import { getEnvList, deleteEnv } from '../../../api/env';
-  import { IEnvItem, EnvType } from '../../../../types/env';
+  import { permissionCheck } from '../../../api';
+  import { IEnvItem, EnvType, EnvFieldType } from '../../../../types/env';
+  import { ResourcePermMap } from '../../../../types/index';
   import { ENV_TYPE_OPTIONS } from '../../../constants/env';
-  import { datetimeFormat, copyToClipBoard } from '../../../utils';
+  import { datetimeFormat, copyToClipBoard, hasResourcePerm } from '../../../utils';
 
   const { t } = useI18n();
-  const { spaceId, projectId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId, showApplyPermDialog, permissionQuery } = storeToRefs(useGlobalStore());
   const router = useRouter();
   const { bizProjectText: currentProjectText, ensureProjectList } = useBizProjectText();
 
@@ -135,6 +149,9 @@
   const isSearchEmpty = ref(false);
   const isFormDialogShow = ref(false);
   const editingItem = ref<Partial<IEnvItem>>({});
+  const permMap = ref<ResourcePermMap>({});
+  const hasCreateEnvPerm = ref(false);
+  const createPermLoading = ref(false);
   const searchSelectorRef = ref();
   const searchField = [
     { field: 'name', label: t('环境名称') },
@@ -162,17 +179,44 @@
   });
 
   watch(
-    () => spaceId.value,
+    () => [spaceId.value, projectId.value],
     async () => {
       ensureProjectList();
       await loadEnvList();
+      getCreateEnvPerm();
     },
   );
 
   onMounted(async () => {
     ensureProjectList();
     await loadEnvList();
+    getCreateEnvPerm();
   });
+
+  // 查询新增环境权限，仅保存在当前页面
+  const getCreateEnvPerm = async () => {
+    createPermLoading.value = true;
+    try {
+      const res = await permissionCheck({
+        resources: [
+          {
+            biz_id: spaceId.value,
+            basic: {
+              type: 'environment',
+              action: 'create',
+            },
+            project_id: +projectId.value,
+          },
+        ],
+      });
+      hasCreateEnvPerm.value = res.is_allowed;
+    } catch (e) {
+      console.error(e);
+      hasCreateEnvPerm.value = false;
+    } finally {
+      createPermLoading.value = false;
+    }
+  };
 
   // 加载环境列表
   const loadEnvList = async (searchCondition?: { [key: string]: string }) => {
@@ -185,12 +229,18 @@
       }
       const res = await getEnvList(spaceId.value, projectId.value, query);
       const data = res.data || {};
+      permMap.value = res.web_annotations?.perms || {};
+      const withPerm = (list: IEnvItem[]) => list.map((item) => ({
+        ...item,
+        prem_update: hasResourcePerm(permMap.value, item.id, 'update'),
+        prem_delete: hasResourcePerm(permMap.value, item.id, 'delete'),
+      }));
       // 重置所有分组
       envGroupData.value = {
-        [EnvType.PRODUCTION]: data.prod_environments || [],
-        [EnvType.STAGING]: data.staging_environments || [],
-        [EnvType.TESTING]: data.test_environments || [],
-        [EnvType.DEVELOPMENT]: data.dev_environments || [],
+        [EnvType.PRODUCTION]: withPerm(data[EnvFieldType.PRODUCTION_FIELD] || []),
+        [EnvType.STAGING]: withPerm(data[EnvFieldType.STAGING_FIELD] || []),
+        [EnvType.TESTING]: withPerm(data[EnvFieldType.TESTING_FIELD] || []),
+        [EnvType.DEVELOPMENT]: withPerm(data[EnvFieldType.DEVELOPMENT_FIELD] || []),
       };
     } catch (e) {
       console.error(e);
@@ -220,20 +270,50 @@
     isSearchEmpty.value = false;
   };
 
+  // 无权限时弹出权限申请弹窗
+  const openPermDialog = (action: string, envId?: number | string) => {
+    permissionQuery.value = {
+      resources: [
+        {
+          biz_id: spaceId.value,
+          basic: {
+            type: 'environment',
+            action,
+          },
+          project_id: +projectId.value,
+          ...(envId ? { environment_id: envId } : {}),
+        },
+      ],
+    };
+    showApplyPermDialog.value = true;
+  };
+
   // 创建环境
   const handleCreateEnv = () => {
+    if (!hasCreateEnvPerm.value) {
+      openPermDialog('create');
+      return;
+    }
     editingItem.value = {};
     isFormDialogShow.value = true;
   };
 
   // 编辑环境
   const handleEditEnv = (row: IEnvItem) => {
+    if (!row.prem_update) {
+      openPermDialog('update', row.id);
+      return;
+    }
     editingItem.value = { ...row };
     isFormDialogShow.value = true;
   };
 
   // 删除环境
   const handleDeleteEnv = (row: IEnvItem) => {
+    if (!row.prem_delete) {
+      openPermDialog('delete', row.id);
+      return;
+    }
     InfoBox({
       title: t('确认删除该环境'),
       subTitle: () => (

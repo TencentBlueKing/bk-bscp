@@ -30,6 +30,14 @@ export interface IProjectItem {
     create_at: string;
     update_at?: string;
   };
+  prem_view?: boolean;
+  prem_update?: boolean;
+  prem_delete?: boolean;
+}
+
+export interface IProjectData {
+  count: number;
+  projects: IProjectItem[];
 }
 
 // 项目创建/编辑参数
