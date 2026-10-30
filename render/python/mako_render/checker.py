@@ -86,15 +86,16 @@ def parse_template_nodes(nodes: List[parsetree.Node], node_visitor: ast.NodeVisi
             raise ForbiddenMakoTemplateException("不支持[{}]节点".format(node.__class__.__name__))
         
         try:
-            # 对于表达式节点，使用 "eval" 模式解析
-            # 对于代码节点，使用 "exec" 模式解析
-            parse_mode = "eval" if isinstance(node, parsetree.Expression) else "exec"
-            ast_node = ast.parse(code.strip(), "<unknown>", parse_mode)
+            # 与 Mako PythonCode 一致，表达式和代码块都按 exec 解析。
+            # 表达式若改用 eval，赋值、分号、import 会 SyntaxError；跳过检查后，
+            # Mako 仍把原文嵌进 str(...)，参数求值时这些调用会执行。
+            source = code.lstrip() if isinstance(node, parsetree.Expression) else code.strip()
+            ast_node = ast.parse(source, "<unknown>", "exec")
             node_visitor.visit(ast_node)
-        except SyntaxError:
-            # 如果语法错误，跳过检查（Mako 会在渲染时处理）
-            # 但这种情况应该很少见，因为 Mako 已经解析过了
-            pass
+        except SyntaxError as exc:
+            raise ForbiddenMakoTemplateException(
+                "mako语法解析失败, {err_msg}".format(err_msg=exc.msg)
+            ) from exc
         
         if hasattr(node, "nodes"):
             if isinstance(node, parsetree.ControlLine) and hasattr(node_visitor, "enter_mako_control"):

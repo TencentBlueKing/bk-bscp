@@ -43,7 +43,8 @@ with MakoSandbox():
 - 如果是用户代码线程，抛出 `ForbiddenMakoTemplateException` 异常
 
 **黑名单配置（`default_black_list`）**：
-- `os` 模块：`system`, `chdir`, `chmod`, `kill`, `popen`, `exec*`, `spawn*` 等
+- `os` 与 `posix` 使用同一份进程调用名单：`system`, `chdir`, `chmod`, `kill`, `popen`, `open`, `exec*`, `spawn*` 等。两者是不同模块属性，只拦截 `os` 挡不住 `posix`
+- `builtins`、`io`：只拦截 `open`
 - `subprocess` 模块：`Popen`, `call`, `run` 等
 - `ctypes` 模块：`CDLL`, `PyDLL`, `LibraryLoader` 等
 - `socket` 模块：`socket`, `create_connection` 等
@@ -51,8 +52,9 @@ with MakoSandbox():
 - 其他危险模块：`shutil`, `signal`, `fcntl`, `tempfile`, `webbrowser` 等
 
 **注意**：
-- **不拦截 `builtins` 模块**：因为 Mako 需要使用 `compile` 和 `exec` 来编译和执行模板，如果拦截会导致 Mako 无法正常工作
-- 安全保护主要依赖编译时检查（`visitor.py`）来拦截 `builtins` 模块的危险函数
+- 运行时只拦截 `builtins.open` 和 `io.open`，且仅在 `MakoSandbox` 线程内生效
+- **不拦截** `builtins.compile`、`builtins.exec`、`builtins.__import__`：Mako 编译模板，以及模板中的 `import json` 等白名单导入，都依赖这些入口
+- `eval`、`exec`、`__import__` 等其余危险内置名称仍由编译时检查（`visitor.py`）拒绝
 
 ### 3. AST 语法树检查（编译时检查）
 
@@ -78,9 +80,10 @@ with MakoSandbox():
 - 允许使用的变量名：`HELP`（上下文变量）
 
 **表达式解析**：
-- 对于 `${expression}` 这样的表达式，使用 `"eval"` 模式解析 AST
-- 对于 `<% code %>` 这样的代码块，使用 `"exec"` 模式解析 AST
-- 这样可以正确检查表达式中的危险函数，如 `${open}` 会被正确拦截
+- `${expression}` 和 `<% code %>` 都按 Mako `PythonCode` 的 `"exec"` 模式解析 AST
+- 解析出现 `SyntaxError` 时直接拒绝渲染，不再跳过检查
+- 控制行（`% for`、`% if` 等）先按 Mako `PythonFragment` 补成完整语句，再做同样的检查
+- 因此 `${open}`，以及赋值、分号、`import` 这类不能单独作为 `eval` 表达式、但会被 Mako 嵌进 `str(...)` 执行的写法，都会在编译前被拦截
 
 ## 两个黑名单的区别
 
@@ -164,10 +167,10 @@ rendered_output = mako_render(template_content, context)
 ### 当前实现（bk-bscp）
 
 - ✅ 使用 `MakoSandbox` 上下文管理器（完全一致）
-- ✅ 运行时补丁拦截危险函数（完全一致，不拦截 `builtins` 模块）
-- ✅ AST 语法树检查（完全一致，包括 `builtins` 模块的危险函数）
+- ✅ 运行时补丁拦截危险函数，并额外拦截 `posix` 以及 `builtins.open` / `io.open`（仍不拦截 `compile`、`exec`、`__import__`）
+- ✅ AST 语法树检查（包括 `builtins` 中的危险名称）
 - ✅ 模板内容清理（完全一致）
-- ✅ 表达式解析改进（使用 `"eval"` 模式正确解析 `${expression}`）
+- ✅ `${expression}` 与代码块统一按 `"exec"` 解析；`SyntaxError` 拒绝渲染
 - ✅ 编译时检查失败时抛出异常（阻止模板编译）
 
 ## 拦截示例
@@ -227,7 +230,7 @@ rendered_output = mako_render(template_content, context)
 1. **性能影响**：运行时补丁和上下文跟踪可能带来轻微的性能开销
 2. **功能限制**：某些高级功能可能无法在安全模式下使用
 3. **错误信息**：安全机制拦截的错误信息可能与普通模板错误不同
-4. **builtins 模块**：运行时不拦截 `builtins` 模块，主要依赖编译时检查
+4. **builtins 其余入口**：运行时只拦截 `open`。`compile`、`exec`、`__import__` 仍依赖编译时检查，不能在运行时整体打补丁
 
 ## 参考文档
 

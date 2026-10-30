@@ -1153,6 +1153,43 @@ this.cc_set.attrib['k'] = "v"
 
         self.assertTrue(check_mako_template_safety(HELP_TEMPLATE))
 
+    def test_rejects_exec_only_expressions_that_still_run_inside_mako(self):
+        """赋值、分号、import 不是合法 eval，但 Mako 仍会把原文放进 str() 执行。"""
+        cases = [
+            '${x = open("/etc/passwd")}',
+            '${\nx = open("/etc/passwd")\n}',
+            '${1; open("/etc/passwd")}',
+            "${\nimport posix\n}",
+        ]
+
+        for template in cases:
+            with self.subTest(template=template):
+                self.assert_unsafe(template)
+
+    def test_allows_parenthesized_multiline_expression(self):
+        template = """${
+",".join([
+    "a",
+    "b",
+])
+}"""
+
+        self.assertTrue(check_mako_template_safety(template))
+        self.assertEqual("a,b", mako_render(template, {}))
+
+    def test_allows_existing_control_lines(self):
+        template = """% for idx, item in enumerate(items):
+${idx}:${item}
+% endfor
+% if flag:
+ok
+% endif"""
+
+        result = mako_render(template, {"items": ["x"], "flag": True})
+
+        self.assertIn("0:x", result)
+        self.assertIn("ok", result)
+
 
 if __name__ == "__main__":
     unittest.main()
