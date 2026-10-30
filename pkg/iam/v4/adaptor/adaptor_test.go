@@ -29,6 +29,25 @@ func attr(t meta.ResourceType, a meta.Action, bizID, resourceID uint32) *meta.Re
 	}
 }
 
+// attrInProject 用于项目/环境维度的资源，额外携带所属项目 ID。
+func attrInProject(t meta.ResourceType, a meta.Action, bizID, projectID, resourceID uint32) *meta.ResourceAttribute {
+	return &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: t, Action: a, ResourceID: resourceID},
+		BizID:     bizID,
+		ProjectID: projectID,
+	}
+}
+
+// attrInEnv 用于服务维度的资源：服务挂在环境下，需要业务、项目、环境三级归属。
+func attrInEnv(a meta.Action, bizID, projectID, envID, resourceID uint32) *meta.ResourceAttribute {
+	return &meta.ResourceAttribute{
+		Basic:         meta.Basic{Type: meta.App, Action: a, ResourceID: resourceID},
+		BizID:         bizID,
+		ProjectID:     projectID,
+		EnvironmentID: envID,
+	}
+}
+
 // 映射表逐项核对，覆盖方案 §4.3 的 17 个操作。
 func TestAdaptActionMapping(t *testing.T) {
 	cases := []struct {
@@ -41,19 +60,19 @@ func TestAdaptActionMapping(t *testing.T) {
 	}{
 		{"业务访问", attr(meta.Biz, meta.FindBusinessResource, 100001, 0),
 			model.ActionFindBusinessResource, model.ResourceTypeBiz, "100001", "100001"},
-		{"服务创建", attr(meta.App, meta.Create, 100001, 0),
-			model.ActionAppCreate, model.ResourceTypeBiz, "100001", "100001"},
+		{"服务创建", attrInProject(meta.App, meta.Create, 100001, 40001, 50001),
+			model.ActionAppCreate, model.ResourceTypeEnvironment, "50001", "100001"},
 		{"服务列表", attr(meta.App, meta.Find, 100001, 0),
 			model.ActionFindBusinessResource, model.ResourceTypeBiz, "100001", "100001"},
-		{"服务查看", attr(meta.App, meta.View, 100001, 30001),
+		{"服务查看", attrInEnv(meta.View, 100001, 40001, 50001, 30001),
 			model.ActionAppView, model.ResourceTypeApp, "30001", "100001"},
-		{"服务编辑", attr(meta.App, meta.Update, 100001, 30001),
+		{"服务编辑", attrInEnv(meta.Update, 100001, 40001, 50001, 30001),
 			model.ActionAppEdit, model.ResourceTypeApp, "30001", "100001"},
-		{"服务删除", attr(meta.App, meta.Delete, 100001, 30001),
+		{"服务删除", attrInEnv(meta.Delete, 100001, 40001, 50001, 30001),
 			model.ActionAppDelete, model.ResourceTypeApp, "30001", "100001"},
-		{"生成版本", attr(meta.App, meta.GenerateRelease, 100001, 30001),
+		{"生成版本", attrInEnv(meta.GenerateRelease, 100001, 40001, 50001, 30001),
 			model.ActionReleaseGenerate, model.ResourceTypeApp, "30001", "100001"},
-		{"上线版本", attr(meta.App, meta.Publish, 100001, 30001),
+		{"上线版本", attrInEnv(meta.Publish, 100001, 40001, 50001, 30001),
 			model.ActionReleasePublish, model.ResourceTypeApp, "30001", "100001"},
 		{"密钥查看", attr(meta.Credential, meta.View, 100001, 0),
 			model.ActionAppCredentialView, model.ResourceTypeBiz, "100001", "100001"},
@@ -75,6 +94,22 @@ func TestAdaptActionMapping(t *testing.T) {
 			model.ActionConfigGenerate, model.ResourceTypeBiz, "100001", "100001"},
 		{"配置下发", attr(meta.ProcConfigMgmt, meta.ReleaseConfig, 100001, 0),
 			model.ActionConfigRelease, model.ResourceTypeBiz, "100001", "100001"},
+		{"项目创建", attrInProject(meta.Project, meta.Create, 100001, 40001, 40001),
+			model.ActionProjectCreate, model.ResourceTypeBiz, "100001", "100001"},
+		{"项目查看", attrInProject(meta.Project, meta.View, 100001, 40001, 40001),
+			model.ActionProjectView, model.ResourceTypeProject, "40001", "100001"},
+		{"项目编辑", attrInProject(meta.Project, meta.Update, 100001, 40001, 40001),
+			model.ActionProjectEdit, model.ResourceTypeProject, "40001", "100001"},
+		{"项目删除", attrInProject(meta.Project, meta.Delete, 100001, 40001, 40001),
+			model.ActionProjectDelete, model.ResourceTypeProject, "40001", "100001"},
+		{"环境创建", attrInProject(meta.Environment, meta.Create, 100001, 40001, 40001),
+			model.ActionEnvironmentCreate, model.ResourceTypeProject, "40001", "100001"},
+		{"环境查看", attrInProject(meta.Environment, meta.View, 100001, 40001, 50001),
+			model.ActionEnvironmentView, model.ResourceTypeEnvironment, "50001", "100001"},
+		{"环境编辑", attrInProject(meta.Environment, meta.Update, 100001, 40001, 50001),
+			model.ActionEnvironmentEdit, model.ResourceTypeEnvironment, "50001", "100001"},
+		{"环境删除", attrInProject(meta.Environment, meta.Delete, 100001, 40001, 50001),
+			model.ActionEnvironmentDelete, model.ResourceTypeEnvironment, "50001", "100001"},
 	}
 
 	for _, c := range cases {
@@ -99,7 +134,7 @@ func TestAdaptProducesRegisteredActions(t *testing.T) {
 
 	attrs := []*meta.ResourceAttribute{
 		attr(meta.Biz, meta.FindBusinessResource, 1, 0),
-		attr(meta.App, meta.Create, 1, 0),
+		attrInProject(meta.App, meta.Create, 1, 2, 3),
 		attr(meta.App, meta.View, 1, 2),
 		attr(meta.App, meta.Update, 1, 2),
 		attr(meta.App, meta.Delete, 1, 2),
@@ -115,6 +150,14 @@ func TestAdaptProducesRegisteredActions(t *testing.T) {
 		attr(meta.ProcConfigMgmt, meta.Delete, 1, 0),
 		attr(meta.ProcConfigMgmt, meta.GenerateConfig, 1, 0),
 		attr(meta.ProcConfigMgmt, meta.ReleaseConfig, 1, 0),
+		attr(meta.Project, meta.Create, 1, 0),
+		attr(meta.Project, meta.View, 1, 0),
+		attr(meta.Project, meta.Update, 1, 0),
+		attr(meta.Project, meta.Delete, 1, 0),
+		attr(meta.Environment, meta.Create, 1, 2),
+		attr(meta.Environment, meta.View, 1, 2),
+		attr(meta.Environment, meta.Update, 1, 2),
+		attr(meta.Environment, meta.Delete, 1, 2),
 	}
 
 	for _, a := range attrs {
@@ -168,17 +211,53 @@ func TestAdaptRejectsInvalidInput(t *testing.T) {
 
 	_, err = Adapt(attr(meta.ProcConfigMgmt, meta.Publish, 1, 0))
 	require.ErrorContains(t, err, "unsupported bscp action for process config management")
+
+	_, err = Adapt(attr(meta.Project, meta.Publish, 1, 0))
+	require.ErrorContains(t, err, "unsupported bscp action for project")
+
+	_, err = Adapt(attr(meta.Environment, meta.Publish, 1, 2))
+	require.ErrorContains(t, err, "unsupported bscp action for environment")
 }
 
-// app 维度必须带拓扑路径，否则按业务授权的用户会被判无权限。
+// 服务创建按目标环境授权（此时还没有服务实例），路径只到项目一级：
+// 业务与项目维度的授权据此覆盖到该环境。
+func TestAppCreateIsAuthorizedOnTargetEnvironment(t *testing.T) {
+	got, err := Adapt(attrInProject(meta.App, meta.Create, 100001, 40001, 50001))
+	require.NoError(t, err)
+	require.Equal(t, model.ActionAppCreate, got.ActionID)
+	require.Equal(t, model.ResourceTypeEnvironment, got.ResourceType)
+	require.Equal(t, "50001", got.ResourceID)
+
+	res := got.AuthResource()
+	require.NotNil(t, res)
+	require.Equal(t, "50001", res.ID)
+	require.Equal(t, "/biz,100001/project,40001/", res.Attributes[client.IAMPathAttrKey])
+
+	applyRes := got.ApplyResource()
+	require.Len(t, applyRes, 1)
+	require.Equal(t, model.ResourceTypeEnvironment, applyRes[0].Type)
+}
+
+// 服务挂在环境下，鉴权路径必须是 业务 → 项目 → 环境 三级，
+// 项目/环境维度的授权才能覆盖到该服务。
 func TestAuthResourceCarriesTopologyForApp(t *testing.T) {
-	got, err := Adapt(attr(meta.App, meta.View, 100001, 30001))
+	got, err := Adapt(attrInEnv(meta.View, 100001, 40001, 50001, 30001))
 	require.NoError(t, err)
 
 	res := got.AuthResource()
 	require.NotNil(t, res)
 	require.Equal(t, "30001", res.ID)
-	require.Equal(t, "/biz,100001/", res.Attributes[client.IAMPathAttrKey])
+	require.Equal(t, "/biz,100001/project,40001/environment,50001/", res.Attributes[client.IAMPathAttrKey])
+}
+
+// 服务缺少项目或环境归属时三级路径不完整，必须退化为无 attributes（即无权限）。
+func TestAppWithoutEnvironmentHasNoPath(t *testing.T) {
+	got, err := Adapt(attr(meta.App, meta.View, 100001, 30001))
+	require.NoError(t, err)
+
+	res := got.AuthResource()
+	require.NotNil(t, res)
+	require.Nil(t, res.Attributes, "incomplete path must be dropped")
 }
 
 // biz 是拓扑根节点，不带 attributes。
@@ -201,7 +280,7 @@ func TestAuthResourceNilWhenSkipped(t *testing.T) {
 
 // 申请链接用 ancestors 数组表达拓扑，而不是 attributes 里的路径字符串。
 func TestApplyResourceUsesAncestors(t *testing.T) {
-	appMapped, err := Adapt(attr(meta.App, meta.Update, 100001, 30001))
+	appMapped, err := Adapt(attrInEnv(meta.Update, 100001, 40001, 50001, 30001))
 	require.NoError(t, err)
 
 	appRes := appMapped.ApplyResource()
@@ -209,7 +288,10 @@ func TestApplyResourceUsesAncestors(t *testing.T) {
 	require.Equal(t, "30001", appRes[0].ID)
 	require.Equal(t, model.ResourceTypeApp, appRes[0].Type)
 	require.Equal(t, []client.ResourceRef{
-		{Type: model.ResourceTypeBiz, ID: "100001"}}, appRes[0].Ancestors)
+		{Type: model.ResourceTypeBiz, ID: "100001"},
+		{Type: model.ResourceTypeProject, ID: "40001"},
+		{Type: model.ResourceTypeEnvironment, ID: "50001"},
+	}, appRes[0].Ancestors)
 
 	bizMapped, err := Adapt(attr(meta.Credential, meta.Manage, 100001, 0))
 	require.NoError(t, err)
@@ -219,4 +301,62 @@ func TestApplyResourceUsesAncestors(t *testing.T) {
 	require.Equal(t, "100001", bizRes[0].ID)
 	require.Equal(t, model.ResourceTypeBiz, bizRes[0].Type)
 	require.Empty(t, bizRes[0].Ancestors)
+}
+
+// 环境按环境实例鉴权，路径带上业务与项目两级，项目/业务维度的授权才能覆盖到环境。
+func TestAuthResourceForEnvironment(t *testing.T) {
+	got, err := Adapt(attrInProject(meta.Environment, meta.Update, 100001, 40001, 50001))
+	require.NoError(t, err)
+	require.False(t, got.Skip)
+	require.Equal(t, model.ActionEnvironmentEdit, got.ActionID)
+	require.Equal(t, model.ResourceTypeEnvironment, got.ResourceType)
+
+	res := got.AuthResource()
+	require.NotNil(t, res)
+	require.Equal(t, "50001", res.ID)
+	require.Equal(t, "/biz,100001/project,40001/", res.Attributes[client.IAMPathAttrKey])
+
+	applied := got.ApplyResource()
+	require.Len(t, applied, 1)
+	require.Equal(t, "50001", applied[0].ID)
+	require.Equal(t, model.ResourceTypeEnvironment, applied[0].Type)
+	require.Equal(t, []client.ResourceRef{
+		{Type: model.ResourceTypeBiz, ID: "100001"},
+		{Type: model.ResourceTypeProject, ID: "40001"},
+	}, applied[0].Ancestors)
+}
+
+// 项目按项目实例鉴权，路径只到业务一层；申请链接只回显业务这一级祖先。
+func TestAuthResourceForProject(t *testing.T) {
+	got, err := Adapt(attrInProject(meta.Project, meta.View, 100001, 40001, 40001))
+	require.NoError(t, err)
+	require.Equal(t, model.ActionProjectView, got.ActionID)
+	require.Equal(t, model.ResourceTypeProject, got.ResourceType)
+
+	res := got.AuthResource()
+	require.NotNil(t, res)
+	require.Equal(t, "40001", res.ID)
+	require.Equal(t, "/biz,100001/", res.Attributes[client.IAMPathAttrKey])
+
+	applied := got.ApplyResource()
+	require.Equal(t, []client.ResourceRef{
+		{Type: model.ResourceTypeBiz, ID: "100001"},
+	}, applied[0].Ancestors)
+}
+
+// 环境创建时还没有环境实例，按所属项目授权。
+func TestEnvironmentCreateIsProjectScoped(t *testing.T) {
+	got, err := Adapt(attrInProject(meta.Environment, meta.Create, 100001, 40001, 40001))
+	require.NoError(t, err)
+	require.Equal(t, model.ActionEnvironmentCreate, got.ActionID)
+	require.Equal(t, model.ResourceTypeProject, got.ResourceType)
+	require.Equal(t, "40001", got.ResourceID)
+	require.Equal(t, "/biz,100001/", got.AuthResource().Attributes[client.IAMPathAttrKey])
+}
+
+// 缺少项目 ID 时环境路径不完整，不能带着残缺路径去鉴权，必须退化为无 attributes（即无权限）。
+func TestEnvironmentWithoutProjectIDHasNoPath(t *testing.T) {
+	got, err := Adapt(attr(meta.Environment, meta.View, 100001, 50001))
+	require.NoError(t, err)
+	require.Nil(t, got.AuthResource().Attributes)
 }

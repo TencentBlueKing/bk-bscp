@@ -68,6 +68,26 @@ func genBusinessManagementActionGroups() []client.ActionGroup {
 
 		},
 		{
+			Name:   "项目",
+			NameEn: "Project",
+			Actions: []client.ActionWithID{
+				{ID: ProjectCreate},
+				{ID: ProjectView},
+				{ID: ProjectEdit},
+				{ID: ProjectDelete},
+			},
+		},
+		{
+			Name:   "环境",
+			NameEn: "Environment",
+			Actions: []client.ActionWithID{
+				{ID: EnvironmentCreate},
+				{ID: EnvironmentView},
+				{ID: EnvironmentEdit},
+				{ID: EnvironmentDelete},
+			},
+		},
+		{
 			Name:   "操作记录",
 			NameEn: "Audit",
 			Actions: []client.ActionWithID{ // 操作记录查看

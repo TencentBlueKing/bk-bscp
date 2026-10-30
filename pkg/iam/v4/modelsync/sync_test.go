@@ -603,6 +603,55 @@ func TestApplyDeletesInDependencyOrder(t *testing.T) {
 	require.False(t, after.HasChanges())
 }
 
+// delete-iam-v4 走的是不比较差异的计划：本地定义仍然存在，但线上元素必须全部列为删除。
+func TestPlanDeleteAllListsEveryOnlineElement(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	s := mustSyncer(t, gw)
+
+	plan, err := s.PlanDeleteAll(testKit())
+	require.NoError(t, err)
+
+	require.Empty(t, plan.CreateRoles, "cleanup must not create anything")
+	require.Empty(t, plan.CreateActions)
+	require.Empty(t, plan.CreateResourceTypes)
+	require.Len(t, plan.DeleteRoles, len(model.Roles()))
+	require.Len(t, plan.DeleteActions, len(model.Actions()))
+	require.Len(t, plan.DeleteResourceTypes, len(model.ResourceTypes()))
+	require.True(t, plan.HasDeletions())
+}
+
+// 清空后线上不应剩下任何角色、操作与资源类型，系统本身保留。
+func TestApplyDeleteAllEmptiesModel(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	plan, err := s.PlanDeleteAll(kt)
+	require.NoError(t, err)
+
+	require.NoError(t, s.Apply(kt, plan, ApplyOption{AllowDelete: true}))
+
+	require.Empty(t, gw.roles)
+	require.Empty(t, gw.actions)
+	require.Empty(t, gw.types)
+	require.NotNil(t, gw.system, "system itself must be kept")
+	require.Equal(t, testSystemSpec.CallbackURL, gw.system.CallbackURL)
+}
+
+// 系统未注册时没有可清空的模型，直接报错而不是静默成功。
+func TestPlanDeleteAllRejectsUnregisteredSystem(t *testing.T) {
+	s := mustSyncer(t, newFakeGateway())
+
+	_, err := s.PlanDeleteAll(testKit())
+	require.ErrorContains(t, err, "无需清理")
+}
+
+// 同一 ID 在线上可能重复出现，删除前要去重，否则删除请求会因重复项失败。
+func TestUniqueIDs(t *testing.T) {
+	require.Equal(t, []string{"a", "b"}, uniqueIDs([]string{"b", "a", "b"}))
+	require.Empty(t, uniqueIDs(nil))
+}
+
 // 新增角色时展示层级要随之配置，否则申请页的资源层级会是默认值。
 func TestApplyConfiguresDisplayForNewRoles(t *testing.T) {
 	gw := newFakeGateway()

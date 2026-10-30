@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
@@ -84,13 +85,17 @@ func (a *Authorize) authFieldValue(ctx context.Context, p *operator.Policy, rscM
 
 	authRsc, exist := rscMap[fv.Field.Resource]
 	if !exist {
-		return false, fmt.Errorf("can not find resource %s which is in iam policy", fv.Field.Resource)
+		// 策略中的资源类型不在本次鉴权资源里，说明该条件与本次鉴权无关，
+		// 视为条件不匹配，避免单个无关条件导致整批鉴权失败。
+		logs.CtxWarnf(ctx, "policy resource type %s is not in the authorizing resources, treat as not matched",
+			fv.Field.Resource)
+		return false, nil
 	}
 
 	// check the special resource id at first
 	switch fv.Field.Attribute {
 	case client.IamIDKey:
-		authorized, err := p.Operator.Operator().Match(authRsc.ID, fv.Value)
+		authorized, err := matchIAMID(p.Operator, authRsc.ID, fv.Value)
 		if err != nil {
 			return false, fmt.Errorf("do %s match calculate failed, err: %v", p.Operator, err)
 		}
@@ -243,7 +248,11 @@ func (a *Authorize) authElement(ctx context.Context, policy *operator.Policy, rs
 
 	authRsc, exist := rscMap[fv.Field.Resource]
 	if !exist {
-		return false, false, fmt.Errorf("can not find resource %s which is in iam policy", fv.Field.Resource)
+		// 策略中的资源类型不在本次鉴权资源里，说明该条件与本次鉴权无关，
+		// 视为条件不匹配，交给上层按 And/Or 语义继续计算。
+		logs.CtxWarnf(ctx, "policy resource type %s is not in the authorizing resources, treat as not matched",
+			fv.Field.Resource)
+		return false, false, nil
 	}
 
 	var authorized bool
@@ -251,7 +260,7 @@ func (a *Authorize) authElement(ctx context.Context, policy *operator.Policy, rs
 	// check the special resource id at first
 	switch fv.Field.Attribute {
 	case client.IamIDKey:
-		authorized, err = policy.Operator.Operator().Match(authRsc.ID, fv.Value)
+		authorized, err = matchIAMID(policy.Operator, authRsc.ID, fv.Value)
 		if err != nil {
 			return false, false, fmt.Errorf("do %s match calculate failed, err: %v", policy.Operator, err)
 		}
@@ -270,7 +279,7 @@ func (a *Authorize) authElement(ctx context.Context, policy *operator.Policy, rs
 		if len(authPath) == 0 {
 			authorized, err = a.authResourceAttribute(ctx, policy.Operator, []*operator.Policy{policy}, authRsc)
 		} else {
-			authorized, err = a.calculateAuthPath(policy, fv, authPath)
+			authorized, err = a.authWithPath(policy, fv, authPath)
 		}
 
 		if err != nil {
@@ -302,6 +311,10 @@ func (a *Authorize) authElement(ctx context.Context, policy *operator.Policy, rs
 // authWithPath NOTES
 // if a user has a path based auth policy, then we need to check if the user's path is matched with policy's path or
 // not, if one of use's path is matched, then user is authorized.
+//
+// 策略路径按 "/" 分段后与资源的 _bk_iam_path_ 逐段比较，段内 id 为 "*" 表示该层级「无限制」
+// （授权时在项目上勾选、环境全部放开即为 /biz,2/project,1/environment,*/），
+// 因此不能退化成整串比较，否则这类授权永远不生效。
 func (a *Authorize) authWithPath(p *operator.Policy, fv *operator.FieldValue, authPath []string) (bool, error) {
 	if !reflect.ValueOf(fv.Value).IsValid() && len(authPath) == 0 {
 		// if policy have the path, then user's auth path must can not be empty.
@@ -309,19 +322,163 @@ func (a *Authorize) authWithPath(p *operator.Policy, fv *operator.FieldValue, au
 		return false, nil
 	}
 
-	for _, path := range authPath {
-		matched, err := p.Operator.Operator().Match(path, fv.Value)
-		if err != nil {
-			return false, fmt.Errorf("do %s match calculate failed, err: %v", p.Operator, err)
+	policyPaths, isPath := iamPathValues(fv.Value)
+	if !isPath {
+		// 策略值不是路径形式时退回原始比较，避免改变既有语义
+		for _, path := range authPath {
+			matched, err := p.Operator.Operator().Match(path, fv.Value)
+			if err != nil {
+				return false, fmt.Errorf("do %s match calculate failed, err: %v", p.Operator, err)
+			}
+			if matched {
+				return true, nil
+			}
 		}
-		// if one of the path is matched, the we consider it's authorized
-		if matched {
-			return true, nil
+
+		return false, nil
+	}
+
+	for _, path := range authPath {
+		for _, policyPath := range policyPaths {
+			// if one of the path is matched, the we consider it's authorized
+			if matchIAMPath(p.Operator, path, policyPath) {
+				return true, nil
+			}
 		}
 	}
 
 	// no path is matched, not authorized
 	return false, nil
+}
+
+// iamPathValues 把策略里的路径值统一成字符串列表：权限中心可能返回单个字符串，也可能返回字符串数组。
+func iamPathValues(value interface{}) ([]string, bool) {
+	switch v := value.(type) {
+	case string:
+		return []string{v}, true
+	case []string:
+		return v, true
+	}
+
+	rv := reflect.ValueOf(value)
+	if !rv.IsValid() || (rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array) {
+		return nil, false
+	}
+
+	paths := make([]string, 0, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		one, ok := rv.Index(i).Interface().(string)
+		if !ok {
+			return nil, false
+		}
+		paths = append(paths, one)
+	}
+
+	return paths, true
+}
+
+// matchIAMPath 判断资源路径是否命中策略路径。
+// starts_with 表示策略路径是资源路径的前缀（上层授权的继承），eq 要求两段完全一致，
+// 两者都允许段内 id 使用 "*" 通配，例如 /biz,2/project,1/environment,*/ 覆盖该项目下的全部环境。
+func matchIAMPath(op operator.OpType, authPath, policyPath string) bool {
+	policySegments := splitIAMPath(policyPath)
+	authSegments := splitIAMPath(authPath)
+
+	switch op {
+	case operator.StartWith:
+		return matchPathSegments(policySegments, authSegments)
+	case operator.NStartWith:
+		return !matchPathSegments(policySegments, authSegments)
+	case operator.Equal:
+		return len(policySegments) == len(authSegments) &&
+			matchPathSegments(policySegments, authSegments)
+	case operator.NEqual:
+		return len(policySegments) != len(authSegments) ||
+			!matchPathSegments(policySegments, authSegments)
+	default:
+		matched, err := op.Operator().Match(authPath, policyPath)
+		return err == nil && matched
+	}
+}
+
+// splitIAMPath 把 /biz,2/project,1/environment,16/ 拆成 [biz,2 project,1 environment,16]。
+func splitIAMPath(path string) []string {
+	trimmed := strings.Trim(path, "/")
+	if trimmed == "" {
+		return nil
+	}
+
+	return strings.Split(trimmed, "/")
+}
+
+// matchPathSegments 判断策略路径段是否逐段命中资源路径段，策略路径必须是资源路径的前缀。
+func matchPathSegments(policySegments, authSegments []string) bool {
+	if len(policySegments) > len(authSegments) {
+		return false
+	}
+
+	for i, policySegment := range policySegments {
+		if !matchPathSegment(policySegment, authSegments[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// matchPathSegment 比较单段 type,id：类型必须一致，策略 id 为 "*" 时该层级不限。
+func matchPathSegment(policySegment, authSegment string) bool {
+	if policySegment == client.IamWildcard {
+		return true
+	}
+
+	policyType, policyID, ok := strings.Cut(policySegment, ",")
+	if !ok {
+		return policySegment == authSegment
+	}
+
+	authType, authID, ok := strings.Cut(authSegment, ",")
+	if !ok || policyType != authType {
+		return false
+	}
+
+	return policyID == client.IamWildcard || policyID == authID
+}
+
+// matchIAMID 判断资源实例 ID 是否命中策略值。
+// 策略值为 "*" 表示实例「无限制」（如授权时勾选整个业务），此时运算符不再参与比较：
+// 正向运算符一律命中，取反类运算符一律不命中。
+func matchIAMID(op operator.OpType, id string, value interface{}) (bool, error) {
+	if !hasIAMWildcard(value) {
+		return op.Operator().Match(id, value)
+	}
+
+	switch op {
+	case operator.NEqual, operator.Nin, operator.NStartWith, operator.NEndWith, operator.NContains:
+		return false, nil
+	default:
+		return true, nil
+	}
+}
+
+// hasIAMWildcard 判断策略值是否为 "无限制"，支持单个值与字符串数组两种形式。
+func hasIAMWildcard(value interface{}) bool {
+	if v, ok := value.(string); ok {
+		return v == client.IamWildcard
+	}
+
+	rv := reflect.ValueOf(value)
+	if !rv.IsValid() || (rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array) {
+		return false
+	}
+
+	for i := 0; i < rv.Len(); i++ {
+		if v, ok := rv.Index(i).Interface().(string); ok && v == client.IamWildcard {
+			return true
+		}
+	}
+
+	return false
 }
 
 // authResourceAttribute NOTES
@@ -362,31 +519,6 @@ func (a *Authorize) authResourceAttribute(ctx context.Context, op operator.OpTyp
 	}
 
 	// no id matched
-	return false, nil
-}
-
-// calculateAuthPath NOTES
-// if a user has a path based auth policy, then we need to check if the user's path is matched with policy's path or
-// not, if one of use's path is matched, then user is authorized.
-func (a *Authorize) calculateAuthPath(p *operator.Policy, fv *operator.FieldValue, authPath []string) (bool, error) {
-	if !reflect.ValueOf(fv.Value).IsValid() && len(authPath) == 0 {
-		// if policy have the path, then user's auth path must can not be empty.
-		// we consider this to be unauthorized.
-		return false, nil
-	}
-
-	for _, path := range authPath {
-		matched, err := p.Operator.Operator().Match(path, fv.Value)
-		if err != nil {
-			return false, fmt.Errorf("do %s match calculate failed, err: %v", p.Operator, err)
-		}
-		// if one of the path is matched, the we consider it's authorized
-		if matched {
-			return true, nil
-		}
-	}
-
-	// no path is matched, not authorized
 	return false, nil
 }
 

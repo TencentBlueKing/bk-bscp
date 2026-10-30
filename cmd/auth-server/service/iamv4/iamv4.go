@@ -33,7 +33,7 @@ type spaceLister interface {
 	QuerySpace(ctx context.Context, bizIDs []string) ([]*space.Space, error)
 }
 
-// appLister 提供服务实例数据，由 data-service 的 gRPC client 实现。
+// appLister 提供 IAM 资源实例数据（服务、项目等），由 data-service 的 gRPC client 实现。
 type appLister interface {
 	ListInstances(ctx context.Context, in *pbds.ListInstancesReq, opts ...grpc.CallOption) (
 		*pbds.ListInstancesResp, error)
@@ -84,6 +84,10 @@ func (i *IAM) listInstance(kt *kit.Kit, req *PullResourceReq) (*ListInstanceResu
 		return i.listBizInstances(kt, req.Filter, req.Page)
 	case model.ResourceTypeApp:
 		return i.listAppInstances(kt, req.Filter, req.Page)
+	case model.ResourceTypeProject:
+		return i.listProjectInstances(kt, req.Filter, req.Page)
+	case model.ResourceTypeEnvironment:
+		return i.listEnvironmentInstances(kt, req.Filter, req.Page)
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %s", req.Type)
 	}
@@ -101,6 +105,10 @@ func (i *IAM) fetchInstanceInfo(kt *kit.Kit, req *PullResourceReq) ([]instanceIn
 		return i.fetchBizInstanceInfo(kt, req.Filter.IDs, selector)
 	case model.ResourceTypeApp:
 		return i.fetchAppInstanceInfo(kt, req.Filter.IDs, selector)
+	case model.ResourceTypeProject:
+		return i.fetchProjectInstanceInfo(kt, req.Filter.IDs, selector)
+	case model.ResourceTypeEnvironment:
+		return i.fetchEnvironmentInstanceInfo(kt, req.Filter.IDs, selector)
 	default:
 		return nil, fmt.Errorf("unsupported resource type: %s", req.Type)
 	}

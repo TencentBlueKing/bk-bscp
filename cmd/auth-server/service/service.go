@@ -624,6 +624,9 @@ func ListUserSpaceAnnotation(ctx context.Context, kt *kit.Kit, authorizer iamaut
 func init() {
 	webannotation.Register(&pbas.ListUserSpaceResp{}, ListUserSpaceAnnotation)
 	webannotation.Register(&pbcs.ListAppsResp{}, confsvc.ListAppsAnnotation)
+	// 项目/环境列表无法逐项拦截，需要把逐项权限带回前端做置灰与申请引导。
+	webannotation.Register(&pbcs.ListProjectsResp{}, confsvc.ListProjectsAnnotation)
+	webannotation.Register(&pbcs.ListEnvironmentsResp{}, confsvc.ListEnvironmentsAnnotation)
 }
 
 // ListUserSpace 获取用户信息

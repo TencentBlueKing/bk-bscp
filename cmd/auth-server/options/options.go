@@ -14,6 +14,7 @@
 package options
 
 import (
+	"os"
 	"sync"
 
 	"github.com/spf13/pflag"
@@ -21,6 +22,18 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/flags"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 )
+
+// hasMigrateCommand 判断本次执行的是 migrate 子命令而不是常驻服务启动。
+// 子命令的 flags 交给 cobra 解析，全局 flag set 不再校验。
+func hasMigrateCommand(args []string) bool {
+	for _, arg := range args {
+		if arg == "migrate" {
+			return true
+		}
+	}
+
+	return false
+}
 
 // Option defines the app's runtime flag options.
 type Option struct {
@@ -41,6 +54,14 @@ func InitOptions() *Option {
 	fs.BoolVar(&disableAuth, "disable-auth", false, "defines whether iam authorization is disabled. Auth is enabled "+
 		"by default, disable-auth=true needs to set explicitly to disable iam authorization. Note: disable auth "+
 		"may cause security problems, please do not use it unless you understand and accept the risks.")
+
+	// migrate 子命令（init-iam / delete-iam 等）自己的 flags 由 cobra 解析，
+	// 它们没有注册在这个全局 flag set 上，这里必须放行未注册的 flag，
+	// 否则 `migrate delete-iam --yes` 会在启动阶段就被 pflag 拒绝。
+	// 常驻服务启动（无子命令）时保持严格解析，避免拼错的 flag 被静默忽略。
+	if hasMigrateCommand(os.Args[1:]) {
+		fs.ParseErrorsWhitelist.UnknownFlags = true
+	}
 
 	// parses the command-line flags from os.Args[1:]. must be called after all flags are defined
 	// and before flags are accessed by the program.

@@ -19,13 +19,18 @@ const (
 	ResourceTypeBiz = "biz"
 	// ResourceTypeApp 服务，父级为业务
 	ResourceTypeApp = "app"
+	// ResourceTypeProject 项目，父级为业务
+	ResourceTypeProject = "project"
+	// ResourceTypeEnvironment 环境，父级为项目
+	ResourceTypeEnvironment = "environment"
 )
 
 // 操作 ID
 const (
 	// ActionFindBusinessResource 业务访问，BSCP 所有业务接口的前置校验
 	ActionFindBusinessResource = "find_business_resource"
-	// ActionAppCreate 服务创建，按业务授权即"允许在哪个业务下创建服务"
+	// ActionAppCreate 服务创建，按环境授权即"允许在哪个环境下创建服务"；
+	// 创建时尚无服务实例，项目/业务维度的授权经拓扑路径继承覆盖到该环境。
 	ActionAppCreate = "app_create"
 	// ActionAppView 服务查看
 	ActionAppView = "app_view"
@@ -57,6 +62,22 @@ const (
 	ActionConfigGenerate = "config_generate"
 	// ActionConfigRelease 配置下发
 	ActionConfigRelease = "config_release"
+	// ActionProjectCreate 项目创建，按业务授权（此时项目实例尚未存在）
+	ActionProjectCreate = "project_create"
+	// ActionProjectView 项目查看，按项目实例授权
+	ActionProjectView = "project_view"
+	// ActionProjectEdit 项目编辑，按项目实例授权
+	ActionProjectEdit = "project_edit"
+	// ActionProjectDelete 项目删除，按项目实例授权
+	ActionProjectDelete = "project_delete"
+	// ActionEnvironmentCreate 环境创建，按项目授权（此时环境实例尚未存在）
+	ActionEnvironmentCreate = "environment_create"
+	// ActionEnvironmentView 环境查看，按环境实例授权
+	ActionEnvironmentView = "environment_view"
+	// ActionEnvironmentEdit 环境编辑，按环境实例授权
+	ActionEnvironmentEdit = "environment_edit"
+	// ActionEnvironmentDelete 环境删除，按环境实例授权
+	ActionEnvironmentDelete = "environment_delete"
 )
 
 const (
@@ -74,7 +95,7 @@ const (
 	RoleBizViewer = "biz_viewer"
 	// RoleBizOperator 业务运维
 	RoleBizOperator = "biz_operator"
-	// RoleAppCreator 服务创建者：只能在业务下新建服务，配合创建者自动授权获得自己所建服务的管理权，对他人的服务无权限
+	// RoleAppCreator 服务创建者：只能在被授权的环境下新建服务，配合创建者自动授权获得自己所建服务的管理权，对他人的服务无权限
 	RoleAppCreator = "app_creator"
 	// RoleCredentialManager 服务密钥管理员
 	RoleCredentialManager = "credential_manager"
@@ -88,4 +109,12 @@ const (
 	RoleAppPublisher = "app_publisher"
 	// RoleAppViewer 服务查看者，最小粒度只读
 	RoleAppViewer = "app_viewer"
+	// RoleProjectOperator 项目运维，管理指定项目及其全部环境
+	RoleProjectOperator = "project_operator"
+	// RoleProjectViewer 项目查看者，查看指定项目及其全部环境
+	RoleProjectViewer = "project_viewer"
+	// RoleEnvironmentOperator 环境运维，管理指定环境，也是环境创建者自动授权所授予的角色
+	RoleEnvironmentOperator = "environment_operator"
+	// RoleEnvironmentViewer 环境查看者，查看指定环境
+	RoleEnvironmentViewer = "environment_viewer"
 )

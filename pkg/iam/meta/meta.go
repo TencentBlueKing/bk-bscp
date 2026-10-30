@@ -24,6 +24,14 @@ type ResourceAttribute struct {
 	Basic `json:",inline"`
 	// BizID biz id of the iam resource.
 	BizID uint32 `json:"biz_id,omitempty"`
+	// ProjectID project id of the iam resource.
+	// 环境按项目隔离，环境的鉴权路径需要它拼出 /biz,{bizID}/project,{projectID}/；
+	// 服务挂在环境下，也需要它拼出三级路径。
+	ProjectID uint32 `json:"project_id,omitempty"`
+	// EnvironmentID environment id of the iam resource.
+	// 服务的鉴权路径需要它拼出 /biz,{bizID}/project,{projectID}/environment,{envID}/；
+	// 缺失时路径不完整，鉴权按无权限处理。
+	EnvironmentID uint32 `json:"environment_id,omitempty"`
 }
 
 // Basic defines the basic info for a resource.
@@ -97,6 +105,8 @@ type IamResourceAttributeValue struct {
 }
 
 // DecisionsMap defines the authorization decision of a resource.
+// 注意：鉴权侧会给部分资源补齐归属（如服务的 project_id/environment_id）再回传，
+// 补齐后的属性与调用方入参不再相等，按值查会一律查不到。需要与入参对应时请按序号访问。
 func DecisionsMap(ds []*Decision) map[ResourceAttribute]bool {
 	result := make(map[ResourceAttribute]bool, len(ds))
 	for _, d := range ds {

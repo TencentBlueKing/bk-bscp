@@ -46,6 +46,25 @@ func GenerateResourceCreatorActions() client.ResourceCreatorActions {
 				},
 				SubResourceTypes: nil,
 			},
+			{
+				// 环境创建者自动获得该环境的运维权限；环境下的服务仍需单独授权。
+				ResourceID: Environment,
+				Actions: []client.CreatorRelatedAction{
+					{
+						ID:         EnvironmentView,
+						IsRequired: false,
+					},
+					{
+						ID:         EnvironmentEdit,
+						IsRequired: false,
+					},
+					{
+						ID:         EnvironmentDelete,
+						IsRequired: false,
+					},
+				},
+				SubResourceTypes: nil,
+			},
 		},
 	}
 }
