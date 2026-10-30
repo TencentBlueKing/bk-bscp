@@ -37,6 +37,34 @@ import (
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
+// appCreateAuthResources 构造创建/克隆服务的鉴权资源。
+// 服务落在具体环境里，创建权限按目标环境授予（app_create @ environment）：授权页面因此
+// 需要先选项目、再选环境，项目/业务维度的授权经拓扑路径继承覆盖到该环境。
+// 创建后会把该服务的运维权限自动授予创建者，因此创建权限只覆盖被授权的环境，
+// 不会因为一条业务维度的授权就扩散到业务下的全部项目与环境。
+func appCreateAuthResources(bizID, projectID, envID uint32) []*meta.ResourceAttribute {
+	return []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: bizID},
+		{
+			// ResourceID 是目标环境 ID：创建时尚无服务实例，授权维度落在服务将要归属的环境上。
+			Basic:         meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: envID},
+			BizID:         bizID,
+			ProjectID:     projectID,
+			EnvironmentID: envID,
+		},
+	}
+}
+
+// appListAuthResources 服务列表的鉴权资源：只校验业务访问，不按环境维度拦截。
+// 列表按上层放行并返回全部服务，环境与服务的逐项权限由 ListAppsAnnotation
+// 带回前端置灰并引导申请。ListAppsRest 与 ListAppsBySpaceRest 共用这一处，
+// 避免两个入口的规则再次分叉。
+func appListAuthResources(bizID uint32) []*meta.ResourceAttribute {
+	return []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: bizID},
+	}
+}
+
 // CreateApp create app with options
 func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.CreateAppResp, error) {
 	kt := kit.FromGrpcContext(ctx)
@@ -45,12 +73,10 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 		return nil, err
 	}
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Create}, BizID: req.BizId},
-	}
-	err := s.authorizer.Authorize(kt, res...)
-	if err != nil {
+	projectID := kt.ResolvedProjectID(req.GetProjectId())
+	envID := kt.ResolvedEnvID(req.GetEnvId())
+
+	if err := s.authorizer.Authorize(kt, appCreateAuthResources(req.BizId, projectID, envID)...); err != nil {
 		return nil, err
 	}
 
@@ -66,8 +92,8 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 			ApproveType: req.ApproveType,
 			Approver:    req.Approver,
 		},
-		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
-		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
+		ProjectId: projectID,
+		EnvId:     envID,
 	}
 	rp, err := s.client.DS.CreateApp(kt.RpcCtx(), r)
 	if err != nil {
@@ -81,12 +107,24 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 		ID:      strconv.Itoa(int(rp.Id)),
 		Name:    req.Name,
 		Creator: kt.User,
-		// 声明服务所属的业务
-		Ancestors: []client.GrantResourceCreatorActionAncestor{{
-			System: sys.SystemIDCMDB,
-			Type:   sys.Business,
-			ID:     strconv.Itoa(int(req.BizId)),
-		}},
+		// 声明服务所属的业务、项目与环境，权限中心据此回显三级拓扑
+		Ancestors: []client.GrantResourceCreatorActionAncestor{
+			{
+				System: sys.SystemIDCMDB,
+				Type:   sys.Business,
+				ID:     strconv.Itoa(int(req.BizId)),
+			},
+			{
+				System: sys.SystemIDBSCP,
+				Type:   sys.Project,
+				ID:     strconv.Itoa(int(projectID)),
+			},
+			{
+				System: sys.SystemIDBSCP,
+				Type:   sys.Environment,
+				ID:     strconv.Itoa(int(envID)),
+			},
+		},
 	}); err != nil {
 		logs.Errorf("grant app creator action failed, err: %v, rid: %s", err, kt.Rid)
 	}
@@ -219,10 +257,7 @@ func (s *Service) GetAppByName(ctx context.Context, req *pbcs.GetAppByNameReq) (
 func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (*pbcs.ListAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-	}
-	err := s.authorizer.Authorize(kt, res...)
+	err := s.authorizer.Authorize(kt, appListAuthResources(req.BizId)...)
 	if err != nil {
 		return nil, err
 	}
@@ -283,13 +318,12 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 }
 
 // ListAppsBySpaceRest list apps with rest filter
+// 与 ListAppsRest 同一条规则（见 appListAuthResources）：只校验业务访问，
+// 不按环境维度拦截，未授权的服务由 ListAppsAnnotation 置灰并引导申请。
 func (s *Service) ListAppsBySpaceRest(ctx context.Context, req *pbcs.ListAppsBySpaceRestReq) (*pbcs.ListAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-	}
-	err := s.authorizer.Authorize(kt, res...)
+	err := s.authorizer.Authorize(kt, appListAuthResources(req.BizId)...)
 	if err != nil {
 		return nil, err
 	}
@@ -370,23 +404,31 @@ func ListAppsAnnotation(ctx context.Context, kt *kit.Kit,
 	}
 
 	perms := map[string]webannotation.Perm{}
-	authRes := make([]*meta.ResourceAttribute, 0, len(resp.Details))
+	authRes := make([]*meta.ResourceAttribute, 0, len(resp.Details)*5)
 	for _, v := range resp.Details {
-		bID, _ := strconv.ParseInt(v.SpaceId, 10, 64)
+		bID := uint64(v.GetBizId())
+		if bID == 0 {
+			bID, _ = strconv.ParseUint(v.SpaceId, 10, 32)
+		}
 		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
-			Type: meta.App, Action: meta.View, ResourceID: v.Id}, BizID: uint32(bID)},
+			Type: meta.App, Action: meta.View, ResourceID: v.Id}, BizID: uint32(bID),
+			ProjectID: v.GetProjectId(), EnvironmentID: v.GetEnvId()},
 		)
 		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
-			Type: meta.App, Action: meta.Update, ResourceID: v.Id}, BizID: uint32(bID)},
+			Type: meta.App, Action: meta.Update, ResourceID: v.Id}, BizID: uint32(bID),
+			ProjectID: v.GetProjectId(), EnvironmentID: v.GetEnvId()},
 		)
 		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
-			Type: meta.App, Action: meta.Delete, ResourceID: v.Id}, BizID: uint32(bID)},
+			Type: meta.App, Action: meta.Delete, ResourceID: v.Id}, BizID: uint32(bID),
+			ProjectID: v.GetProjectId(), EnvironmentID: v.GetEnvId()},
 		)
 		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
-			Type: meta.App, Action: meta.Publish, ResourceID: v.Id}, BizID: uint32(bID)},
+			Type: meta.App, Action: meta.Publish, ResourceID: v.Id}, BizID: uint32(bID),
+			ProjectID: v.GetProjectId(), EnvironmentID: v.GetEnvId()},
 		)
 		authRes = append(authRes, &meta.ResourceAttribute{Basic: meta.Basic{
-			Type: meta.App, Action: meta.GenerateRelease, ResourceID: v.Id}, BizID: uint32(bID)},
+			Type: meta.App, Action: meta.GenerateRelease, ResourceID: v.Id}, BizID: uint32(bID),
+			ProjectID: v.GetProjectId(), EnvironmentID: v.GetEnvId()},
 		)
 	}
 
@@ -395,17 +437,21 @@ func ListAppsAnnotation(ctx context.Context, kt *kit.Kit,
 		return nil, err
 	}
 
-	dMap := meta.DecisionsMap(decisions)
-
-	for _, res := range authRes {
-		if _, ok := perms[strconv.Itoa(int(res.ResourceID))]; !ok {
-			perms[strconv.Itoa(int(res.ResourceID))] = webannotation.Perm{
-				string(res.Action): dMap[*res],
-			}
-		} else {
-			perms[strconv.Itoa(int(res.ResourceID))][string(res.Action)] = dMap[*res]
+	// 必须按下标对齐，不能用资源属性做 map key：鉴权侧会给服务资源补齐
+	// project_id / environment_id 再回传，补齐后的属性与这里的入参不再相等，
+	// 用 map 查会一律取到 false，导致有权限的服务也被禁用。
+	for idx, res := range authRes {
+		if idx >= len(decisions) || decisions[idx] == nil {
+			continue
 		}
+
+		id := strconv.Itoa(int(res.ResourceID))
+		if _, ok := perms[id]; !ok {
+			perms[id] = webannotation.Perm{}
+		}
+		perms[id][string(res.Action)] = decisions[idx].Authorized
 	}
+
 	return &webannotation.Annotation{Perms: perms}, nil
 }
 
@@ -413,13 +459,11 @@ func ListAppsAnnotation(ctx context.Context, kt *kit.Kit,
 func (s *Service) CloneApp(ctx context.Context, req *pbcs.CloneAppReq) (*pbcs.CreateAppResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Create}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update}, BizID: req.BizId},
-	}
-	err := s.authorizer.Authorize(kt, res...)
-	if err != nil {
+	projectID := kt.ResolvedProjectID(req.GetProjectId())
+	envID := kt.ResolvedEnvID(req.GetEnvId())
+
+	// 克隆等同于在目标环境里新建服务，与创建服务使用同一套校验。
+	if err := s.authorizer.Authorize(kt, appCreateAuthResources(req.BizId, projectID, envID)...); err != nil {
 		return nil, err
 	}
 

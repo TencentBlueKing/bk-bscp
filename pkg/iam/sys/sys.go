@@ -44,39 +44,55 @@ func (s *Sys) GetSystemToken(ctx context.Context) (string, error) {
 }
 
 // Register register auth model to iam.
+//
+// 资源之间存在依赖：操作引用资源类型与实例视图，实例视图引用资源类型。因此写入顺序固定为
+//
+//	删除：Action → InstanceSelection → ResourceType
+//	新增：ResourceType → InstanceSelection → Action（父资源必须先存在）
+//	更新：InstanceSelection、Action 必须放在新增资源类型之后
+//
+// 分类阶段不做任何写入：把更新与分类混在一起会导致「操作引用的资源类型尚未创建」而失败，
+// 例如新增 project 资源类型、同时把既有 project_view 的关联资源类型改为 project 时，
+// 若先更新操作就会报 related resource type[project] not exists。
+// ActionGroup / 创建者动作 / 通用操作都依赖 Action，始终放在最后。
+// 先删除再新增，是因为实例视图的名称在系统中唯一，同名时创建会失败。
 func (s *Sys) Register(ctx context.Context, host string) error {
 	system, err := s.registerSystem(ctx, host)
 	if err != nil {
 		return err
 	}
 
-	// Note: 如果更新的资源依赖新增的其他资源，会存在问题。如更新的实例视图，依赖新增的资源类型。
-	removedResTypeMap, newResTypes, err := s.classResType(ctx, system.ResourceTypes)
-	if err != nil {
-		return err
-	}
-
-	removedInstSelectionMap, newInstSelections, err := s.classInstSelection(ctx, system.InstanceSelections)
-	if err != nil {
-		return err
-	}
-
-	removedResActionMap, newResActions, err := s.classAction(ctx, system.Actions)
-	if err != nil {
-		return err
-	}
-
-	// 因为资源间的依赖关系，删除和更新的顺序为 1.Action 2.InstanceSelection 3.ResourceType
-	// 因为资源间的依赖关系，新建的顺序则反过来为 1.ResourceType 2.InstanceSelection 3.Action
-	// ActionGroup依赖于Action，该资源的增删操作始终放在最后
-	// 先删除资源，再新增资源，因为实例视图的名称在系统中是唯一的，如果不先删，同样名称的实例视图将创建失败
+	removedResTypeMap, newResTypes := classResType(system.ResourceTypes)
+	removedInstSelectionMap, newInstSelections := classInstSelection(system.InstanceSelections)
+	removedResActionMap, newResActions := classAction(system.Actions)
 
 	if err = s.deleteRemovedModel(ctx, removedResActionMap, removedInstSelectionMap, removedResTypeMap); err != nil {
 		return err
 	}
 
-	if err := s.registerNewModel(ctx, newResTypes, newInstSelections, newResActions); err != nil {
+	if len(newResTypes) > 0 {
+		if err := s.client.RegisterResourcesTypes(ctx, newResTypes); err != nil {
+			logs.Errorf("register resource types failed, types: %v, err: %v", newResTypes, err)
+			return err
+		}
+	}
+
+	if len(newInstSelections) > 0 {
+		if err := s.client.RegisterInstanceSelections(ctx, newInstSelections); err != nil {
+			logs.Errorf("register instance selections failed, selections: %v, err: %v", newInstSelections, err)
+			return err
+		}
+	}
+
+	if err := s.updateExistingModel(ctx, system); err != nil {
 		return err
+	}
+
+	if len(newResActions) > 0 {
+		if err := s.client.RegisterActions(ctx, newResActions); err != nil {
+			logs.Errorf("register resource actions failed, actions: %v, err: %v", newResActions, err)
+			return err
+		}
 	}
 
 	if err := s.registerActionGroup(ctx, system.ActionGroups); err != nil {
@@ -89,6 +105,63 @@ func (s *Sys) Register(ctx context.Context, host string) error {
 
 	if err := s.registerCommonAction(ctx, system.CommonActions); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// updateExistingModel 更新线上已存在、但本地定义有变化的资源类型、实例视图与操作。
+// 必须在新增资源类型之后调用：它们的父级或引用可能正是本次新增的资源类型。
+func (s *Sys) updateExistingModel(ctx context.Context, system *client.RegisteredSystemInfo) error {
+	existingTypes := make(map[client.TypeID]struct{}, len(system.ResourceTypes))
+	for _, resourceType := range system.ResourceTypes {
+		existingTypes[resourceType.ID] = struct{}{}
+	}
+
+	for _, resourceType := range GenerateStaticResourceTypes() {
+		if _, ok := existingTypes[resourceType.ID]; !ok {
+			continue
+		}
+
+		if err := s.client.UpdateResourcesType(ctx, resourceType); err != nil {
+			logs.Errorf("update resource type failed, id: %s, type: %v, err: %v",
+				resourceType.ID, resourceType, err)
+			return err
+		}
+	}
+
+	existingSelections := make(map[client.InstanceSelectionID]struct{}, len(system.InstanceSelections))
+	for _, selection := range system.InstanceSelections {
+		existingSelections[selection.ID] = struct{}{}
+	}
+
+	for _, selection := range GenerateStaticInstanceSelections() {
+		if _, ok := existingSelections[selection.ID]; !ok {
+			continue
+		}
+
+		if err := s.client.UpdateInstanceSelection(ctx, selection); err != nil {
+			logs.Errorf("update instance selection failed, id: %s, selection: %v, err: %v",
+				selection.ID, selection, err)
+			return err
+		}
+	}
+
+	existingActions := make(map[client.ActionID]struct{}, len(system.Actions))
+	for _, action := range system.Actions {
+		existingActions[action.ID] = struct{}{}
+	}
+
+	for _, action := range GenerateStaticActions() {
+		if _, ok := existingActions[action.ID]; !ok {
+			continue
+		}
+
+		if err := s.client.UpdateAction(ctx, action); err != nil {
+			logs.Errorf("update resource action failed, id: %s, action: %v, err: %v",
+				action.ID, action, err)
+			return err
+		}
 	}
 
 	return nil
@@ -157,33 +230,6 @@ func (s *Sys) registerActionGroup(ctx context.Context, groups []client.ActionGro
 	return nil
 }
 
-// registerNewModel register new auth model.
-func (s *Sys) registerNewModel(ctx context.Context, newResTypes []client.ResourceType,
-	newInstSelections []client.InstanceSelection, newResActions []client.ResourceAction) error {
-	if len(newResTypes) > 0 {
-		if err := s.client.RegisterResourcesTypes(ctx, newResTypes); err != nil {
-			logs.Errorf("register resource types failed, types: %v, err: %v", newResTypes, err)
-			return err
-		}
-	}
-
-	if len(newInstSelections) > 0 {
-		if err := s.client.RegisterInstanceSelections(ctx, newInstSelections); err != nil {
-			logs.Errorf("register instance selections failed, types: %v, err: %v", newInstSelections, err)
-			return err
-		}
-	}
-
-	if len(newResActions) > 0 {
-		if err := s.client.RegisterActions(ctx, newResActions); err != nil {
-			logs.Errorf("register resource actions failed, actions: %v, err: %v", newResActions, err)
-			return err
-		}
-	}
-
-	return nil
-}
-
 // deleteRemovedModel delete removed auth model.
 func (s *Sys) deleteRemovedModel(ctx context.Context, resActions map[client.ActionID]struct{},
 	selections map[client.InstanceSelectionID]struct{}, resTypes map[client.TypeID]struct{}) error {
@@ -237,9 +283,9 @@ func (s *Sys) deleteRemovedModel(ctx context.Context, resActions map[client.Acti
 	return nil
 }
 
-// classAction class action to removed and new create.
-func (s *Sys) classAction(ctx context.Context, actions []client.ResourceAction) (
-	map[client.ActionID]struct{}, []client.ResourceAction, error) {
+// classAction 把本地操作分为「线上已存在（后续更新）」与「需要新增」两类，只读不写。
+func classAction(actions []client.ResourceAction) (
+	map[client.ActionID]struct{}, []client.ResourceAction) {
 
 	old := make(map[client.ActionID]bool)
 	removed := make(map[client.ActionID]struct{})
@@ -252,24 +298,17 @@ func (s *Sys) classAction(ctx context.Context, actions []client.ResourceAction) 
 	for _, resourceAction := range GenerateStaticActions() {
 		// registered resource action exist in current resource actions, should not be removed
 		delete(removed, resourceAction.ID)
-		// if current resource action is registered, update it, or else register it
-		if old[resourceAction.ID] {
-			if err := s.client.UpdateAction(ctx, resourceAction); err != nil {
-				logs.Errorf("update resource action failed, id: %s, action: %v, err: %v",
-					resourceAction.ID, resourceAction, err)
-				return nil, nil, err
-			}
-		} else {
+		if !old[resourceAction.ID] {
 			news = append(news, resourceAction)
 		}
 	}
 
-	return removed, news, nil
+	return removed, news
 }
 
-// classInstSelection class instance selection to removed and new create.
-func (s *Sys) classInstSelection(ctx context.Context, selections []client.InstanceSelection) (
-	map[client.InstanceSelectionID]struct{}, []client.InstanceSelection, error) {
+// classInstSelection 把本地实例视图分为「线上已存在（后续更新）」与「需要新增」两类，只读不写。
+func classInstSelection(selections []client.InstanceSelection) (
+	map[client.InstanceSelectionID]struct{}, []client.InstanceSelection) {
 
 	old := make(map[client.InstanceSelectionID]bool)
 	removed := make(map[client.InstanceSelectionID]struct{})
@@ -282,24 +321,17 @@ func (s *Sys) classInstSelection(ctx context.Context, selections []client.Instan
 	for _, resourceType := range GenerateStaticInstanceSelections() {
 		// registered instance selection removed in current instance selections, should not be removed
 		delete(removed, resourceType.ID)
-		// if current instance selection is registered, update it, or else register it
-		if old[resourceType.ID] {
-			if err := s.client.UpdateInstanceSelection(ctx, resourceType); err != nil {
-				logs.Errorf("update instance selection failed, id: %s, type: %v, err: %v",
-					resourceType.ID, resourceType, err)
-				return nil, nil, err
-			}
-		} else {
+		if !old[resourceType.ID] {
 			news = append(news, resourceType)
 		}
 	}
 
-	return removed, news, nil
+	return removed, news
 }
 
-// classResType class resource type to removed and new create.
-func (s *Sys) classResType(ctx context.Context, resTypes []client.ResourceType) (
-	map[client.TypeID]struct{}, []client.ResourceType, error) {
+// classResType 把本地资源类型分为「线上已存在（无需处理）」与「需要新增」两类，只读不写。
+func classResType(resTypes []client.ResourceType) (
+	map[client.TypeID]struct{}, []client.ResourceType) {
 
 	old := make(map[client.TypeID]bool)
 	removed := make(map[client.TypeID]struct{})
@@ -312,19 +344,12 @@ func (s *Sys) classResType(ctx context.Context, resTypes []client.ResourceType) 
 	for _, resourceType := range GenerateStaticResourceTypes() {
 		// registered resource type exist in current resource types, should not be removed
 		delete(removed, resourceType.ID)
-		// if current resource type is registered, update it, or else register it
-		if old[resourceType.ID] {
-			if err := s.client.UpdateResourcesType(ctx, resourceType); err != nil {
-				logs.Errorf("update resource type failed, id: %s, type: %v, err: %v",
-					resourceType.ID, resourceType, err)
-				return nil, nil, err
-			}
-		} else {
+		if !old[resourceType.ID] {
 			news = append(news, resourceType)
 		}
 	}
 
-	return removed, news, nil
+	return removed, news
 }
 
 // registerSystem register or update system to iam.
@@ -365,7 +390,12 @@ func (s *Sys) registerSystem(ctx context.Context, host string) (*client.Register
 			return nil, err
 		}
 
-		logs.V(5).Infof("update system host succeed, old: %s, new: %s", resp.Data.BaseInfo.ProviderConfig.Host, host)
+		// 权限中心可能没有回填 provider_config，直接取字段会空指针。
+		oldHost := ""
+		if resp.Data.BaseInfo.ProviderConfig != nil {
+			oldHost = resp.Data.BaseInfo.ProviderConfig.Host
+		}
+		logs.V(5).Infof("update system host succeed, old: %s, new: %s", oldHost, host)
 	}
 
 	return &resp.Data, nil

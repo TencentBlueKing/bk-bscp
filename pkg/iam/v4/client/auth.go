@@ -22,9 +22,27 @@ import (
 // IAMPathAttrKey 资源属性中承载拓扑路径的键。
 const IAMPathAttrKey = "_bk_iam_path_"
 
-// BuildIAMPath 构造单层父资源的拓扑路径，格式为 /ParentType,ParentInstanceID/。
-func BuildIAMPath(parentType, parentID string) string {
-	return fmt.Sprintf("/%s,%s/", parentType, parentID)
+// BuildIAMPath 构造拓扑路径，格式为 /Type,ID/Type,ID/。
+// 参数按"从根到叶"的顺序成对给出，例如 BuildIAMPath("biz", "1", "project", "2")。
+// 任一层级缺失（空类型或空 ID）时返回空串：调用方据此不携带 attributes，
+// 权限中心按无拓扑处理，鉴权结果为无权限，避免把不完整的路径发给权限中心。
+func BuildIAMPath(typesAndIDs ...string) string {
+	if len(typesAndIDs) < 2 || len(typesAndIDs)%2 != 0 {
+		return ""
+	}
+
+	path := ""
+	for i := 0; i < len(typesAndIDs); i += 2 {
+		typ, id := typesAndIDs[i], typesAndIDs[i+1]
+		if typ == "" || id == "" {
+			return ""
+		}
+
+		path += fmt.Sprintf("/%s,%s", typ, id)
+	}
+
+	// 每级形如 /Type,ID，整体以 "/" 收尾：/biz,1/project,2/
+	return path + "/"
 }
 
 // AuthResource 鉴权请求中的资源。资源类型由 action_id 隐含决定，无需在此声明。

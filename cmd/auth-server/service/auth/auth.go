@@ -21,6 +21,7 @@ import (
 	"time"
 
 	bkiam "github.com/TencentBlueKing/iam-go-sdk"
+	"github.com/bluele/gcache"
 	"github.com/pkg/errors"
 
 	"github.com/TencentBlueKing/bk-bscp/cmd/auth-server/options"
@@ -80,6 +81,10 @@ type Auth struct {
 	v4 *authv4.Authorizer
 	// v4Cli V4 网关客户端，用于生成权限申请链接与创建者授权
 	v4Cli v4Gateway
+	// appScopes 缓存服务的项目/环境归属，服务鉴权需要它拼三级路径
+	appScopes gcache.Cache
+	// defaultScopes 缓存按业务解析出的默认项目/环境，用于归属为 0 的历史服务
+	defaultScopes gcache.Cache
 }
 
 // v4Gateway 是本包用到的 V4 网关能力。
@@ -113,6 +118,8 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 		disableWriteOpt: disableWriteOpt,
 		spaceMgr:        spaceMgr,
 		iamCli:          iamCli,
+		appScopes:       newAppScopeCache(),
+		defaultScopes:   newDefaultScopeCache(),
 	}
 
 	return i, nil
@@ -160,12 +167,18 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 	// 	return resp, nil
 	// }
 
+	// 服务挂在环境下，鉴权路径需要项目与环境两级归属。调用方常常只带 biz 与实例 ID，
+	// 在这里统一回查或按默认项目/环境补齐，V3 与 V4 共用同一份归属，避免两套路径不一致。
+	resources := pbas.ResourceAttributes(req.Resources)
+	if err := a.fillResourceScope(kt, resources); err != nil {
+		return nil, err
+	}
+
 	if a.useV4() {
-		return a.authorizeBatchV4(kt, req)
+		return a.authorizeBatchV4(kt, req.GetUser().GetUserName(), resources)
 	}
 
 	// parse bscp resource to iam resource
-	resources := pbas.ResourceAttributes(req.Resources)
 	opts, decisions, err := parseAttributesToBatchOptions(kt, req.User.UserInfo(), resources...)
 	if err != nil {
 		return nil, err
@@ -205,14 +218,11 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 }
 
 // authorizeBatchV4 走权限中心 V4 的批量鉴权。
-func (a *Auth) authorizeBatchV4(kt *kit.Kit, req *pbas.AuthorizeBatchReq) (
-	*pbas.AuthorizeBatchResp, error) {
+func (a *Auth) authorizeBatchV4(kt *kit.Kit, user string,
+	resources []*meta.ResourceAttribute) (*pbas.AuthorizeBatchResp, error) {
 
 	// 此处不校验用户名。feed-server 处理 sidecar 请求时使用应用凭证而非用户身份，
 	// 用户名为空且相关资源无需鉴权，用户名是否必需交由 V4 鉴权器在资源映射后判断。
-	user := req.GetUser().GetUserName()
-	resources := pbas.ResourceAttributes(req.Resources)
-
 	decisions, err := a.v4.AuthorizeBatch(kt, user, resources...)
 	if err != nil {
 		logs.Errorf("iam v4 authorize batch failed, user: %s, resource count: %d, err: %v, rid: %s",
@@ -310,12 +320,16 @@ func (a *Auth) GetPermissionToApply(ctx context.Context, req *pbas.GetPermission
 	kt := kit.FromGrpcContext(ctx)
 	resp := new(pbas.GetPermissionToApplyResp)
 
-	permission, err := a.getPermissionToApply(kt, pbas.ResourceAttributes(req.Resources))
-	if err != nil {
+	resourceAttributes := pbas.ResourceAttributes(req.Resources)
+	// 申请链接要回显「业务 → 项目 → 环境」，与鉴权使用同一份归属。
+	if err := a.fillResourceScope(kt, resourceAttributes); err != nil {
 		return nil, err
 	}
 
-	resourceAttributes := pbas.ResourceAttributes(req.Resources)
+	permission, err := a.getPermissionToApply(kt, resourceAttributes)
+	if err != nil {
+		return nil, err
+	}
 
 	url, err := a.genApplyURL(kt, resourceAttributes)
 	if err != nil {
@@ -574,8 +588,14 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		return errf.New(errf.InvalidParameter, "creator action option is nil")
 	}
 
-	// 目前只有服务需要创建者授权，与 V3 注册的 ResourceCreatorAction 范围一致。
-	if opts.Type != sys.Application {
+	// 目前服务和环境需要创建者授权，与 V3 注册的 ResourceCreatorAction 范围一致。
+	var roleID, resourceTypeID string
+	switch opts.Type {
+	case sys.Application:
+		roleID, resourceTypeID = model.RoleAppOperator, model.ResourceTypeApp
+	case sys.Environment:
+		roleID, resourceTypeID = model.RoleEnvironmentOperator, model.ResourceTypeEnvironment
+	default:
 		return errf.New(errf.InvalidParameter,
 			fmt.Sprintf("unsupported resource type for creator grant: %s", opts.Type))
 	}
@@ -593,21 +613,21 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 	expiredAt := time.Now().Add(creatorGrantDuration).Unix()
 
 	// 必须拆成两条：一次 add_authorization 仅授予 related_resource_type_id 指定的单个
-	// 授权维度。若只授 app 维度，角色内 biz 维度的 find_business_resource 不会生效；
-	// BSCP 每个业务接口都有业务访问前置校验，该操作缺失时创建者对新服务的所有操作都会被拒绝。
+	// 授权维度。若只授资源维度，角色内 biz 维度的 find_business_resource 不会生效；
+	// BSCP 每个业务接口都有业务访问前置校验，该操作缺失时创建者对新资源的操作都会被拒绝。
 	items := []clientv4.Authorization{
 		{
 			Subject:               subject,
-			RoleID:                model.RoleAppOperator,
-			RelatedResourceTypeID: model.ResourceTypeApp,
+			RoleID:                roleID,
+			RelatedResourceTypeID: resourceTypeID,
 			Resources: []clientv4.ResourceRef{
-				{Type: model.ResourceTypeApp, ID: opts.ID},
+				{Type: resourceTypeID, ID: opts.ID},
 			},
 			ExpiredAt: expiredAt,
 		},
 		{
 			Subject:               subject,
-			RoleID:                model.RoleAppOperator,
+			RoleID:                roleID,
 			RelatedResourceTypeID: model.ResourceTypeBiz,
 			Resources: []clientv4.ResourceRef{
 				{Type: model.ResourceTypeBiz, ID: bizID},
@@ -618,13 +638,13 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 
 	// 操作人取创建者：该授权由创建资源的行为直接触发，并非管理员代为授权。
 	if err := a.v4Cli.AddAuthorizations(kt, opts.Creator, items); err != nil {
-		logs.Errorf("iam v4 grant creator action failed, creator: %s, app: %s, biz: %s, "+
-			"err: %v, rid: %s", opts.Creator, opts.ID, bizID, err, kt.Rid)
+		logs.Errorf("iam v4 grant creator action failed, creator: %s, type: %s, id: %s, "+
+			"biz: %s, err: %v, rid: %s", opts.Creator, opts.Type, opts.ID, bizID, err, kt.Rid)
 		return err
 	}
 
-	logs.Infof("iam v4 granted %s to creator %s on app %s and biz %s, rid: %s",
-		model.RoleAppOperator, opts.Creator, opts.ID, bizID, kt.Rid)
+	logs.Infof("iam v4 granted %s to creator %s on %s %s and biz %s, rid: %s",
+		roleID, opts.Creator, resourceTypeID, opts.ID, bizID, kt.Rid)
 
 	return nil
 }

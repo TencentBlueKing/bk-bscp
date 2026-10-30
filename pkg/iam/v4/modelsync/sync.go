@@ -152,6 +152,76 @@ func (s *Syncer) Plan(kt *kit.Kit) (*Plan, error) {
 	return plan, nil
 }
 
+// PlanDeleteAll 把线上全部模型元素列为删除，不与本地定义比较。
+//
+// Plan 只找出本地已移除的元素，而资源类型的祖先链、操作关联的资源类型不支持更新，
+// 这类字段要变更只能先整体清空再重建，因此需要这个不比较差异的计划。
+// 系统本身不删：回调地址与 clients 白名单必须保留，否则重建期间鉴权全部不可用。
+func (s *Syncer) PlanDeleteAll(kt *kit.Kit) (*Plan, error) {
+	if _, err := s.gw.GetSystem(kt); err != nil {
+		if client.IsNotFound(err) {
+			return nil, errors.Errorf("权限中心未注册 %s 系统，无需清理", s.system.ID)
+		}
+
+		return nil, errors.Wrap(err, "get online system")
+	}
+
+	roles, err := s.listAllRoles(kt)
+	if err != nil {
+		return nil, errors.Wrap(err, "list online roles")
+	}
+
+	actions, err := s.listAllActions(kt)
+	if err != nil {
+		return nil, errors.Wrap(err, "list online actions")
+	}
+
+	types, err := s.listAllResourceTypes(kt)
+	if err != nil {
+		return nil, errors.Wrap(err, "list online resource types")
+	}
+
+	plan := new(Plan)
+
+	roleIDs := make([]string, 0, len(roles))
+	for _, r := range roles {
+		roleIDs = append(roleIDs, r.ID)
+	}
+	plan.DeleteRoles = uniqueIDs(roleIDs)
+
+	actionIDs := make([]string, 0, len(actions))
+	for _, a := range actions {
+		actionIDs = append(actionIDs, a.ID)
+	}
+	plan.DeleteActions = uniqueIDs(actionIDs)
+
+	typeIDs := make([]string, 0, len(types))
+	for _, t := range types {
+		typeIDs = append(typeIDs, t.ID)
+	}
+	plan.DeleteResourceTypes = uniqueIDs(typeIDs)
+
+	return plan, nil
+}
+
+// uniqueIDs 去重并排序。权限中心可能对同一 ID 返回多条记录（重复注册残留），
+// 重复的 ID 会让删除请求失败。
+func uniqueIDs(ids []string) []string {
+	seen := make(map[string]struct{}, len(ids))
+	result := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
 // diffSystem 比较系统本身，返回系统当前是否已注册。
 func (s *Syncer) diffSystem(kt *kit.Kit, plan *Plan) (bool, error) {
 	online, err := s.gw.GetSystem(kt)

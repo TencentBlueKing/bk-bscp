@@ -89,7 +89,9 @@ func (c *decisionCache) set(key string, allowed bool) {
 
 // cacheKey 构造缓存键。
 // 必须包含租户：多租户下同名用户属于不同租户，混用会导致跨租户的权限泄漏。
-// 资源类型与实例 ID 都要带上，因为 IAM V4 的判定结果是绑定到具体资源实例的。
+// 资源类型与实例 ID 都要带上，因为 IAM V4 的判定结果是绑定到具体资源实例的；
+// 归属（项目/环境）也要带上，资源被移动到其他环境后旧路径上的判定不能继续命中。
 func cacheKey(tenantID, user string, m *adaptor.Mapped) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s", tenantID, user, m.ActionID, m.ResourceType, m.ResourceID)
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s", tenantID, user,
+		m.ActionID, m.ResourceType, m.ResourceID, m.ProjectID, m.EnvironmentID)
 }

@@ -39,6 +39,10 @@ const (
 	Business      client.TypeID = "biz"
 	Application   client.TypeID = "app"
 	AppCredential client.TypeID = "app_credential" //nolint:gosec
+	// Project 项目，父级为业务。
+	Project client.TypeID = "project"
+	// Environment 环境，父级为项目。
+	Environment client.TypeID = "environment"
 )
 
 // ActionID action id to register iam.
@@ -96,6 +100,24 @@ const (
 	CredentialManage client.ActionID = "app_credential_manage" //nolint:gosec
 	// AuditView 审计查看
 	AuditView client.ActionID = "audit_view"
+	// ProjectCreate 项目创建
+	ProjectCreate client.ActionID = "project_create"
+	// ProjectView 项目查看
+	ProjectView client.ActionID = "project_view"
+	// ProjectEdit 项目编辑
+	ProjectEdit client.ActionID = "project_edit"
+	// ProjectDelete 项目删除
+	ProjectDelete client.ActionID = "project_delete"
+
+	// EnvironmentCreate 环境创建
+	EnvironmentCreate client.ActionID = "environment_create"
+	// EnvironmentView 环境查看
+	EnvironmentView client.ActionID = "environment_view"
+	// EnvironmentEdit 环境编辑
+	EnvironmentEdit client.ActionID = "environment_edit"
+	// EnvironmentDelete 环境删除
+	EnvironmentDelete client.ActionID = "environment_delete"
+
 	// ProcConfigMgmtView 进程配置管理查看
 	ProcConfigMgmtView   client.ActionID = "proc_config_mgmt_view"
 	ProcessOperate       client.ActionID = "process_operate"
@@ -136,6 +158,16 @@ var ActionIDNameMap = map[client.ActionID]string{
 	CredentialManage: "服务秘钥管理",
 	AuditView:        "操作记录查看",
 
+	ProjectCreate: "项目创建",
+	ProjectView:   "项目查看",
+	ProjectEdit:   "项目编辑",
+	ProjectDelete: "项目删除",
+
+	EnvironmentCreate: "环境创建",
+	EnvironmentView:   "环境查看",
+	EnvironmentEdit:   "环境编辑",
+	EnvironmentDelete: "环境删除",
+
 	ProcConfigMgmtView:   "进程配置管理查看",
 	ProcessOperate:       "进程操作",
 	ConfigTemplateCreate: "配置模板创建",
@@ -149,6 +181,8 @@ var ActionIDNameMap = map[client.ActionID]string{
 const (
 	BusinessSelection    client.InstanceSelectionID = "business"
 	ApplicationSelection client.InstanceSelectionID = "application"
+	ProjectSelection     client.InstanceSelectionID = "project"
+	EnvironmentSelection client.InstanceSelectionID = "environment"
 )
 
 // ActionType action type to register iam.

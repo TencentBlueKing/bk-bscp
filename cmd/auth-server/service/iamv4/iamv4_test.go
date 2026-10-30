@@ -283,11 +283,25 @@ func TestListAppInstancesRequiresParent(t *testing.T) {
 	i := newTestIAM(t, &fakeApps{}, &fakeSpaces{})
 
 	_, err := i.listAppInstances(testKit(), Filter{}, Page{})
-	require.ErrorContains(t, err, "requires a biz parent")
+	require.ErrorContains(t, err, "requires a parent")
 
 	_, err = i.listAppInstances(testKit(),
 		Filter{Parent: &Parent{Type: model.ResourceTypeApp, ID: "1"}}, Page{})
 	require.ErrorContains(t, err, "unexpected parent type")
+}
+
+// 展示层级可能配置在业务或项目上，权限中心会按对应 parent 回调，不能报错。
+func TestListAppInstancesAcceptsUpperParents(t *testing.T) {
+	for _, parentType := range []string{model.ResourceTypeBiz, model.ResourceTypeProject,
+		model.ResourceTypeEnvironment} {
+		apps := &fakeApps{}
+		i := newTestIAM(t, apps, &fakeSpaces{})
+
+		_, err := i.listAppInstances(testKit(),
+			Filter{Parent: &Parent{Type: parentType, ID: "1"}}, Page{})
+		require.NoError(t, err, "parent type %s", parentType)
+		require.Equal(t, parentType, apps.lastListReq.ParentType)
+	}
 }
 
 // 无关键字时分页应下推给 data-service，不在内存里做。
@@ -300,15 +314,15 @@ func TestListAppInstancesPushesDownPaging(t *testing.T) {
 	i := newTestIAM(t, apps, &fakeSpaces{})
 
 	got, err := i.listAppInstances(testKit(),
-		Filter{Parent: &Parent{Type: model.ResourceTypeBiz, ID: "100001"}},
+		Filter{Parent: &Parent{Type: model.ResourceTypeEnvironment, ID: "50001"}},
 		Page{Page: 2, PageSize: 2})
 	require.NoError(t, err)
 
 	require.Equal(t, uint32(2), apps.lastListReq.Page.Start)
 	require.Equal(t, uint32(2), apps.lastListReq.Page.Limit)
 	require.Equal(t, model.ResourceTypeApp, apps.lastListReq.ResourceType)
-	require.Equal(t, model.ResourceTypeBiz, apps.lastListReq.ParentType)
-	require.Equal(t, "100001", apps.lastListReq.ParentId)
+	require.Equal(t, model.ResourceTypeEnvironment, apps.lastListReq.ParentType)
+	require.Equal(t, "50001", apps.lastListReq.ParentId)
 	require.Equal(t, 3, got.Count)
 	require.Len(t, got.Results, 1)
 }
@@ -323,7 +337,7 @@ func TestListAppInstancesKeyword(t *testing.T) {
 	i := newTestIAM(t, apps, &fakeSpaces{})
 
 	got, err := i.listAppInstances(testKit(),
-		Filter{Parent: &Parent{Type: model.ResourceTypeBiz, ID: "100001"}, Keyword: "配置中心"},
+		Filter{Parent: &Parent{Type: model.ResourceTypeEnvironment, ID: "50001"}, Keyword: "配置中心"},
 		Page{Page: 1, PageSize: 10})
 	require.NoError(t, err)
 
@@ -347,7 +361,7 @@ func TestListAppInstancesKeywordPushesDownPaging(t *testing.T) {
 	i := newTestIAM(t, apps, &fakeSpaces{})
 
 	got, err := i.listAppInstances(testKit(),
-		Filter{Parent: &Parent{Type: model.ResourceTypeBiz, ID: "100001"}, Keyword: "配置中心"},
+		Filter{Parent: &Parent{Type: model.ResourceTypeEnvironment, ID: "50001"}, Keyword: "配置中心"},
 		Page{Page: 2, PageSize: 2})
 	require.NoError(t, err)
 
@@ -369,7 +383,7 @@ func TestListAppInstancesKeywordByID(t *testing.T) {
 	i := newTestIAM(t, apps, &fakeSpaces{})
 
 	got, err := i.listAppInstances(testKit(),
-		Filter{Parent: &Parent{Type: model.ResourceTypeBiz, ID: "100001"}, Keyword: "30002"},
+		Filter{Parent: &Parent{Type: model.ResourceTypeEnvironment, ID: "50001"}, Keyword: "30002"},
 		Page{Page: 1, PageSize: 10})
 	require.NoError(t, err)
 
@@ -380,7 +394,12 @@ func TestListAppInstancesKeywordByID(t *testing.T) {
 
 func TestFetchAppInstanceInfo(t *testing.T) {
 	apps := &fakeApps{details: []*pbds.InstanceInfo{
-		{Id: "30001", DisplayName: "主服务", Path: []string{"/biz,100001/"}, Approver: []string{"alice"}},
+		{
+			Id:          "30001",
+			DisplayName: "主服务",
+			Path:        []string{"/biz,100001/project,40001/environment,50001/"},
+			Approver:    []string{"alice"},
+		},
 	}}
 	i := newTestIAM(t, apps, &fakeSpaces{})
 
@@ -397,7 +416,7 @@ func TestFetchAppInstanceInfo(t *testing.T) {
 	require.Equal(t, "30001", infos[0]["id"])
 	require.Equal(t, "主服务", infos[0][AttrDisplayName])
 	// V3 返回数组，V4 只接受单个字符串
-	require.Equal(t, "/biz,100001/", infos[0][AttrIAMPath])
+	require.Equal(t, "/biz,100001/project,40001/environment,50001/", infos[0][AttrIAMPath])
 	require.NotContains(t, infos[0], AttrIAMApprovers)
 }
 
@@ -419,4 +438,127 @@ func TestPageNormalize(t *testing.T) {
 		Page{Page: -1, PageSize: MaxPageSize + 1}.normalize())
 	require.Equal(t, Page{Page: 3, PageSize: 20}, Page{Page: 3, PageSize: 20}.normalize())
 	require.Equal(t, 40, Page{Page: 3, PageSize: 20}.offset())
+}
+
+// 项目是环境的授权维度，权限中心必须按业务维度拉取项目，缺父级或父级不是业务都视为非法请求。
+func TestListProjectInstancesRequiresBizParent(t *testing.T) {
+	i := newTestIAM(t, &fakeApps{}, &fakeSpaces{})
+
+	_, err := i.listProjectInstances(testKit(), Filter{}, Page{})
+	require.ErrorContains(t, err, "requires a biz parent")
+
+	_, err = i.listProjectInstances(testKit(),
+		Filter{Parent: &Parent{Type: model.ResourceTypeApp, ID: "1"}}, Page{})
+	require.ErrorContains(t, err, "unexpected parent type")
+}
+
+func TestListProjectInstances(t *testing.T) {
+	apps := &fakeApps{instances: []*pbds.InstanceResource{
+		{Id: "40001", Name: "默认项目"},
+		{Id: "40002", Name: "电商项目"},
+	}}
+	i := newTestIAM(t, apps, &fakeSpaces{})
+
+	got, err := i.PullResource(testKit(), &PullResourceReq{
+		Type:   model.ResourceTypeProject,
+		Method: MethodListInstance,
+		Filter: Filter{Parent: &Parent{Type: model.ResourceTypeBiz, ID: "100001"}},
+		Page:   Page{Page: 1, PageSize: 10},
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, model.ResourceTypeProject, apps.lastListReq.ResourceType)
+	require.Equal(t, model.ResourceTypeBiz, apps.lastListReq.ParentType)
+	require.Equal(t, "100001", apps.lastListReq.ParentId)
+
+	result := got.(*ListInstanceResult)
+	require.Equal(t, 2, result.Count)
+	require.Equal(t, InstanceBrief{ID: "40001", DisplayName: "默认项目"}, result.Results[0])
+}
+
+// 环境挂在项目下，权限中心必须按项目维度拉取环境，缺父级或父级不是项目都视为非法请求。
+func TestListEnvironmentInstancesRequiresProjectParent(t *testing.T) {
+	i := newTestIAM(t, &fakeApps{}, &fakeSpaces{})
+
+	_, err := i.listEnvironmentInstances(testKit(), Filter{}, Page{})
+	require.ErrorContains(t, err, "requires a project parent")
+
+	_, err = i.listEnvironmentInstances(testKit(),
+		Filter{Parent: &Parent{Type: model.ResourceTypeBiz, ID: "100001"}}, Page{})
+	require.ErrorContains(t, err, "unexpected parent type")
+}
+
+func TestListEnvironmentInstances(t *testing.T) {
+	apps := &fakeApps{instances: []*pbds.InstanceResource{
+		{Id: "50001", Name: "生产环境"},
+		{Id: "50002", Name: "测试环境"},
+	}}
+	i := newTestIAM(t, apps, &fakeSpaces{})
+
+	got, err := i.PullResource(testKit(), &PullResourceReq{
+		Type:   model.ResourceTypeEnvironment,
+		Method: MethodListInstance,
+		Filter: Filter{Parent: &Parent{Type: model.ResourceTypeProject, ID: "40001"}},
+		Page:   Page{Page: 1, PageSize: 10},
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, model.ResourceTypeEnvironment, apps.lastListReq.ResourceType)
+	require.Equal(t, model.ResourceTypeProject, apps.lastListReq.ParentType)
+	require.Equal(t, "40001", apps.lastListReq.ParentId)
+
+	result := got.(*ListInstanceResult)
+	require.Equal(t, 2, result.Count)
+	require.Equal(t, InstanceBrief{ID: "50001", DisplayName: "生产环境"}, result.Results[0])
+}
+
+// 环境的拓扑路径是 /biz,{bizID}/project,{projectID}/，
+// 按业务或项目授权的用户据此覆盖到项目下所有环境。
+func TestFetchEnvironmentInstanceInfoCarriesProjectPath(t *testing.T) {
+	apps := &fakeApps{details: []*pbds.InstanceInfo{
+		{
+			Id:          "50001",
+			DisplayName: "生产环境",
+			Path:        []string{"/biz,100001/project,40001/"},
+			Approver:    []string{"alice"},
+		},
+	}}
+	i := newTestIAM(t, apps, &fakeSpaces{})
+
+	got, err := i.PullResource(testKit(), &PullResourceReq{
+		Type:     model.ResourceTypeEnvironment,
+		Method:   MethodFetchInstanceInfo,
+		Filter:   Filter{IDs: []string{"50001"}},
+		Requires: []string{AttrDisplayName, AttrIAMPath, AttrIAMApprovers},
+	})
+	require.NoError(t, err)
+
+	infos := got.([]instanceInfo)
+	require.Len(t, infos, 1)
+	require.Equal(t, "50001", infos[0]["id"])
+	require.Equal(t, "生产环境", infos[0][AttrDisplayName])
+	require.Equal(t, "/biz,100001/project,40001/", infos[0][AttrIAMPath])
+	require.Equal(t, []string{"alice"}, infos[0][AttrIAMApprovers])
+}
+
+// 项目的拓扑路径是 /biz,{bizID}/，按业务授权的用户据此覆盖到业务下所有项目及其环境。
+func TestFetchProjectInstanceInfoCarriesBizPath(t *testing.T) {
+	apps := &fakeApps{details: []*pbds.InstanceInfo{
+		{Id: "40001", DisplayName: "默认项目", Path: []string{"/biz,100001/"}, Approver: []string{}},
+	}}
+	i := newTestIAM(t, apps, &fakeSpaces{})
+
+	got, err := i.PullResource(testKit(), &PullResourceReq{
+		Type:     model.ResourceTypeProject,
+		Method:   MethodFetchInstanceInfo,
+		Filter:   Filter{IDs: []string{"40001"}},
+		Requires: []string{AttrDisplayName, AttrIAMPath},
+	})
+	require.NoError(t, err)
+
+	infos := got.([]instanceInfo)
+	require.Len(t, infos, 1)
+	require.Equal(t, "40001", infos[0]["id"])
+	require.Equal(t, "默认项目", infos[0][AttrDisplayName])
+	require.Equal(t, "/biz,100001/", infos[0][AttrIAMPath])
 }

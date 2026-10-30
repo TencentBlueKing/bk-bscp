@@ -76,6 +76,73 @@ var migratePruneIAMV4Cmd = &cobra.Command{
 	},
 }
 
+// deleteIAMV4Yes 跳过 delete-iam-v4 的交互确认，供流水线与无人值守场景使用。
+var deleteIAMV4Yes bool
+
+var migrateDeleteIAMV4Cmd = &cobra.Command{
+	Use:   "delete-iam-v4",
+	Short: "Delete all IAM V4 model elements of this system",
+	Long: "清空权限中心 V4 中当前系统的权限模型，不做任何差异比较：\n" +
+		"1. 删除全部角色；\n" +
+		"2. 删除全部操作；\n" +
+		"3. 删除全部资源类型。\n" +
+		"删除顺序遵循依赖关系，角色下的全部授权会一并失效且无法恢复。\n" +
+		"系统本身保留，回调地址与 clients 白名单不受影响。\n" +
+		"资源类型的祖先链、操作关联的资源类型不支持更新，需要变更时用该命令清空，" +
+		"随后必须执行 migrate init-iam-v4 重建模型。",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := runIAMV4DeleteAll(); err != nil {
+			fmt.Println("清空 IAM V4 模型失败:", err)
+			os.Exit(1)
+		}
+	},
+}
+
+// runIAMV4DeleteAll 清空线上 V4 模型，供 init-iam-v4 全量重建。
+func runIAMV4DeleteAll() error {
+	syncer, err := prepareIAMV4()
+	if err != nil {
+		return err
+	}
+
+	kt := newIAMV4Kit()
+
+	plan, err := syncer.PlanDeleteAll(kt)
+	if err != nil {
+		return err
+	}
+
+	if !plan.HasDeletions() {
+		fmt.Println("线上没有可删除的元素")
+
+		return nil
+	}
+
+	fmt.Println("待删除的元素：")
+	fmt.Print(plan)
+
+	if !deleteIAMV4Yes {
+		if confirmErr := confirmPrompt("\n该操作不可恢复，清空后需执行 migrate init-iam-v4 重建。输入 yes 继续："); confirmErr != nil {
+			return confirmErr
+		}
+	}
+
+	if err := syncer.Apply(kt, plan, modelsync.ApplyOption{
+		AllowDelete: true,
+		Logf: func(format string, args ...interface{}) {
+			fmt.Printf("  "+format+"\n", args...)
+		},
+	}); err != nil {
+		return err
+	}
+
+	fmt.Printf("删除完成：角色 %d 个、操作 %d 个、资源类型 %d 个\n",
+		len(plan.DeleteRoles), len(plan.DeleteActions), len(plan.DeleteResourceTypes))
+	fmt.Println("请执行 migrate init-iam-v4 按本地定义重建模型")
+
+	return nil
+}
+
 // runIAMV4Diff 对比本地模型与 IAM V4 线上状态
 func runIAMV4Diff() error {
 	syncer, err := prepareIAMV4()
@@ -251,11 +318,14 @@ func checkIAMV4Settings(settings cc.IAMV4) error {
 
 func init() {
 	for _, sub := range []*cobra.Command{
-		migrateInitIAMV4Cmd, migrateDiffIAMV4Cmd, migratePruneIAMV4Cmd,
+		migrateInitIAMV4Cmd, migrateDiffIAMV4Cmd, migratePruneIAMV4Cmd, migrateDeleteIAMV4Cmd,
 	} {
 		sub.Flags().StringVar(&iamV4TenantID, "tenant-id", "",
 			"the tenant id carried in the X-Bk-Tenant-Id header when requesting bkiam, "+
 				"defaults to system in multi-tenant mode, otherwise default")
 		migrateCmd.AddCommand(sub)
 	}
+
+	migrateDeleteIAMV4Cmd.Flags().BoolVar(&deleteIAMV4Yes, "yes", false,
+		"skip the interactive confirmation, for non-interactive environments")
 }

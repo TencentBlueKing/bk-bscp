@@ -6,7 +6,7 @@
 
 - 调用方均为 `auth-server`：常驻服务用 4 个接口，`migrate` 子命令用 19 个模型管理接口，共 **23 个**。
 - 常驻服务的那 4 个接口仅在配置 `iam.version: v4` 时生效，v3 模式下网关客户端为 nil，不会产生任何调用。
-- `migrate` 的三个 `*-iam-v4` 子命令与版本开关无关：它们只校验 `iam.v4` 配置是否齐全，从不读 `iam.version`。因此「仍运行 v3、但已预置 V4 配置以便切换前先注册模型」这一常规切换路径下，这 19 个接口照样会被真实调用，网关权限必须在此之前就申请到位。
+- `migrate` 的四个 `*-iam-v4` 子命令与版本开关无关：它们只校验 `iam.v4` 配置是否齐全，从不读 `iam.version`。因此「仍运行 v3、但已预置 V4 配置以便切换前先注册模型」这一常规切换路径下，这 19 个接口照样会被真实调用，网关权限必须在此之前就申请到位。
 - 权限中心回调 BSCP 拉取资源实例是反向调用（IAM → BSCP），不需要申请网关权限，因此不在本文范围内。
 
 调用凭证取 `iam.v4.app_code` / `iam.v4.app_secret`，未单独配置时回退到外层 `iam.appCode` / `iam.appSecret`。除网关权限外，权限中心侧接入系统的 `clients` 白名单必须包含该 `app_code`，否则即使网关放行，IAM 应用层仍会拒绝。
@@ -50,7 +50,7 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 
 ## 二、模型同步接口（19 个）
 
-仅由 `auth-server migrate init-iam-v4` / `diff-iam-v4` / `prune-iam-v4` 三个 CLI 子命令调用，常驻服务不涉及。同步内容为 2 个资源类型（`biz`、`app`）、17 个操作、9 个角色，定义在 `pkg/iam/v4/model/model.go`。
+仅由 `auth-server migrate init-iam-v4` / `diff-iam-v4` / `prune-iam-v4` / `delete-iam-v4` 调用，常驻服务不涉及。同步内容为 4 个资源类型（`biz` → `project` → `environment` → `app`）、25 个操作、13 个角色，定义在 `pkg/iam/v4/model/model.go`。资源类型的祖先链与操作的关联资源类型不可更新，需要变更时由 `delete-iam-v4` 清空后重建。
 
 ### 系统
 
@@ -83,7 +83,9 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 | 角色内操作：批量添加 | `batch_create_role_action` | `POST /roles/{role_id}/actions/` |
 | 角色内操作：批量移除 | `batch_delete_role_action` | `DELETE /roles/{role_id}/actions/?ids=a,b` |
 
-`delete_resource_type`、`delete_action`、`delete_role` 只有 `prune-iam-v4` 且人工输入 `yes` 后才会调用；`init-iam-v4` 只做新增与更新。删除角色会使该角色下全部授权失效，删除操作会让引用它的角色失去该权限，均不可逆。
+`delete_resource_type`、`delete_action`、`delete_role` 只有两个子命令会调用：`prune-iam-v4` 只删线上存在、本地定义已移除的元素；`delete-iam-v4` 不比较差异，把线上全部角色、操作、资源类型一并删掉。两者都必须人工确认后才执行（`prune-iam-v4` 必须交互输入 `yes`，`delete-iam-v4` 可加 `--yes` 跳过交互）。`init-iam-v4` 只做新增与更新。删除角色会使该角色下全部授权失效，删除操作会让引用它的角色失去该权限，均不可逆。
+
+两个删除命令的适用场景不同：本地只是删掉了几项定义时用 `prune-iam-v4`；要改资源类型的祖先链、操作关联的资源类型这类不支持更新的字段时，`prune-iam-v4` 处理不了（`init-iam-v4` / `diff-iam-v4` 只会报冲突），必须先 `delete-iam-v4` 清空再 `init-iam-v4` 重建。`delete-iam-v4` 保留系统本身，回调地址与 `clients` 白名单不受影响，但清空到重建之间线上没有任何操作与角色，鉴权会全部失败，因此必须在同一维护窗口内完成重建。
 
 `batch_delete_role_action` 走 query 参数 `ids` 传逗号连接的操作 ID，而非请求体，与添加接口的形态不同。
 

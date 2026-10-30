@@ -527,6 +527,10 @@ func (s *Service) isValidGrayPercentValue(value interface{}) bool {
 	case int:
 		// int类型
 		percent = float64(v)
+	case float64:
+		percent = v
+	case float32:
+		percent = float64(v)
 	case string:
 		percent, err = strconv.ParseFloat(v, 64)
 		if err != nil {
