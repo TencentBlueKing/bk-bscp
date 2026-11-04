@@ -50,6 +50,9 @@ const (
 	PushConfigStepName istep.StepName = "PushConfig"
 	// ReleaseConfigStepName release config step name
 	ReleaseConfigStepName istep.StepName = "ReleaseConfig"
+	// ConfigStaggerDelayStepName 同主机配置下发任务错峰延迟步骤名
+	// （与进程操作的 StaggerDelay 区分，istep.Register 为全局注册表，步骤名不能重复）
+	ConfigStaggerDelayStepName istep.StepName = "ConfigStaggerDelay"
 )
 
 // CallbackName push config callback name
@@ -87,6 +90,28 @@ type PushConfigPayload struct {
 	OperateType  table.ConfigOperateType
 	OperatorUser string
 	Payload      *common.TaskPayload // 配置生成任务 payload
+	// StaggerSeconds 错峰延迟秒数：同主机内第 N 个下发的任务延迟 N*间隔秒再执行，0 表示不延迟
+	StaggerSeconds int
+}
+
+// StaggerDelay 同主机配置下发任务错峰延迟：同主机内第 N 个下发的任务先等待 N*间隔秒
+// 再执行后续步骤，用于规避同机多实例并发写配置 / 重载互相干扰
+func (e *PushConfigExecutor) StaggerDelay(c *istep.Context) error {
+	payload := &PushConfigPayload{}
+	if err := c.GetPayload(payload); err != nil {
+		return fmt.Errorf("[ConfigStaggerDelay STEP]: get payload failed: %w", err)
+	}
+	if payload.StaggerSeconds <= 0 {
+		return nil
+	}
+	logs.Infof("[ConfigStaggerDelay STEP]: sleeping %d(s), bizID: %d, batchID: %d",
+		payload.StaggerSeconds, payload.BizID, payload.BatchID)
+	select {
+	case <-time.After(time.Duration(payload.StaggerSeconds) * time.Second):
+		return nil
+	case <-c.Context().Done():
+		return fmt.Errorf("[ConfigStaggerDelay STEP]: canceled while staggering: %w", c.Context().Err())
+	}
 }
 
 // ValidatePushConfig implements istep.Step.
@@ -295,6 +320,8 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 func RegisterPushConfigExecutor(e *PushConfigExecutor) {
 	istep.Register(ValidatePushConfigStepName, istep.StepExecutorFunc(e.ValidatePushConfig))
 	istep.Register(ReleaseConfigStepName, istep.StepExecutorFunc(e.ReleaseConfig))
+	// 注册同主机配置下发错峰延迟步骤
+	istep.Register(ConfigStaggerDelayStepName, istep.StepExecutorFunc(e.StaggerDelay))
 	istep.RegisterCallback(CallbackName, istep.CallbackExecutorFunc(e.Callback))
 }
 

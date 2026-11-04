@@ -167,3 +167,78 @@ func TestBuildStagesAssignsContiguousSeq(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildStagesStaggerIndex(t *testing.T) {
+	t.Parallel()
+
+	// 同优先级、同主机的 4 个实例任务，主机内序号应为 0/1/2/3（错峰延迟的基数）
+	plan := BuildStages([]TaskItem{
+		{TaskID: "i4", Priority: 1, OpType: table.StopProcessOperate, HostKey: "h1"},
+		{TaskID: "i3", Priority: 1, OpType: table.StopProcessOperate, HostKey: "h1"},
+		{TaskID: "i2", Priority: 1, OpType: table.StopProcessOperate, HostKey: "h1"},
+		{TaskID: "i1", Priority: 1, OpType: table.StopProcessOperate, HostKey: "h1"},
+	})
+
+	for i, id := range []string{"i4", "i3", "i2", "i1"} {
+		if got := plan.StaggerIndex(id); got != i {
+			t.Fatalf("任务 %s 阶段内序号不符, got %d want %d", id, got, i)
+		}
+	}
+
+	// 同优先级、不同主机的任务各自独立从 0 计数，互不影响
+	plan2 := BuildStages([]TaskItem{
+		{TaskID: "h1-a", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "h2-a", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h2"},
+		{TaskID: "h1-b", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "h2-b", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h2"},
+	})
+	want := map[string]int{"h1-a": 0, "h1-b": 1, "h2-a": 0, "h2-b": 1}
+	for id, wantIdx := range want {
+		if got := plan2.StaggerIndex(id); got != wantIdx {
+			t.Fatalf("任务 %s 主机内序号不符, got %d want %d", id, got, wantIdx)
+		}
+	}
+
+	// 不同优先级分属不同阶段，各自独立从 0 计数
+	plan3 := BuildStages([]TaskItem{
+		{TaskID: "a", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "b", Priority: 2, OpType: table.StartProcessOperate, HostKey: "h1"},
+	})
+	if plan3.StaggerIndex("a") != 0 || plan3.StaggerIndex("b") != 0 {
+		t.Fatalf("不同阶段任务序号应各自从 0 计数: %v", plan3.StaggerIndexOf)
+	}
+}
+
+// TestBuildStagesPerHostStaggerMixedProcesses 同主机同优先级下不同进程的实例合并计数错峰；
+// 启动（升序）与停止（降序）两个编排方向下，主机内序号语义一致。
+func TestBuildStagesPerHostStaggerMixedProcesses(t *testing.T) {
+	t.Parallel()
+
+	// 同主机 h1 上 nginx-1 / mysql-1 两个进程的 4 个实例合并计数，另一台主机独立从 0 起算
+	plan := BuildStages([]TaskItem{
+		{TaskID: "nginx-A", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "mysql-B", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "nginx-C", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "mysql-D", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h1"},
+		{TaskID: "other-A", Priority: 1, OpType: table.StartProcessOperate, HostKey: "h2"},
+	})
+	want := map[string]int{"nginx-A": 0, "mysql-B": 1, "nginx-C": 2, "mysql-D": 3, "other-A": 0}
+	for id, wantIdx := range want {
+		if got := plan.StaggerIndex(id); got != wantIdx {
+			t.Fatalf("任务 %s 主机内序号不符, got %d want %d", id, got, wantIdx)
+		}
+	}
+
+	// 停止操作按优先级降序分阶段，主机内计数语义不变：跨阶段重置，同阶段内递增
+	stopPlan := BuildStages([]TaskItem{
+		{TaskID: "s1", Priority: 1, OpType: table.StopProcessOperate, HostKey: "h1"},
+		{TaskID: "s2", Priority: 1, OpType: table.StopProcessOperate, HostKey: "h1"},
+		{TaskID: "s3", Priority: 2, OpType: table.StopProcessOperate, HostKey: "h1"},
+	})
+	if stopPlan.StaggerIndex("s1") != 0 || stopPlan.StaggerIndex("s2") != 1 {
+		t.Fatalf("同阶段同主机停止任务应递增计数: %v", stopPlan.StaggerIndexOf)
+	}
+	if stopPlan.StaggerIndex("s3") != 0 {
+		t.Fatalf("下一阶段的同主机任务应重新从 0 计数: %v", stopPlan.StaggerIndexOf)
+	}
+}

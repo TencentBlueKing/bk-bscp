@@ -23,6 +23,19 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
+// StaggerDelayPushConfig 同主机配置下发错峰延迟步骤
+// 间隔秒数由下发侧按下发序号写入任务，构建时为 0（执行时直接通过）
+func StaggerDelayPushConfig() *types.Step {
+	stf := cc.G().TaskFramework.ConfigPush.StaggerDelay
+	delay := types.NewStep(config.ConfigStaggerDelayStepName.String(), config.ConfigStaggerDelayStepName.String()).
+		SetAlias("config_stagger_delay").
+		SetMaxExecution(stf.MaxExecution).
+		SetMaxTries(stf.MaxRetries)
+
+	lo.Must0(delay.SetPayload(config.PushConfigPayload{}))
+	return delay
+}
+
 // ValidatePushConfig 验证配置下发步骤
 func ValidatePushConfig(
 	tenantID string,

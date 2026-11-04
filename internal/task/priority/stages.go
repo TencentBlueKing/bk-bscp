@@ -33,6 +33,9 @@ type TaskItem struct {
 	TaskID   string
 	Priority int
 	OpType   table.ProcessOperateType
+	// HostKey 主机标识（bk_host_id），同阶段内同主机任务据此错峰延迟；
+	// 不同主机的任务序号各自独立计数，互不影响
+	HostKey string
 }
 
 // StagePlan 一次进程操作请求的阶段编排结果
@@ -41,6 +44,16 @@ type StagePlan struct {
 	Stages []*taskTypes.Stage
 	// StageSeqOf 任务与阶段的归属关系
 	StageSeqOf map[string]int
+	// StaggerIndexOf 任务在所属阶段内、同主机分组中的序号（0 起），用于同主机任务错峰下发
+	StaggerIndexOf map[string]int
+}
+
+// StaggerIndex 返回任务在所属阶段内同主机分组中的序号（0 起），未纳入编排时返回 0
+func (p *StagePlan) StaggerIndex(taskID string) int {
+	if p == nil {
+		return 0
+	}
+	return p.StaggerIndexOf[taskID]
 }
 
 // StageSeq 返回任务所属的阶段序号，未纳入编排时返回 0
@@ -53,14 +66,24 @@ func (p *StagePlan) StageSeq(taskID string) int {
 
 // BuildStages 按操作类型与启动优先级把实例任务排成阶段序列。
 //
-// 规则对齐 gsekit:
 //  1. 托管类操作（register / unregister / update_register）不参与优先级编排，
 //     归入首个阶段并且失败不阻断后续，与第一个优先级阶段同时下发；
+//
 //  2. 参与编排的操作按 priority 分组，start / reload / kill 升序，stop / restart 降序；
-//  3. 每个 priority 一个阶段，阶段内并行、阶段之间串行，任一阶段有失败即阻断后续全部阶段。
+//
+//  3. 每个 priority 一个阶段，阶段内并行、阶段之间串行，任一阶段有失败即阻断后续全部阶段；
+//
+//  4. 阶段内同主机（HostKey 相同）的任务按序号错峰延迟，不同主机互不影响。
+//     同主机同优先级下不同进程的实例合并计数，例如同一台机器上 4 个实例（interval=3s）：
+//
+//     任务（同主机同优先级）  主机内序号	 延迟
+//     nginx-1 实例 A			0		   0s
+//     mysql-1 实例 B			1		   3s
+//     nginx-1 实例 C			2		   6s
+//     mysql-1 实例 D			3		   9s
 func BuildStages(items []TaskItem) *StagePlan {
-	immediate := make([]string, 0)
-	groups := make(map[int][]string)
+	immediate := make([]TaskItem, 0)
+	groups := make(map[int][]TaskItem)
 	var order table.PriorityOrder
 	hasOrdered := false
 
@@ -68,7 +91,7 @@ func BuildStages(items []TaskItem) *StagePlan {
 		// 获取操作类型对应的优先级排序方向
 		o, ok := table.ProcessOperatePriorityOrder(item.OpType)
 		if !ok {
-			immediate = append(immediate, item.TaskID)
+			immediate = append(immediate, item)
 			continue
 		}
 		// 同一次请求内的排序方向由首个参与编排的任务决定
@@ -77,13 +100,14 @@ func BuildStages(items []TaskItem) *StagePlan {
 			hasOrdered = true
 		}
 		// 将任务按优先级分组
-		groups[item.Priority] = append(groups[item.Priority], item.TaskID)
+		groups[item.Priority] = append(groups[item.Priority], item)
 	}
 
 	// 创建阶段编排结果
 	plan := &StagePlan{
-		Stages:     make([]*taskTypes.Stage, 0, len(groups)+1),
-		StageSeqOf: make(map[string]int, len(items)),
+		Stages:         make([]*taskTypes.Stage, 0, len(groups)+1),
+		StageSeqOf:     make(map[string]int, len(items)),
+		StaggerIndexOf: make(map[string]int, len(items)),
 	}
 
 	if len(immediate) > 0 {
@@ -106,19 +130,23 @@ func BuildStages(items []TaskItem) *StagePlan {
 	return plan
 }
 
-func (p *StagePlan) appendStage(stage *taskTypes.Stage, taskIDs []string) {
+func (p *StagePlan) appendStage(stage *taskTypes.Stage, items []TaskItem) {
 	stage.Seq = len(p.Stages)
 	stage.Status = taskTypes.StageStatusNotStarted
-	stage.Total = len(taskIDs)
+	stage.Total = len(items)
 	p.Stages = append(p.Stages, stage)
 
-	for _, taskID := range taskIDs {
-		p.StageSeqOf[taskID] = stage.Seq
+	// 阶段内按主机分组独立计数：同主机第 N 个任务延迟 N*interval，不同主机互不影响
+	counters := make(map[string]int, len(items))
+	for _, item := range items {
+		p.StageSeqOf[item.TaskID] = stage.Seq
+		p.StaggerIndexOf[item.TaskID] = counters[item.HostKey]
+		counters[item.HostKey]++
 	}
 }
 
 // sortedPriorities 按操作方向排序优先级取值
-func sortedPriorities(groups map[int][]string, order table.PriorityOrder) []int {
+func sortedPriorities(groups map[int][]TaskItem, order table.PriorityOrder) []int {
 	prios := make([]int, 0, len(groups))
 	for prio := range groups {
 		prios = append(prios, prio)
