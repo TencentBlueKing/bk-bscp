@@ -24,8 +24,13 @@ func (r ResourceType) String() string {
 const (
 	// Biz 业务
 	Biz ResourceType = "biz"
-	// App resource's bscp auth resource type
+	// App 服务，挂在环境下：ResourceID 为服务 ID，
+	// 鉴权路径为 /biz,{bizID}/project,{projectID}/environment,{envID}/
 	App ResourceType = "app"
+	// Project 项目，授权维度为项目实例：ResourceID 为项目 ID
+	Project ResourceType = "project"
+	// Environment 环境，授权维度为环境实例：ResourceID 为环境 ID
+	Environment ResourceType = "environment"
 	// Commit resource's bscp auth resource type
 	Commit ResourceType = "commit"
 	// ConfigItem resource's bscp auth resource type

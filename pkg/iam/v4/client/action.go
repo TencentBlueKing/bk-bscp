@@ -28,8 +28,12 @@ type Action struct {
 }
 
 // UpdateActionReq 更新操作的请求体。
+// 字段为空表示不修改，PUT 时该字段不会发送。
 type UpdateActionReq struct {
 	Name string `json:"name,omitempty"`
+	// ResourceTypeID 关联的资源类型。服务创建这类操作会随授权维度一起调整
+	// （业务 -> 环境），由模型同步原地更新，避免删除重建导致既有授权全部失效。
+	ResourceTypeID string `json:"resource_type_id,omitempty"`
 }
 
 // BatchCreateActions 批量创建操作，返回创建成功的 ID 列表。请求体顶层为数组。

@@ -407,6 +407,8 @@ service Data {
   rpc DeleteEnvironment(DeleteEnvironmentReq) returns (pbbase.EmptyResp) {}
   // 确保业务下的默认项目和默认环境存在，不存在则自动创建
   rpc EnsureDefaultProjectEnv(EnsureDefaultProjectEnvReq) returns (EnsureDefaultProjectEnvResp) {}
+  // 查询业务下的默认项目和默认环境，只读不创建
+  rpc GetDefaultProjectEnv(GetDefaultProjectEnvReq) returns (GetDefaultProjectEnvResp) {}
   // 根据业务和项目查询默认环境 ID
   rpc GetDefaultEnvironment(GetDefaultEnvironmentReq) returns (GetDefaultEnvironmentResp) {}
   // 根据业务ID和项目key查询项目
@@ -3239,4 +3241,15 @@ message GetEnvironmentByNameReq {
   uint32 biz_id = 1;
   uint32 project_id = 2;
   string env_name = 3;
+}
+
+// 查询默认项目和环境的请求参数
+message GetDefaultProjectEnvReq {
+  uint32 biz_id = 1;
+}
+
+// 返回默认项目和环境的 ID，不存在时为 0
+message GetDefaultProjectEnvResp {
+  uint32 project_id = 1;
+  uint32 env_id = 2;
 }

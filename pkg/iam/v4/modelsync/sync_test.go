@@ -43,6 +43,9 @@ type fakeGateway struct {
 	displays map[string][]client.DisplayResourceType
 
 	calls []string
+
+	// ignoreUpdates 模拟权限中心忽略祖先链/关联资源类型的更新（只接受改名）
+	ignoreUpdates bool
 }
 
 func newFakeGateway() *fakeGateway {
@@ -144,8 +147,15 @@ func (f *fakeGateway) UpdateResourceType(_ *kit.Kit, id string,
 
 	f.calls = append(f.calls, "update_resource_type:"+id)
 	for i := range f.types {
-		if f.types[i].ID == id {
+		if f.types[i].ID != id {
+			continue
+		}
+		if req.Name != "" {
 			f.types[i].Name = req.Name
+		}
+		// ignoreUpdates 模拟权限中心只接受改名、忽略祖先链的情况。
+		if len(req.Ancestors) > 0 && !f.ignoreUpdates {
+			f.types[i].Ancestors = append([]string(nil), req.Ancestors...)
 		}
 	}
 
@@ -187,8 +197,14 @@ func (f *fakeGateway) BatchCreateActions(_ *kit.Kit, actions []client.Action) ([
 func (f *fakeGateway) UpdateAction(_ *kit.Kit, id string, req *client.UpdateActionReq) error {
 	f.calls = append(f.calls, "update_action:"+id)
 	for i := range f.actions {
-		if f.actions[i].ID == id {
+		if f.actions[i].ID != id {
+			continue
+		}
+		if req.Name != "" {
 			f.actions[i].Name = req.Name
+		}
+		if req.ResourceTypeID != "" && !f.ignoreUpdates {
+			f.actions[i].ResourceTypeID = req.ResourceTypeID
 		}
 	}
 
@@ -467,16 +483,17 @@ func TestPlanDetectsRenames(t *testing.T) {
 	require.Empty(t, plan.CreateRoles)
 }
 
-// 祖先链与操作关联的资源类型都不可更新，差异必须报冲突而不是静默忽略。
-func TestPlanReportsUnchangeableFieldsAsConflicts(t *testing.T) {
+// 祖先链与操作关联资源类型走原地更新，不能靠删除重建，否则既有授权会全部失效。
+func TestPlanUpdatesTopologyInPlace(t *testing.T) {
 	gw := newFakeGateway().withFullModel()
 	for i := range gw.types {
 		if gw.types[i].ID == model.ResourceTypeApp {
-			gw.types[i].Ancestors = nil
+			gw.types[i].Ancestors = []string{model.ResourceTypeBiz}
+			gw.types[i].Name = "旧服务名"
 		}
 	}
 	for i := range gw.actions {
-		if gw.actions[i].ID == model.ActionAppView {
+		if gw.actions[i].ID == model.ActionAppCreate {
 			gw.actions[i].ResourceTypeID = model.ResourceTypeBiz
 		}
 	}
@@ -485,11 +502,57 @@ func TestPlanReportsUnchangeableFieldsAsConflicts(t *testing.T) {
 	plan, err := s.Plan(testKit())
 	require.NoError(t, err)
 
-	require.Len(t, plan.Conflicts, 2)
+	require.Empty(t, plan.Conflicts)
+	require.Empty(t, plan.DeleteResourceTypes)
+	require.Empty(t, plan.DeleteActions)
+	require.Len(t, plan.UpdateResourceTypeAncestors, 1)
+	require.Equal(t, model.ResourceTypeApp, plan.UpdateResourceTypeAncestors[0].ID)
+	require.Len(t, plan.UpdateActionResourceTypes, 1)
+	require.Equal(t, model.ActionAppCreate, plan.UpdateActionResourceTypes[0].ID)
+	require.Equal(t, model.ResourceTypeEnvironment, plan.UpdateActionResourceTypes[0].To)
 
-	// 有冲突时 Apply 必须拒绝执行，避免只改一半
+	require.NoError(t, s.Apply(testKit(), plan, ApplyOption{}))
+
+	// 祖先链更新已带上名称，同一次变更只发一个请求
+	require.Equal(t, 1, countCalls(gw.calls, "update_resource_type:"+model.ResourceTypeApp))
+	require.Equal(t, 1, countCalls(gw.calls, "update_action:"+model.ActionAppCreate))
+
+	// 施加后再次 Plan 应该没有变更，说明更新确实生效
+	again, err := s.Plan(testKit())
+	require.NoError(t, err)
+	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
+}
+
+func countCalls(calls []string, target string) int {
+	var count int
+	for _, c := range calls {
+		if c == target {
+			count++
+		}
+	}
+
+	return count
+}
+
+// 权限中心若忽略这两个字段，更新请求也会成功；必须回读校验并让命令失败，
+// 否则会出现「模型显示已对齐、实际按旧拓扑鉴权」的静默错误。
+func TestApplyFailsWhenGatewayIgnoresTopologyUpdates(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	gw.ignoreUpdates = true
+	for i := range gw.types {
+		if gw.types[i].ID == model.ResourceTypeApp {
+			gw.types[i].Ancestors = []string{model.ResourceTypeBiz}
+		}
+	}
+
+	s := mustSyncer(t, gw)
+	plan, err := s.Plan(testKit())
+	require.NoError(t, err)
+	require.Len(t, plan.UpdateResourceTypeAncestors, 1)
+
 	err = s.Apply(testKit(), plan, ApplyOption{})
-	require.ErrorContains(t, err, "人工处理")
+	require.ErrorContains(t, err, "delete-iam-v4")
+	require.ErrorContains(t, err, model.ResourceTypeApp)
 }
 
 // 角色内操作的增删要能识别，且换了授权维度视为重建。
@@ -601,6 +664,55 @@ func TestApplyDeletesInDependencyOrder(t *testing.T) {
 	after, err := s.Plan(kt)
 	require.NoError(t, err)
 	require.False(t, after.HasChanges())
+}
+
+// delete-iam-v4 走的是不比较差异的计划：本地定义仍然存在，但线上元素必须全部列为删除。
+func TestPlanDeleteAllListsEveryOnlineElement(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	s := mustSyncer(t, gw)
+
+	plan, err := s.PlanDeleteAll(testKit())
+	require.NoError(t, err)
+
+	require.Empty(t, plan.CreateRoles, "cleanup must not create anything")
+	require.Empty(t, plan.CreateActions)
+	require.Empty(t, plan.CreateResourceTypes)
+	require.Len(t, plan.DeleteRoles, len(model.Roles()))
+	require.Len(t, plan.DeleteActions, len(model.Actions()))
+	require.Len(t, plan.DeleteResourceTypes, len(model.ResourceTypes()))
+	require.True(t, plan.HasDeletions())
+}
+
+// 清空后线上不应剩下任何角色、操作与资源类型，系统本身保留。
+func TestApplyDeleteAllEmptiesModel(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	plan, err := s.PlanDeleteAll(kt)
+	require.NoError(t, err)
+
+	require.NoError(t, s.Apply(kt, plan, ApplyOption{AllowDelete: true}))
+
+	require.Empty(t, gw.roles)
+	require.Empty(t, gw.actions)
+	require.Empty(t, gw.types)
+	require.NotNil(t, gw.system, "system itself must be kept")
+	require.Equal(t, testSystemSpec.CallbackURL, gw.system.CallbackURL)
+}
+
+// 系统未注册时没有可清空的模型，直接报错而不是静默成功。
+func TestPlanDeleteAllRejectsUnregisteredSystem(t *testing.T) {
+	s := mustSyncer(t, newFakeGateway())
+
+	_, err := s.PlanDeleteAll(testKit())
+	require.ErrorContains(t, err, "无需清理")
+}
+
+// 同一 ID 在线上可能重复出现，删除前要去重，否则删除请求会因重复项失败。
+func TestUniqueIDs(t *testing.T) {
+	require.Equal(t, []string{"a", "b"}, uniqueIDs([]string{"b", "a", "b"}))
+	require.Empty(t, uniqueIDs(nil))
 }
 
 // 新增角色时展示层级要随之配置，否则申请页的资源层级会是默认值。

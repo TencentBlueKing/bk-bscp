@@ -51,11 +51,33 @@ type RoleDisplayChange struct {
 	Detail string
 }
 
-// Conflict 是无法通过 API 消除的差异。
+// ResourceTypeAncestorsUpdate 是资源类型祖先链的变更。
+// 拓扑调整只能原地更新：删除资源类型会连带删掉引用它的操作和既有授权，
+// 因此优先走更新，更新后由同步流程回读校验是否真的生效。
+type ResourceTypeAncestorsUpdate struct {
+	ID string
+	// Name 本地定义的名称，更新时一并提交，避免部分更新接口要求全量字段
+	Name string
+	From []string
+	To   []string
+}
+
+// ActionResourceTypeUpdate 是操作关联资源类型的变更。
+// 与祖先链同理走原地更新：例如服务创建从业务维度改为环境维度时，
+// 不能删掉 app_create 重建，否则业务维度的授权会一起失效。
+type ActionResourceTypeUpdate struct {
+	ID string
+	// Name 本地定义的名称，更新时一并提交
+	Name string
+	From string
+	To   string
+}
+
+// Conflict 是同步无法自动处理的差异。
 //
-// IAM V4 仅支持更新资源类型与操作的名称，资源类型的祖先链、操作关联的资源类型均不可变更，
-// 变更这些字段需删除后重建，而删除会影响引用该资源的操作及既有授权。因此同步过程
-// 不做自动处理，仅记录冲突并终止命令，由人工确认处置方式。
+// 目前没有字段会落到这里：名称走改名、祖先链与操作关联资源类型走原地更新，
+// 其余差异（新增/删除/角色内操作增减）都有对应的接口。保留该结构用于报告
+// 需要人工介入的差异并终止命令，避免静默跳过。
 type Conflict struct {
 	Kind   string
 	ID     string
@@ -82,13 +104,15 @@ type Plan struct {
 	CreateSystem *client.CreateSystemReq
 	UpdateSystem *SystemUpdate
 
-	CreateResourceTypes []client.ResourceType
-	RenameResourceTypes []Rename
-	DeleteResourceTypes []string
+	CreateResourceTypes         []client.ResourceType
+	RenameResourceTypes         []Rename
+	UpdateResourceTypeAncestors []ResourceTypeAncestorsUpdate
+	DeleteResourceTypes         []string
 
-	CreateActions []client.Action
-	RenameActions []Rename
-	DeleteActions []string
+	CreateActions             []client.Action
+	RenameActions             []Rename
+	UpdateActionResourceTypes []ActionResourceTypeUpdate
+	DeleteActions             []string
 
 	CreateRoles     []client.Role
 	UpdateRoleMetas []RoleMetaUpdate
@@ -105,8 +129,9 @@ type Plan struct {
 func (p *Plan) HasChanges() bool {
 	return p.CreateSystem != nil || p.UpdateSystem != nil ||
 		len(p.CreateResourceTypes) > 0 || len(p.RenameResourceTypes) > 0 ||
-		len(p.DeleteResourceTypes) > 0 || len(p.CreateActions) > 0 ||
-		len(p.RenameActions) > 0 || len(p.DeleteActions) > 0 ||
+		len(p.UpdateResourceTypeAncestors) > 0 || len(p.DeleteResourceTypes) > 0 ||
+		len(p.CreateActions) > 0 || len(p.RenameActions) > 0 ||
+		len(p.UpdateActionResourceTypes) > 0 || len(p.DeleteActions) > 0 ||
 		len(p.CreateRoles) > 0 || len(p.UpdateRoleMetas) > 0 ||
 		len(p.AddRoleActions) > 0 || len(p.DelRoleActions) > 0 ||
 		len(p.SetRoleDisplays) > 0 || len(p.DeleteRoles) > 0
@@ -141,12 +166,18 @@ func (p *Plan) String() string {
 	for _, r := range p.RenameResourceTypes {
 		fmt.Fprintf(&b, "  [改名] 资源类型 %s：%q -> %q\n", r.ID, r.From, r.To)
 	}
+	for _, u := range p.UpdateResourceTypeAncestors {
+		fmt.Fprintf(&b, "  [更新] 资源类型 %s 的祖先链：%v -> %v\n", u.ID, u.From, u.To)
+	}
 
 	for _, a := range p.CreateActions {
 		fmt.Fprintf(&b, "  [新增] 操作 %s（%s）关联 %s\n", a.ID, a.Name, orNone(a.ResourceTypeID))
 	}
 	for _, r := range p.RenameActions {
 		fmt.Fprintf(&b, "  [改名] 操作 %s：%q -> %q\n", r.ID, r.From, r.To)
+	}
+	for _, u := range p.UpdateActionResourceTypes {
+		fmt.Fprintf(&b, "  [更新] 操作 %s 的关联资源类型：%s -> %s\n", u.ID, orNone(u.From), orNone(u.To))
 	}
 
 	for _, r := range p.CreateRoles {

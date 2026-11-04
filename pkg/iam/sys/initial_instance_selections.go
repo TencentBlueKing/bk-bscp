@@ -29,6 +29,8 @@ func GenerateStaticInstanceSelections() []client.InstanceSelection {
 			},
 		},
 		{
+			// 服务挂在环境下：实例视图的链路必须与资源类型的父级一致，
+			// 否则权限中心按「业务 → 项目 → 环境 → 服务」选资源时会取不到实例。
 			ID:     ApplicationSelection,
 			Name:   "服务列表",
 			NameEn: "Application List",
@@ -39,7 +41,49 @@ func GenerateStaticInstanceSelections() []client.InstanceSelection {
 				},
 				{
 					SystemID: SystemIDBSCP,
+					ID:       Project,
+				},
+				{
+					SystemID: SystemIDBSCP,
+					ID:       Environment,
+				},
+				{
+					SystemID: SystemIDBSCP,
 					ID:       Application,
+				},
+			},
+		},
+		{
+			ID:     ProjectSelection,
+			Name:   "项目列表",
+			NameEn: "Project List",
+			ResourceTypeChain: []client.ResourceChain{
+				{
+					SystemID: SystemIDCMDB,
+					ID:       Business,
+				},
+				{
+					SystemID: SystemIDBSCP,
+					ID:       Project,
+				},
+			},
+		},
+		{
+			ID:     EnvironmentSelection,
+			Name:   "环境列表",
+			NameEn: "Environment List",
+			ResourceTypeChain: []client.ResourceChain{
+				{
+					SystemID: SystemIDCMDB,
+					ID:       Business,
+				},
+				{
+					SystemID: SystemIDBSCP,
+					ID:       Project,
+				},
+				{
+					SystemID: SystemIDBSCP,
+					ID:       Environment,
 				},
 			},
 		},

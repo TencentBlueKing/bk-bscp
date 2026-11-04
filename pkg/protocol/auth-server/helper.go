@@ -103,11 +103,10 @@ func (r *PullResourceReq) PullResourceReq() (*types.PullResourceReq, error) {
 }
 
 // Validate Page.
+//
+// limit 为 0 表示权限中心没有指定分页（资源选择器逐级展开时常见），由调用方补默认上限，
+// 这里不能报错：返回 400 会让整个资源选择器提示"接入系统资源接口请求失败"。
 func (p *Page) Validate() error {
-	if p.Limit == 0 {
-		return errf.New(errf.InvalidParameter, "limit should > 0")
-	}
-
 	if p.Limit > client.BkIAMMaxPageSize {
 		return errf.New(errf.InvalidParameter, fmt.Sprintf("limit should <= %d", client.BkIAMMaxPageSize))
 	}

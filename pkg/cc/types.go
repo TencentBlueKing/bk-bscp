@@ -369,6 +369,19 @@ type IAM struct {
 	TLS       TLSConfig `yaml:"tls"`
 	// V4 权限中心 V4 的配置，仅当 Version 为 v4 时生效
 	V4 IAMV4 `yaml:"v4"`
+	// ProjectEnvironmentAuth 项目/环境维度权限校验开关，V3、V4 共用
+	ProjectEnvironmentAuth IAMProjectEnvironmentAuth `yaml:"project_environment_auth"`
+}
+
+// IAMProjectEnvironmentAuth 定义项目与环境维度权限校验的开关。
+//
+// 项目、环境是 IAM 中较晚注册的资源类型，权限中心侧存在同步延迟；
+// 该开关关闭时退回改造前的授权逻辑：只校验业务维度，项目/环境资源不参与鉴权，
+// 服务的鉴权路径也退化为 /biz,{bizID}/。
+type IAMProjectEnvironmentAuth struct {
+	// Enabled 是否启用项目与环境维度的 IAM 权限校验。
+	// 未配置时读取环境变量 BK_BSCP_IAM_PROJECT_ENV_AUTH，仍为空时按 false 处理。
+	Enabled *bool `yaml:"enabled"`
 }
 
 // IAMV4 defines the runtime of the bkiam gateway for IAM V4.
@@ -405,6 +418,39 @@ const (
 // IsV4 判断是否启用权限中心 V4。
 func (s IAM) IsV4() bool {
 	return s.Version == IAMVersionV4
+}
+
+// ProjectEnvAuthEnabled 返回项目/环境维度权限校验开关的最终取值。
+// 配置文件显式配置优先；未配置时读取环境变量，仍为空时默认 false，即只校验业务维度。
+// 环境变量取值非法时按 false 处理，具体报错由 validate 统一给出。
+func (s IAM) ProjectEnvAuthEnabled() bool {
+	enabled, err := s.resolveProjectEnvAuth()
+	if err != nil {
+		return false
+	}
+
+	return enabled
+}
+
+// resolveProjectEnvAuth 解析开关取值：配置文件 > 环境变量 > 默认 false。
+func (s IAM) resolveProjectEnvAuth() (bool, error) {
+	if s.ProjectEnvironmentAuth.Enabled != nil {
+		return *s.ProjectEnvironmentAuth.Enabled, nil
+	}
+
+	raw := strings.TrimSpace(os.Getenv(config.IAMProjectEnvAuthEnv))
+	if raw == "" {
+		return false, nil
+	}
+
+	// 只接受 true/false 这类明确取值，避免误配置被静默忽略。
+	enabled, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, fmt.Errorf("invalid %s: %q, should be true or false",
+			config.IAMProjectEnvAuthEnv, raw)
+	}
+
+	return enabled, nil
 }
 
 // trySetDefault set the default value of the iam runtime.
@@ -463,6 +509,10 @@ func (s IAM) validate() error {
 
 	if err := s.TLS.validate(); err != nil {
 		return fmt.Errorf("iam tls, %v", err)
+	}
+
+	if _, err := s.resolveProjectEnvAuth(); err != nil {
+		return err
 	}
 
 	return nil

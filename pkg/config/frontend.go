@@ -29,6 +29,9 @@ const (
 	// IAMVersionEnv 权限中心版本对应的环境变量，取值 v3/v4，
 	// 用于不便于修改配置文件时通过环境变量开启 iam v4，各组件共用
 	IAMVersionEnv = "BK_BSCP_IAM_VERSION"
+	// IAMProjectEnvAuthEnv 项目/环境维度权限校验开关对应的环境变量，取值 true/false，
+	// 仅当配置文件未显式配置 iam.project_environment_auth.enabled 时生效，auth-server 使用
+	IAMProjectEnvAuthEnv = "BK_BSCP_IAM_PROJECT_ENV_AUTH"
 )
 
 // HostConf host conf

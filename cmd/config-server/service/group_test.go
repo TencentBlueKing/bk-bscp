@@ -13,6 +13,7 @@
 package service
 
 import (
+	"math"
 	"testing"
 )
 
@@ -38,6 +39,11 @@ func TestIsValidGrayPercentValue(t *testing.T) {
 		{"float64_valid_25.0", float64(25.0), true},
 		{"float64_valid_50.5", float64(50.5), true},
 		{"float32_valid_35", float32(35), true},
+		{"float64_invalid_0", float64(0), false},
+		{"float64_invalid_100", float64(100), false},
+		{"float32_invalid_100", float32(100), false},
+		{"float64_invalid_nan", math.NaN(), false},
+		{"float64_invalid_inf", math.Inf(1), false},
 
 		// 无效类型
 		{"bool_invalid", true, false},

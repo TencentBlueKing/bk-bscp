@@ -64,13 +64,77 @@ func (r *iamDao) ListInstances(kt *kit.Kit, opts *types.ListInstancesOption) (
 	)
 	switch opts.ResourceType {
 	case meta.App.String():
+		// 服务挂在环境下，权限中心展开资源树时会按环境拉取可选服务；
+		// 但业务/项目层级的展示配置仍会按上层拉取，需要一并支持，否则授权页面直接报错。
+		m := r.genQ.App
+		q := m.WithContext(kt.Ctx).
+			Select(m.ID.As("id"), m.Name.As("name"))
+		switch opts.ParentType {
+		case meta.Biz.String():
+			bizID, err := strconv.ParseUint(opts.ParentID, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			q = q.Where(m.BizID.Eq(uint32(bizID)))
+		case meta.Project.String():
+			projectID, err := strconv.ParseUint(opts.ParentID, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			q = q.Where(m.ProjID.Eq(uint32(projectID)))
+		case meta.Environment.String():
+			envID, err := strconv.ParseUint(opts.ParentID, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			// 服务必须挂在具体环境下，environment_id 不存在 0 值约定，按环境精确匹配。
+			q = q.Where(m.EnvID.Eq(uint32(envID)))
+		default:
+			return nil, fmt.Errorf("unexpected parent type for app: %s", opts.ParentType)
+		}
+		if opts.Keyword != "" {
+			pattern := "%" + opts.Keyword + "%"
+			kw := m.WithContext(kt.Ctx).Where(m.Name.Like(pattern))
+			if id, parseErr := strconv.ParseUint(opts.Keyword, 10, 32); parseErr == nil {
+				kw = kw.Or(m.ID.Eq(uint32(id)))
+			}
+			q = q.Where(kw)
+		}
+		var err error
+		count, err = q.ScanByPage(&details, opts.Page.Offset(), opts.Page.LimitInt())
+		if err != nil {
+			return nil, err
+		}
+	case meta.Project.String():
+		// 项目挂在业务下，权限中心按业务维度拉取可选项目，因此 parent 必须是业务。
 		bizID, err := strconv.ParseUint(opts.ParentID, 10, 32)
 		if err != nil {
 			return nil, err
 		}
-		m := r.genQ.App
+		m := r.genQ.Project
 		q := m.WithContext(kt.Ctx).
 			Select(m.ID.As("id"), m.Name.As("name")).Where(m.BizID.Eq(uint32(bizID)))
+		if opts.Keyword != "" {
+			pattern := "%" + opts.Keyword + "%"
+			kw := m.WithContext(kt.Ctx).Where(m.Name.Like(pattern))
+			if id, parseErr := strconv.ParseUint(opts.Keyword, 10, 32); parseErr == nil {
+				kw = kw.Or(m.ID.Eq(uint32(id)))
+			}
+			q = q.Where(kw)
+		}
+		count, err = q.ScanByPage(&details, opts.Page.Offset(), opts.Page.LimitInt())
+		if err != nil {
+			return nil, err
+		}
+	case meta.Environment.String():
+		// 环境挂在项目下，权限中心按项目维度拉取可选环境，因此 parent 必须是项目。
+		projectID, err := strconv.ParseUint(opts.ParentID, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		m := r.genQ.Environment
+		q := m.WithContext(kt.Ctx).
+			Select(m.ID.As("id"), m.Name.As("name")).Where(m.ProjectID.Eq(uint32(projectID)))
 		if opts.Keyword != "" {
 			pattern := "%" + opts.Keyword + "%"
 			kw := m.WithContext(kt.Ctx).Where(m.Name.Like(pattern))
@@ -115,17 +179,74 @@ func (r *iamDao) FetchInstanceInfo(kt *kit.Kit, opts *types.FetchInstanceInfoOpt
 			return nil, err
 		}
 		for _, app := range apps {
+			// 服务的 _bk_iam_path_ 是 /biz,{bizID}/project,{projectID}/environment,{envID}/：
+			// 归属直接取自服务自身，按业务、项目或环境维度的授权据此覆盖到该服务。
 			detail := &types.InstanceInfo{
 				ID:          strconv.Itoa(int(app.ID)),
 				DisplayName: app.Spec.Name,
 				Approver:    []string{},
-				Path:        []string{fmt.Sprintf("/%s,%d/", sys.Business, app.BizID)},
+				Path: []string{fmt.Sprintf("/%s,%d/%s,%d/%s,%d/",
+					sys.Business, app.BizID, sys.Project, app.ProjID, sys.Environment, app.EnvID)},
 			}
 			if app.Revision.Creator != "" {
 				detail.Approver = append(detail.Approver, app.Revision.Creator)
 			}
 			if app.Revision.Reviser != "" {
 				detail.Approver = append(detail.Approver, app.Revision.Reviser)
+			}
+			details = append(details, detail)
+		}
+	case meta.Project.String():
+		// 项目的 _bk_iam_path_ 是 /biz,{bizID}/，按业务维度的授权据此覆盖该项目。
+		ids, err := tools.StringSliceToUint32Slice(opts.IDs)
+		if err != nil {
+			return nil, err
+		}
+		m := r.genQ.Project
+		projects, err := m.WithContext(kt.Ctx).Where(m.ID.In(ids...)).Find()
+		if err != nil {
+			return nil, err
+		}
+		for _, project := range projects {
+			detail := &types.InstanceInfo{
+				ID:          strconv.Itoa(int(project.ID)),
+				DisplayName: project.Spec.Name,
+				Approver:    []string{},
+				Path:        []string{fmt.Sprintf("/%s,%d/", sys.Business, project.Attachment.BizID)},
+			}
+			if project.Revision.Creator != "" {
+				detail.Approver = append(detail.Approver, project.Revision.Creator)
+			}
+			if project.Revision.Reviser != "" {
+				detail.Approver = append(detail.Approver, project.Revision.Reviser)
+			}
+			details = append(details, detail)
+		}
+	case meta.Environment.String():
+		// 环境的 _bk_iam_path_ 是 /biz,{bizID}/project,{projectID}/：
+		// 按业务或项目维度的授权据此覆盖该项目下的环境。
+		ids, err := tools.StringSliceToUint32Slice(opts.IDs)
+		if err != nil {
+			return nil, err
+		}
+		m := r.genQ.Environment
+		envs, err := m.WithContext(kt.Ctx).Where(m.ID.In(ids...)).Find()
+		if err != nil {
+			return nil, err
+		}
+		for _, env := range envs {
+			detail := &types.InstanceInfo{
+				ID:          strconv.Itoa(int(env.ID)),
+				DisplayName: env.Spec.Name,
+				Approver:    []string{},
+				Path: []string{fmt.Sprintf("/%s,%d/%s,%d/",
+					sys.Business, env.Attachment.BizID, sys.Project, env.Attachment.ProjectID)},
+			}
+			if env.Revision.Creator != "" {
+				detail.Approver = append(detail.Approver, env.Revision.Creator)
+			}
+			if env.Revision.Reviser != "" {
+				detail.Approver = append(detail.Approver, env.Revision.Reviser)
 			}
 			details = append(details, detail)
 		}

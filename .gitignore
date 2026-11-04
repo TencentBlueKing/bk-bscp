@@ -40,4 +40,3 @@ graphify-out/
 !docs/dev-map/
 docs/dev-map/*
 !docs/dev-map/README.md
-!docs/dev-map/graph.json

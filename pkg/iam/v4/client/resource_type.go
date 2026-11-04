@@ -30,8 +30,12 @@ type ResourceType struct {
 }
 
 // UpdateResourceTypeReq 更新资源类型的请求体。
+// 字段为空表示不修改，PUT 时该字段不会发送；因此无法用空值清空祖先链（根资源类型不需要）。
 type UpdateResourceTypeReq struct {
 	Name string `json:"name,omitempty"`
+	// Ancestors 祖先链（从根到父级）。服务资源类型需要从 [业务] 调整为
+	// [业务, 项目, 环境]，由模型同步原地更新，避免删模型导致授权全部失效。
+	Ancestors []string `json:"ancestors,omitempty"`
 }
 
 // BatchCreateResourceTypes 批量创建资源类型，返回创建成功的 ID 列表。请求体顶层为数组。

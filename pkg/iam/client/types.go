@@ -38,6 +38,10 @@ const (
 	IamPathKey = "_bk_iam_path_"
 	// IamIDKey defines the iam id key
 	IamIDKey = "id"
+	// IamWildcard 是权限中心表示「该层级不限」的通配符。
+	// 授权时把上层实例设为「无限制」（例如在项目上勾选后环境全部放开），
+	// 策略里对应层级的实例 ID 会写成 "*"，路径形如 /biz,2/project,1/environment,*/。
+	IamWildcard = "*"
 )
 
 // Config auth center config.
