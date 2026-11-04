@@ -47,8 +47,10 @@ func (m *ResourceAttribute) ResourceAttribute() *meta.ResourceAttribute {
 	}
 
 	return &meta.ResourceAttribute{
-		Basic: m.Basic.Basic(),
-		BizID: m.BizId,
+		Basic:         m.Basic.Basic(),
+		BizID:         m.BizId,
+		ProjectID:     m.ProjectId,
+		EnvironmentID: m.EnvironmentId,
 	}
 }
 
@@ -74,8 +76,10 @@ func PbResourceAttribute(m *meta.ResourceAttribute) *ResourceAttribute {
 	}
 
 	return &ResourceAttribute{
-		Basic: PbBasic(m.Basic),
-		BizId: m.BizID,
+		Basic:         PbBasic(m.Basic),
+		BizId:         m.BizID,
+		ProjectId:     m.ProjectID,
+		EnvironmentId: m.EnvironmentID,
 	}
 }
 

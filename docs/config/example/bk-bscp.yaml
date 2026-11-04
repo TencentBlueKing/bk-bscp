@@ -44,6 +44,14 @@ iam:
   appCode: "[app code]"
   # appSecret is bscp app secret.
   appSecret: "[app secret]"
+  # 项目/环境维度权限校验开关，V3、V4 共用，仅 auth-server 生效。
+  # 关闭时只校验业务维度：项目/环境操作不请求权限中心；
+  # 服务创建仍校验，但只认业务维度（资源实例仍是目标环境，路径只声明业务）；
+  # 服务其它操作的鉴权路径退化为 /biz,{bizID}/。
+  # 开启后追加项目/环境维度校验，服务创建按目标环境授权，服务鉴权路径为三级拓扑。
+  # 未配置时读取环境变量 BK_BSCP_IAM_PROJECT_ENV_AUTH，仍为空则视为 false。
+  project_environment_auth:
+    enabled: false
   # defines tls related options.
   tls:
     # server should be accessed without verifying the TLS certificate.

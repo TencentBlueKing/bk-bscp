@@ -504,11 +504,17 @@ func (s *Service) initLogicModule() error {
 		}
 	}
 
+	// 项目/环境维度校验是否启用由配置开关决定，V3 与 V4 共用同一份取值。
+	projectEnvAuth := s.iamSettings.ProjectEnvAuthEnabled()
+	logs.Infof("iam project/environment auth: %s", enabledText(projectEnvAuth))
+
 	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, func(tenantID string) *bkiam.IAM {
 		return s.client.iam.WithTenant(tenantID)
 	},
 		s.disableWriteOpt,
-		s.spaceMgr)
+		s.spaceMgr,
+		auth.WithProjectEnvironmentAuth(projectEnvAuth),
+	)
 	if err != nil {
 		return err
 	}
@@ -529,6 +535,15 @@ func (s *Service) initLogicModule() error {
 	}
 
 	return nil
+}
+
+// enabledText 把开关取值转换成日志用文案。
+func enabledText(enabled bool) string {
+	if enabled {
+		return "enabled"
+	}
+
+	return "disabled, only business dimension is authorized"
 }
 
 // GetUserInfo 获取用户信息
@@ -624,6 +639,9 @@ func ListUserSpaceAnnotation(ctx context.Context, kt *kit.Kit, authorizer iamaut
 func init() {
 	webannotation.Register(&pbas.ListUserSpaceResp{}, ListUserSpaceAnnotation)
 	webannotation.Register(&pbcs.ListAppsResp{}, confsvc.ListAppsAnnotation)
+	// 项目/环境列表无法逐项拦截，需要把逐项权限带回前端做置灰与申请引导。
+	webannotation.Register(&pbcs.ListProjectsResp{}, confsvc.ListProjectsAnnotation)
+	webannotation.Register(&pbcs.ListEnvironmentsResp{}, confsvc.ListEnvironmentsAnnotation)
 }
 
 // ListUserSpace 获取用户信息

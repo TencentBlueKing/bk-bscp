@@ -28,6 +28,34 @@ var (
 			},
 		},
 	}
+
+	// 项目资源，实例挂在业务下，用于项目自身的增删改查与环境创建
+	projectResource = []client.RelateResourceType{
+		{
+			SystemID: SystemIDBSCP,
+			ID:       Project,
+			InstanceSelections: []client.RelatedInstanceSelection{
+				{
+					SystemID: SystemIDBSCP,
+					ID:       ProjectSelection,
+				},
+			},
+		},
+	}
+
+	// 环境资源，实例挂在项目下
+	environmentResource = []client.RelateResourceType{
+		{
+			SystemID: SystemIDBSCP,
+			ID:       Environment,
+			InstanceSelections: []client.RelatedInstanceSelection{
+				{
+					SystemID: SystemIDBSCP,
+					ID:       EnvironmentSelection,
+				},
+			},
+		},
+	}
 )
 
 // GenerateStaticActions return need to register action.
@@ -39,19 +67,109 @@ func GenerateStaticActions() []client.ResourceAction {
 	resourceActionList = append(resourceActionList, genCredentialActions()...)
 	resourceActionList = append(resourceActionList, genAuditActions()...)
 	resourceActionList = append(resourceActionList, genProcConfigMgmtActions()...)
+	resourceActionList = append(resourceActionList, genProjectActions()...)
+	resourceActionList = append(resourceActionList, genEnvironmentActions()...)
 
 	return resourceActionList
+}
+
+// genProjectActions 生成项目相关操作：项目按项目实例隔离，创建按业务授权
+// （创建时项目实例还不存在），查看/编辑/删除都按项目实例授权。
+func genProjectActions() []client.ResourceAction {
+	return []client.ResourceAction{
+		{
+			ID:                   ProjectCreate,
+			Name:                 ActionIDNameMap[ProjectCreate],
+			NameEn:               "Create Project",
+			Type:                 Create,
+			RelatedResourceTypes: businessResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource},
+			Version:              1,
+		},
+		{
+			ID:                   ProjectView,
+			Name:                 ActionIDNameMap[ProjectView],
+			NameEn:               "View Project",
+			Type:                 View,
+			RelatedResourceTypes: projectResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource},
+			Version:              1,
+		},
+		{
+			ID:                   ProjectEdit,
+			Name:                 ActionIDNameMap[ProjectEdit],
+			NameEn:               "Edit Project",
+			Type:                 Edit,
+			RelatedResourceTypes: projectResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource, ProjectView},
+			Version:              1,
+		},
+		{
+			ID:                   ProjectDelete,
+			Name:                 ActionIDNameMap[ProjectDelete],
+			NameEn:               "Delete Project",
+			Type:                 Delete,
+			RelatedResourceTypes: projectResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource, ProjectView},
+			Version:              1,
+		},
+	}
+}
+
+// genEnvironmentActions 生成环境相关操作：环境按环境实例隔离，创建按所属项目授权
+// （创建时环境实例还不存在）。
+func genEnvironmentActions() []client.ResourceAction {
+	return []client.ResourceAction{
+		{
+			ID:                   EnvironmentCreate,
+			Name:                 ActionIDNameMap[EnvironmentCreate],
+			NameEn:               "Create Environment",
+			Type:                 Create,
+			RelatedResourceTypes: projectResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource, ProjectView},
+			Version:              1,
+		},
+		{
+			ID:                   EnvironmentView,
+			Name:                 ActionIDNameMap[EnvironmentView],
+			NameEn:               "View Environment",
+			Type:                 View,
+			RelatedResourceTypes: environmentResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource},
+			Version:              1,
+		},
+		{
+			ID:                   EnvironmentEdit,
+			Name:                 ActionIDNameMap[EnvironmentEdit],
+			NameEn:               "Edit Environment",
+			Type:                 Edit,
+			RelatedResourceTypes: environmentResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource, EnvironmentView},
+			Version:              1,
+		},
+		{
+			ID:                   EnvironmentDelete,
+			Name:                 ActionIDNameMap[EnvironmentDelete],
+			NameEn:               "Delete Environment",
+			Type:                 Delete,
+			RelatedResourceTypes: environmentResource,
+			RelatedActions:       []client.ActionID{BusinessViewResource, EnvironmentView},
+			Version:              1,
+		},
+	}
 }
 
 func genApplicationActions() []client.ResourceAction {
 	actions := make([]client.ResourceAction, 0)
 
+	// 服务创建按环境授权：创建时尚无服务实例，授权维度落在服务将要归属的环境上，
+	// 授权页面因此展开「业务 → 项目 → 环境」；业务/项目维度的授权经路径继承覆盖。
 	actions = append(actions, client.ResourceAction{
 		ID:                   AppCreate,
 		Name:                 ActionIDNameMap[AppCreate],
 		NameEn:               "Create APP",
 		Type:                 Create,
-		RelatedResourceTypes: businessResource,
+		RelatedResourceTypes: environmentResource,
 		RelatedActions:       []client.ActionID{BusinessViewResource},
 		Version:              1,
 	})

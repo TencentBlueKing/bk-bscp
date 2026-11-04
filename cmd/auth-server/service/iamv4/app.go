@@ -22,22 +22,27 @@ import (
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
-// listAppInstances 返回某个业务下的服务实例列表。
+// listAppInstances 返回某个上级下的服务实例列表。
+// 服务的祖先链是「业务 → 项目 → 环境」，正常按环境逐级展开；
+// 但角色的展示层级可能配置在业务或项目上，权限中心会用对应的 parent 回调，
+// 这里必须一并支持，否则授权页面会因回调报错而只加载到业务层。
 // data-service 的 ListInstances 支持可选 keyword，对 name 做包含匹配、对 id 做精确匹配，
 // 因此关键字与分页都直接下推，不再在 auth-server 内存过滤。
 func (i *IAM) listAppInstances(kt *kit.Kit, ft Filter, p Page) (*ListInstanceResult, error) {
 	if ft.Parent == nil || ft.Parent.ID == "" {
-		return nil, errors.New("listing app instances requires a biz parent")
+		return nil, errors.New("listing app instances requires a parent")
 	}
 
-	if ft.Parent.Type != model.ResourceTypeBiz {
+	switch ft.Parent.Type {
+	case model.ResourceTypeBiz, model.ResourceTypeProject, model.ResourceTypeEnvironment:
+	default:
 		return nil, fmt.Errorf("unexpected parent type for app: %s", ft.Parent.Type)
 	}
 
 	p = p.normalize()
 	resp, err := i.apps.ListInstances(kt.RpcCtx(), &pbds.ListInstancesReq{
 		ResourceType: model.ResourceTypeApp,
-		ParentType:   model.ResourceTypeBiz,
+		ParentType:   ft.Parent.Type,
 		ParentId:     ft.Parent.ID,
 		Keyword:      ft.Keyword,
 		Page:         &pbbase.BasePage{Start: uint32(p.offset()), Limit: uint32(p.PageSize)},
@@ -55,7 +60,7 @@ func (i *IAM) listAppInstances(kt *kit.Kit, ft Filter, p Page) (*ListInstanceRes
 }
 
 // fetchAppInstanceInfo 批量返回服务详情。
-// app 的 _bk_iam_path_ 声明它所属的业务，权限中心据此在页面上回显资源拓扑。
+// app 的 _bk_iam_path_ 声明「业务 → 项目 → 环境」三级归属，权限中心据此在页面上回显资源拓扑。
 func (i *IAM) fetchAppInstanceInfo(kt *kit.Kit, ids []string, selector attrSelector) (
 	[]instanceInfo, error) {
 
@@ -76,7 +81,7 @@ func (i *IAM) fetchAppInstanceInfo(kt *kit.Kit, ids []string, selector attrSelec
 		}
 
 		if selector.need(AttrIAMPath) {
-			// V3 的 path 是数组，V4 只接受单个字符串。app 的拓扑只有一层父级，取首项即可。
+			// V3 的 path 是数组，V4 只接受单个字符串。同一实例的完整拓扑只由一条路径表达，取首项即可。
 			info[AttrIAMPath] = firstPath(detail.Path)
 		}
 

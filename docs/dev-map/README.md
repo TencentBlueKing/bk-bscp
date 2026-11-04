@@ -21,6 +21,8 @@
 图谱文件不存在时自动全量生成。
 手动触发词："更新 dev map" 或 "生成开发地图"。
 
+`graph.json` 与 `graph.html`、`GRAPH_REPORT.md` 等生成物不入库（见 `.gitignore`），仅在本地生成和使用。
+
 ## 首次生成
 
 `graph.json` 在首次运行 harness-generating（或触发词"更新 dev map"）后自动生成。

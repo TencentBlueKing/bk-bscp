@@ -175,6 +175,11 @@ message UserInfo {
 message ResourceAttribute {
   Basic basic = 1;
   uint32 biz_id = 2;
+  // project_id 环境按项目隔离，鉴权路径需要项目 ID 拼出 /biz,{biz_id}/project,{project_id}/
+  uint32 project_id = 3;
+  // environment_id 服务挂在环境下，鉴权路径需要环境 ID 拼出三级路径
+  // /biz,{biz_id}/project,{project_id}/environment,{environment_id}/
+  uint32 environment_id = 4;
 }
 
 message Basic {

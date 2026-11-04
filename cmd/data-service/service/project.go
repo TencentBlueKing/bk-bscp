@@ -159,6 +159,43 @@ func (s *Service) EnsureDefaultProjectEnv(ctx context.Context, req *pbds.EnsureD
 	}, nil
 }
 
+// GetDefaultProjectEnv 只读查询业务下的默认项目与默认环境，不存在时返回 0。
+//
+// 与 EnsureDefaultProjectEnv 的区别是绝不写库：鉴权链路需要按默认归属补全资源路径，
+// 而调用方可以提交任意 biz_id，若在鉴权入口补建默认项目/环境，等于把只读的权限检查
+// 变成任意业务的写库入口。查询不到时返回 0，由鉴权侧按「归属缺失」退化为无权限。
+func (s *Service) GetDefaultProjectEnv(ctx context.Context, req *pbds.GetDefaultProjectEnvReq) (
+	*pbds.GetDefaultProjectEnvResp, error) {
+
+	kt := kit.FromGrpcContext(ctx)
+	bizID := req.GetBizId()
+	if bizID == 0 {
+		return nil, errors.New(i18n.T(kt, "invalid biz_id"))
+	}
+
+	resp := &pbds.GetDefaultProjectEnvResp{}
+
+	project, err := s.dao.Project().GetDefaultProject(kt, bizID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return resp, nil
+		}
+		return nil, err
+	}
+	resp.ProjectId = project.ID
+
+	env, err := s.dao.Environment().GetDefaultEnvironment(kt, bizID, project.ID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return resp, nil
+		}
+		return nil, err
+	}
+	resp.EnvId = env.ID
+
+	return resp, nil
+}
+
 // GetDefaultEnvironment 根据业务和项目查询默认环境完整信息。
 func (s *Service) GetDefaultEnvironment(ctx context.Context, req *pbds.GetDefaultEnvironmentReq) (
 	*pbds.GetDefaultEnvironmentResp, error) {

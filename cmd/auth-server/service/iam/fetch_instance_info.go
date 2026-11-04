@@ -23,6 +23,12 @@ import (
 func (i *IAM) FetchInstanceInfo(kt *kit.Kit, resType client.TypeID, ft *types.FetchInstanceInfoFilter) (
 	[]*types.InstanceInfo, error) {
 
+	// 权限中心生成申请链接时会不带 ids 调用，此时没有需要返回的实例。
+	// 空 ids 返回空列表而不是报错，否则整个申请链接生成会失败，与 V4 的实现保持一致。
+	if ft == nil || len(ft.IDs) == 0 {
+		return make([]*types.InstanceInfo, 0), nil
+	}
+
 	// Note: f.Attrs need to deal with, if add attribute authentication.
 
 	req := &pbds.FetchInstanceInfoReq{

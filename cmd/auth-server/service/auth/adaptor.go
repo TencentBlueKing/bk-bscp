@@ -24,8 +24,27 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 )
 
+// PermissionOptions 控制资源映射时启用的权限维度。
+type PermissionOptions struct {
+	// ProjectEnvironmentAuth 是否启用项目与环境维度的权限校验。
+	// 关闭时项目、环境资源不参与鉴权；服务创建仍校验，但实例仍用目标环境、
+	// 路径只声明业务一层；服务其它操作的鉴权路径同样退化为业务单级。
+	ProjectEnvironmentAuth bool
+}
+
+// defaultPermissionOptions 返回默认开启项目/环境维度校验的选项。
+func defaultPermissionOptions() PermissionOptions {
+	return PermissionOptions{ProjectEnvironmentAuth: true}
+}
+
 // AdaptAuthOptions convert bscp auth resource to iam action id and resources
 func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
+	return AdaptAuthOptionsWithOptions(a, defaultPermissionOptions())
+}
+
+// AdaptAuthOptionsWithOptions 按指定的权限维度把 bscp 资源映射为 iam 动作与资源。
+func AdaptAuthOptionsWithOptions(a *meta.ResourceAttribute, opts PermissionOptions) (
+	client.ActionID, []client.Resource, error) {
 	if a == nil {
 		return "", nil, errf.New(errf.InvalidParameter, "resource attribute is not set")
 	}
@@ -35,11 +54,20 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		return genSkipResource(a)
 	}
 
+	// 项目/环境维度校验关闭时，这两类资源不进入权限中心：
+	// 调用方已有的业务维度校验就是该场景下的全部约束。
+	if !opts.ProjectEnvironmentAuth {
+		switch a.Type {
+		case meta.Project, meta.Environment:
+			return genSkipResource(a)
+		}
+	}
+
 	switch a.Type {
 	case meta.Biz:
 		return genBizResource(a)
 	case meta.App:
-		return genAppResource(a)
+		return genAppResourceWithOptions(a, opts)
 	case meta.Credential:
 		return genCredResource(a)
 	case meta.Audit:
@@ -49,6 +77,10 @@ func AdaptAuthOptions(a *meta.ResourceAttribute) (client.ActionID, []client.Reso
 		return genSkipResource(a)
 	case meta.ProcConfigMgmt:
 		return genProcConfigMgmtResource(a)
+	case meta.Project:
+		return genProjectResource(a)
+	case meta.Environment:
+		return genEnvResource(a)
 	// case meta.Commit:
 	//	return genCommitResource(a)
 	// case meta.ConfigItem:
@@ -94,18 +126,27 @@ func AdaptIAMResourceOptions(a *meta.ResourceAttribute) (*bkiam.Request, error) 
 		return genCredIAMResource(a)
 	case meta.ProcConfigMgmt:
 		return genProcConfigMgmtRes(a)
+	case meta.Project:
+		return genProjectIAMResource(a)
+	case meta.Environment:
+		return genEnvIAMResource(a)
 	default:
 		return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Type)
 	}
 }
 
 // AdaptIAMApplicationOptions 申请链接, applyURL 接口使用
-func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Application, error) {
+func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute, opts PermissionOptions) (*bkiam.Application, error) {
 	if len(as) == 0 {
 		return nil, errors.New("resource attribute is not set")
 	}
 	actions := make([]bkiam.ApplicationAction, 0)
 	for _, a := range as {
+		// 关闭项目/环境维度校验时，这两类资源不参与申请链接：申请了也不会被校验。
+		if !opts.ProjectEnvironmentAuth && (a.Type == meta.Project || a.Type == meta.Environment) {
+			continue
+		}
+
 		switch a.Type {
 		case meta.Biz:
 			action, err := genBizIAMApplication(a)
@@ -114,9 +155,13 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 			}
 			actions = append(actions, action)
 		case meta.App:
-			action, err := genAppIAMApplication(a)
+			action, err := genAppIAMApplicationWithOptions(a, opts)
 			if err != nil {
 				return nil, err
+			}
+			// 关闭项目/环境维度后服务创建不校验，也就没有可申请的权限。
+			if action.ID == "" {
+				continue
 			}
 			actions = append(actions, action)
 		case meta.Credential:
@@ -137,10 +182,27 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute) (*bkiam.Applicatio
 				return nil, err
 			}
 			actions = append(actions, action)
+		case meta.Project:
+			action, err := genProjectIAMApplication(a)
+			if err != nil {
+				return nil, err
+			}
+			actions = append(actions, action)
+		case meta.Environment:
+			action, err := genEnvIAMApplication(a)
+			if err != nil {
+				return nil, err
+			}
+			actions = append(actions, action)
 		default:
 			return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Type)
 		}
 	}
+	// 全部资源都被跳过时没有必要生成申请链接，交由调用方返回空链接。
+	if len(actions) == 0 {
+		return nil, nil
+	}
+
 	application := bkiam.NewApplication(sys.SystemIDBSCP, actions)
 	return &application, nil
 }

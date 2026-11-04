@@ -566,7 +566,13 @@ func (a *authorizer) IAMVerify(next http.Handler) http.Handler {
 		}
 
 		if err := a.iamRequestFilter(w, r, k); err != nil {
-			render.Render(w, r, rest.BadRequest(errors.Wrap(errf.ErrPermissionDenied, "authorized failed")))
+			// 响应只回稳定文案：调用方是权限中心，它按状态码处理即可，不该拿到下游细节
+			// （auth-server 地址、配置错误、内部错误文本等）。真实原因只落日志，
+			// 排查时按 tenant + rid 检索，凭证不匹配与取 token 失败因此仍可区分。
+			logs.Errorf("iam callback authorization failed, tenant: %s, rid: %s, err: %v",
+				r.Header.Get(constant.BkTenantID), getRid(r.Header), err)
+			render.Render(w, r, rest.BadRequest(
+				errors.Wrap(errf.ErrPermissionDenied, "authorized failed")))
 			return
 		}
 
@@ -644,8 +650,17 @@ func (a *authorizer) checkRequestAuthorization(req *http.Request) (bool, error) 
 
 	resp, err := a.authClient.IAMVerify(kt.RpcCtx(), &pbas.IAMVerifyReq{Token: pwd})
 	if err != nil {
+		// 这里多为 auth-server 不可达或地址配置错误：权限中心回调会拿到 400，
+		// 而 auth-server 侧没有任何请求日志，容易误判成资源接口问题。
+		logs.Errorf("verify iam callback token by auth-server failed, tenant: %s, rid: %s, err: %v",
+			kt.TenantID, rid, err)
 		return false, err
 	}
 
-	return resp.GetIsAuthorized(), nil
+	if !resp.GetIsAuthorized() {
+		logs.Errorf("iam callback token rejected by auth-server, tenant: %s, rid: %s", kt.TenantID, rid)
+		return false, nil
+	}
+
+	return true, nil
 }

@@ -16,6 +16,7 @@ import (
 	"context"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server/types"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -25,6 +26,22 @@ import (
 // Keyword 透传给 data-service：V3 的 list_instance 通常为空，search_instance 会带搜索词。
 func (i *IAM) ListInstances(kt *kit.Kit, resType client.TypeID, filter *types.ListInstanceFilter,
 	page types.Page) (*types.ListInstanceResult, error) {
+
+	if filter == nil {
+		filter = &types.ListInstanceFilter{}
+	}
+
+	// 权限中心探测资源类型时会不带 parent 调用 list_instance。项目、环境、服务的实例分别挂在
+	// 业务、项目和环境下，缺 parent 无法定位上层实例，返回空列表而不是让下游解析空 ID 而报错。
+	if (resType == sys.Project || resType == sys.Environment || resType == sys.Application) &&
+		(filter.Parent == nil || filter.Parent.ID == "") {
+		return &types.ListInstanceResult{Count: 0, Results: make([]types.InstanceResource, 0)}, nil
+	}
+
+	// 未带分页参数时给默认分页，避免下游因 limit 非法中断回调。
+	if page.Limit == 0 {
+		page.Limit = client.BkIAMMaxPageSize
+	}
 
 	req := &pbds.ListInstancesReq{
 		ResourceType: string(resType),

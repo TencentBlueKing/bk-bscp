@@ -129,6 +129,86 @@ func TestIAMVersionEnvInvalid(t *testing.T) {
 	require.ErrorContains(t, iam.validate(), "unsupported iam version")
 }
 
+// 未配置开关时默认关闭，保持改造前的业务维度授权逻辑。
+func TestIAMProjectEnvAuthDefaultsToDisabled(t *testing.T) {
+	t.Setenv(config.IAMProjectEnvAuthEnv, "")
+	iam := IAM{Version: IAMVersionV3, APIURL: "http://iam", AppCode: "c", AppSecret: "s"}
+	iam.trySetDefault()
+
+	require.False(t, iam.ProjectEnvAuthEnabled())
+	require.NoError(t, iam.validate())
+}
+
+// 配置文件显式开启时以文件为准。
+func TestIAMProjectEnvAuthFromConfig(t *testing.T) {
+	enabled := true
+	iam := IAM{
+		Version:                IAMVersionV3,
+		APIURL:                 "http://iam",
+		AppCode:                "c",
+		AppSecret:              "s",
+		ProjectEnvironmentAuth: IAMProjectEnvironmentAuth{Enabled: &enabled},
+	}
+	iam.trySetDefault()
+
+	require.True(t, iam.ProjectEnvAuthEnabled())
+	require.NoError(t, iam.validate())
+}
+
+// 配置文件未配置时允许通过环境变量开启，便于不改配置文件快速切换。
+func TestIAMProjectEnvAuthFromEnv(t *testing.T) {
+	t.Setenv(config.IAMProjectEnvAuthEnv, "true")
+	iam := IAM{Version: IAMVersionV3, APIURL: "http://iam", AppCode: "c", AppSecret: "s"}
+	iam.trySetDefault()
+
+	require.True(t, iam.ProjectEnvAuthEnabled())
+	require.NoError(t, iam.validate())
+}
+
+// 配置文件显式配置优先于环境变量，且可以显式关闭。
+func TestIAMProjectEnvAuthConfigWinsOverEnv(t *testing.T) {
+	t.Setenv(config.IAMProjectEnvAuthEnv, "true")
+	disabled := false
+	iam := IAM{
+		Version:                IAMVersionV3,
+		APIURL:                 "http://iam",
+		AppCode:                "c",
+		AppSecret:              "s",
+		ProjectEnvironmentAuth: IAMProjectEnvironmentAuth{Enabled: &disabled},
+	}
+	iam.trySetDefault()
+
+	require.False(t, iam.ProjectEnvAuthEnabled())
+	require.NoError(t, iam.validate())
+}
+
+// 环境变量取值非法时应报错，而不是静默按关闭处理。
+func TestIAMProjectEnvAuthEnvInvalid(t *testing.T) {
+	t.Setenv(config.IAMProjectEnvAuthEnv, "yes")
+	iam := IAM{Version: IAMVersionV3, APIURL: "http://iam", AppCode: "c", AppSecret: "s"}
+	iam.trySetDefault()
+
+	require.ErrorContains(t, iam.validate(), config.IAMProjectEnvAuthEnv)
+}
+
+// 确认 yaml 标签与配置形态一致。
+func TestIAMYamlUnmarshalProjectEnvAuth(t *testing.T) {
+	const conf = `
+version: v3
+api_url: "http://iam.example.com"
+appCode: "bk-bscp"
+appSecret: "secret"
+project_environment_auth:
+  enabled: true
+`
+
+	iam := new(IAM)
+	require.NoError(t, yaml.Unmarshal([]byte(conf), iam))
+
+	require.NotNil(t, iam.ProjectEnvironmentAuth.Enabled)
+	require.True(t, iam.ProjectEnvAuthEnabled())
+}
+
 // 确认 yaml 标签与方案 §5.3 约定的配置形态一致。
 func TestIAMYamlUnmarshal(t *testing.T) {
 	const conf = `

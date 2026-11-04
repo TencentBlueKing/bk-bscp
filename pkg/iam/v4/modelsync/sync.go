@@ -152,6 +152,76 @@ func (s *Syncer) Plan(kt *kit.Kit) (*Plan, error) {
 	return plan, nil
 }
 
+// PlanDeleteAll 把线上全部模型元素列为删除，不与本地定义比较。
+//
+// Plan 只找出本地已移除的元素，而资源类型的祖先链、操作关联的资源类型不支持更新，
+// 这类字段要变更只能先整体清空再重建，因此需要这个不比较差异的计划。
+// 系统本身不删：回调地址与 clients 白名单必须保留，否则重建期间鉴权全部不可用。
+func (s *Syncer) PlanDeleteAll(kt *kit.Kit) (*Plan, error) {
+	if _, err := s.gw.GetSystem(kt); err != nil {
+		if client.IsNotFound(err) {
+			return nil, errors.Errorf("权限中心未注册 %s 系统，无需清理", s.system.ID)
+		}
+
+		return nil, errors.Wrap(err, "get online system")
+	}
+
+	roles, err := s.listAllRoles(kt)
+	if err != nil {
+		return nil, errors.Wrap(err, "list online roles")
+	}
+
+	actions, err := s.listAllActions(kt)
+	if err != nil {
+		return nil, errors.Wrap(err, "list online actions")
+	}
+
+	types, err := s.listAllResourceTypes(kt)
+	if err != nil {
+		return nil, errors.Wrap(err, "list online resource types")
+	}
+
+	plan := new(Plan)
+
+	roleIDs := make([]string, 0, len(roles))
+	for _, r := range roles {
+		roleIDs = append(roleIDs, r.ID)
+	}
+	plan.DeleteRoles = uniqueIDs(roleIDs)
+
+	actionIDs := make([]string, 0, len(actions))
+	for _, a := range actions {
+		actionIDs = append(actionIDs, a.ID)
+	}
+	plan.DeleteActions = uniqueIDs(actionIDs)
+
+	typeIDs := make([]string, 0, len(types))
+	for _, t := range types {
+		typeIDs = append(typeIDs, t.ID)
+	}
+	plan.DeleteResourceTypes = uniqueIDs(typeIDs)
+
+	return plan, nil
+}
+
+// uniqueIDs 去重并排序。权限中心可能对同一 ID 返回多条记录（重复注册残留），
+// 重复的 ID 会让删除请求失败。
+func uniqueIDs(ids []string) []string {
+	seen := make(map[string]struct{}, len(ids))
+	result := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+
+	sort.Strings(result)
+
+	return result
+}
+
 // diffSystem 比较系统本身，返回系统当前是否已注册。
 func (s *Syncer) diffSystem(kt *kit.Kit, plan *Plan) (bool, error) {
 	online, err := s.gw.GetSystem(kt)
@@ -276,12 +346,12 @@ func (s *Syncer) diffResourceTypes(online []client.ResourceType, plan *Plan) {
 			continue
 		}
 
-		// 祖先链不可更新，不一致只能报冲突。空切片与 nil 视为相同。
+		// 祖先链走原地更新：服务资源类型从 [业务] 调整为 [业务,项目,环境] 时，
+		// 删除重建会连带清掉引用它的操作与既有授权。空切片与 nil 视为相同。
 		if !sameStrings(cur.Ancestors, local.Ancestors) {
-			plan.Conflicts = append(plan.Conflicts, Conflict{
-				Kind: "资源类型", ID: local.ID, Field: "ancestors",
-				Online: fmt.Sprint(cur.Ancestors), Local: fmt.Sprint(local.Ancestors),
-			})
+			plan.UpdateResourceTypeAncestors = append(plan.UpdateResourceTypeAncestors,
+				ResourceTypeAncestorsUpdate{ID: local.ID, Name: local.Name,
+					From: cur.Ancestors, To: local.Ancestors})
 		}
 
 		if cur.Name != local.Name {
@@ -314,12 +384,11 @@ func (s *Syncer) diffActions(online []client.Action, plan *Plan) {
 			continue
 		}
 
-		// 关联资源类型不可更新，同样只能报冲突。
+		// 关联资源类型同样走原地更新，例如 app_create 从业务维度改为环境维度。
 		if cur.ResourceTypeID != local.ResourceTypeID {
-			plan.Conflicts = append(plan.Conflicts, Conflict{
-				Kind: "操作", ID: local.ID, Field: "resource_type_id",
-				Online: cur.ResourceTypeID, Local: local.ResourceTypeID,
-			})
+			plan.UpdateActionResourceTypes = append(plan.UpdateActionResourceTypes,
+				ActionResourceTypeUpdate{ID: local.ID, Name: local.Name,
+					From: cur.ResourceTypeID, To: local.ResourceTypeID})
 		}
 
 		if cur.Name != local.Name {
@@ -451,7 +520,79 @@ func (s *Syncer) Apply(kt *kit.Kit, plan *Plan, opt ApplyOption) error {
 		return err
 	}
 
-	return s.applyDeletions(kt, plan, &opt)
+	if err := s.applyDeletions(kt, plan, &opt); err != nil {
+		return err
+	}
+
+	return s.verifyInPlaceUpdates(kt, plan)
+}
+
+// verifyInPlaceUpdates 回读线上模型，确认祖先链与操作关联资源类型确实已更新。
+//
+// 这两个字段决定鉴权路径的拓扑，权限中心若忽略它们，更新请求也会"成功"。
+// 不回读校验就会出现「模型显示已对齐、实际按旧拓扑鉴权」的静默错误，
+// 因此这里显式发现差异并让命令失败，由运维改走 delete-iam-v4 + init-iam-v4。
+func (s *Syncer) verifyInPlaceUpdates(kt *kit.Kit, plan *Plan) error {
+	if len(plan.UpdateResourceTypeAncestors) == 0 && len(plan.UpdateActionResourceTypes) == 0 {
+		return nil
+	}
+
+	mismatches := make([]string, 0)
+
+	if len(plan.UpdateResourceTypeAncestors) > 0 {
+		online, err := s.listAllResourceTypes(kt)
+		if err != nil {
+			return err
+		}
+
+		onlineMap := make(map[string]client.ResourceType, len(online))
+		for _, rt := range online {
+			onlineMap[rt.ID] = rt
+		}
+
+		for _, u := range plan.UpdateResourceTypeAncestors {
+			cur, ok := onlineMap[u.ID]
+			if !ok {
+				continue
+			}
+			if !sameStrings(cur.Ancestors, u.To) {
+				mismatches = append(mismatches, fmt.Sprintf("资源类型 %s 的祖先链仍为 %v，期望 %v",
+					u.ID, cur.Ancestors, u.To))
+			}
+		}
+	}
+
+	if len(plan.UpdateActionResourceTypes) > 0 {
+		online, err := s.listAllActions(kt)
+		if err != nil {
+			return err
+		}
+
+		onlineMap := make(map[string]client.Action, len(online))
+		for _, a := range online {
+			onlineMap[a.ID] = a
+		}
+
+		for _, u := range plan.UpdateActionResourceTypes {
+			cur, ok := onlineMap[u.ID]
+			if !ok {
+				continue
+			}
+			if cur.ResourceTypeID != u.To {
+				mismatches = append(mismatches, fmt.Sprintf("操作 %s 的关联资源类型仍为 %q，期望 %q",
+					u.ID, cur.ResourceTypeID, u.To))
+			}
+		}
+	}
+
+	if len(mismatches) > 0 {
+		return errors.Errorf("权限中心未接受原地更新，模型与本地定义仍不一致：%s。"+
+			"这两项变更会影响鉴权路径拓扑，只能删除模型后重建："+
+			"请执行 migrate delete-iam-v4 清空后重新 migrate init-iam-v4，并提前导出/重放既有授权",
+			strings.Join(mismatches, "；"))
+	}
+
+	return nil
 }
 
 func (s *Syncer) applySystem(kt *kit.Kit, plan *Plan, opt *ApplyOption) error {
@@ -482,12 +623,30 @@ func (s *Syncer) applyResourceTypes(kt *kit.Kit, plan *Plan, opt *ApplyOption) e
 		opt.logf("已新增 %d 个资源类型", len(plan.CreateResourceTypes))
 	}
 
+	// 祖先链更新会一并提交名称，同一资源类型不必再发一次改名请求
+	ancestorUpdated := make(map[string]struct{}, len(plan.UpdateResourceTypeAncestors))
+	for _, u := range plan.UpdateResourceTypeAncestors {
+		ancestorUpdated[u.ID] = struct{}{}
+	}
+
 	for _, r := range plan.RenameResourceTypes {
+		if _, ok := ancestorUpdated[r.ID]; ok {
+			continue
+		}
+
 		if err := s.gw.UpdateResourceType(kt, r.ID,
 			&client.UpdateResourceTypeReq{Name: r.To}); err != nil {
 			return errors.Wrapf(err, "rename resource type %s", r.ID)
 		}
 		opt.logf("已重命名资源类型 %s 为 %q", r.ID, r.To)
+	}
+
+	for _, u := range plan.UpdateResourceTypeAncestors {
+		if err := s.gw.UpdateResourceType(kt, u.ID,
+			&client.UpdateResourceTypeReq{Name: u.Name, Ancestors: u.To}); err != nil {
+			return errors.Wrapf(err, "update ancestors of resource type %s", u.ID)
+		}
+		opt.logf("已更新资源类型 %s 的祖先链 %v -> %v", u.ID, u.From, u.To)
 	}
 
 	return nil
@@ -501,11 +660,29 @@ func (s *Syncer) applyActions(kt *kit.Kit, plan *Plan, opt *ApplyOption) error {
 		opt.logf("已新增 %d 个操作", len(plan.CreateActions))
 	}
 
+	// 关联资源类型的更新会一并提交名称，同一操作不必再发一次改名请求
+	resourceTypeUpdated := make(map[string]struct{}, len(plan.UpdateActionResourceTypes))
+	for _, u := range plan.UpdateActionResourceTypes {
+		resourceTypeUpdated[u.ID] = struct{}{}
+	}
+
 	for _, r := range plan.RenameActions {
+		if _, ok := resourceTypeUpdated[r.ID]; ok {
+			continue
+		}
+
 		if err := s.gw.UpdateAction(kt, r.ID, &client.UpdateActionReq{Name: r.To}); err != nil {
 			return errors.Wrapf(err, "rename action %s", r.ID)
 		}
 		opt.logf("已重命名操作 %s 为 %q", r.ID, r.To)
+	}
+
+	for _, u := range plan.UpdateActionResourceTypes {
+		if err := s.gw.UpdateAction(kt, u.ID,
+			&client.UpdateActionReq{Name: u.Name, ResourceTypeID: u.To}); err != nil {
+			return errors.Wrapf(err, "update resource type of action %s", u.ID)
+		}
+		opt.logf("已更新操作 %s 的关联资源类型 %s -> %s", u.ID, orNone(u.From), orNone(u.To))
 	}
 
 	return nil

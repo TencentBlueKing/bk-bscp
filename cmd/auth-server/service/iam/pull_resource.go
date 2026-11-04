@@ -50,8 +50,10 @@ func (i *IAM) PullResource(ctx context.Context, req *pbas.PullResourceReq) (*pbs
 	case types.ListInstanceMethod, types.SearchInstanceMethod:
 		filter, ok := query.Filter.(types.ListInstanceFilter)
 		if !ok {
-			logs.Errorf("filter %v is not the right type for list_instance method, rid: %s", filter, kt.Rid)
-			return nil, errors.New("filter type not right")
+			// 权限中心探测资源类型时可能不带 filter 调用，返回空结果而不是报错。
+			logs.Infof("no valid filter for list_instance, return empty data, filter: %v, rid: %s", filter, kt.Rid)
+			resp.Data = &types.ListInstanceResult{Count: 0, Results: make([]types.InstanceResource, 0)}
+			return resp.ConvertToPb()
 		}
 
 		instance, err := i.ListInstances(kt, query.Type, &filter, query.Page)
@@ -65,8 +67,12 @@ func (i *IAM) PullResource(ctx context.Context, req *pbas.PullResourceReq) (*pbs
 	case types.FetchInstanceInfoMethod:
 		filter, ok := query.Filter.(types.FetchInstanceInfoFilter)
 		if !ok {
-			logs.Errorf("filter %v is not the right type for fetch_instance_info method, rid: %s", filter, kt.Rid)
-			return nil, errors.New("filter type not right")
+			// 权限中心生成申请链接时可能不带 filter 调用，此时没有需要返回的实例，
+			// 返回空列表而不是报错，否则申请链接生成会因为 400 失败。
+			logs.Infof("no valid filter for fetch_instance_info, return empty data, filter: %v, rid: %s",
+				filter, kt.Rid)
+			resp.Data = make([]*types.InstanceInfo, 0)
+			return resp.ConvertToPb()
 		}
 
 		info, err := i.FetchInstanceInfo(kt, query.Type, &filter)
