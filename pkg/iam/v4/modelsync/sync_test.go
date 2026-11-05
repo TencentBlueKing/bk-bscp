@@ -36,20 +36,19 @@ var testSystemSpec = SystemSpec{
 // fakeGateway 在内存里模拟权限中心的模型存储，既能作为 Plan 的数据源，
 // 也能承接 Apply 的写入，从而验证"Apply 之后再 Plan 应为空"这个幂等性质。
 type fakeGateway struct {
-	system   *client.System
-	types    []client.ResourceType
-	actions  []client.Action
-	roles    []client.Role
-	displays map[string][]client.DisplayResourceType
+	system  *client.System
+	types   []client.ResourceType
+	actions []client.Action
+	roles   []client.Role
 
 	calls []string
 
-	// ignoreUpdates 模拟权限中心忽略祖先链/关联资源类型的更新（只接受改名）
+	// ignoreUpdates 模拟权限中心忽略祖先链的更新（只接受改名）
 	ignoreUpdates bool
 }
 
 func newFakeGateway() *fakeGateway {
-	return &fakeGateway{displays: make(map[string][]client.DisplayResourceType)}
+	return &fakeGateway{}
 }
 
 // withSystem 模拟系统已注册且与期望一致。
@@ -110,10 +109,6 @@ func (f *fakeGateway) withFullModel() *fakeGateway {
 		role.Actions = append([]client.RoleAction(nil), r.Actions...)
 		sortRoleActions(role.Actions)
 		f.roles = append(f.roles, role)
-	}
-
-	for id, types := range model.DisplayResourceTypes() {
-		f.displays[id] = append([]client.DisplayResourceType(nil), types...)
 	}
 
 	return f
@@ -187,6 +182,12 @@ func (f *fakeGateway) BatchCreateActions(_ *kit.Kit, actions []client.Action) ([
 	f.calls = append(f.calls, "create_actions")
 	ids := make([]string, 0, len(actions))
 	for _, a := range actions {
+		for _, cur := range f.actions {
+			if cur.ID == a.ID {
+				return nil, &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
+					Code: "INVALID_ARGUMENT", Message: "action id `" + a.ID + "` already used"}
+			}
+		}
 		f.actions = append(f.actions, a)
 		ids = append(ids, a.ID)
 	}
@@ -203,9 +204,6 @@ func (f *fakeGateway) UpdateAction(_ *kit.Kit, id string, req *client.UpdateActi
 		if req.Name != "" {
 			f.actions[i].Name = req.Name
 		}
-		if req.ResourceTypeID != "" && !f.ignoreUpdates {
-			f.actions[i].ResourceTypeID = req.ResourceTypeID
-		}
 	}
 
 	return nil
@@ -213,6 +211,15 @@ func (f *fakeGateway) UpdateAction(_ *kit.Kit, id string, req *client.UpdateActi
 
 func (f *fakeGateway) DeleteAction(_ *kit.Kit, id string) error {
 	f.calls = append(f.calls, "delete_action:"+id)
+	for _, r := range f.roles {
+		for _, a := range r.Actions {
+			if a.ID == id {
+				return &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
+					Code: "INVALID_ARGUMENT", Message: "action `" + id + "` is used by role"}
+			}
+		}
+	}
+
 	kept := f.actions[:0]
 	for _, a := range f.actions {
 		if a.ID != id {
@@ -236,6 +243,10 @@ func (f *fakeGateway) BatchCreateRoles(_ *kit.Kit, roles []client.Role) ([]strin
 	f.calls = append(f.calls, "create_roles")
 	ids := make([]string, 0, len(roles))
 	for _, r := range roles {
+		if err := f.validateRoleActions(r.ID, r.Actions); err != nil {
+			return nil, err
+		}
+
 		role := r
 		role.Actions = append([]client.RoleAction(nil), r.Actions...)
 		sortRoleActions(role.Actions)
@@ -280,19 +291,44 @@ func (f *fakeGateway) BatchCreateRoleActions(_ *kit.Kit, roleID string,
 			continue
 		}
 
-		// 与真实权限中心一致：角色内按操作 ID 判重，授权维度不同也算重复。
-		seen := make(map[string]struct{}, len(f.roles[i].Actions)+len(actions))
-		for _, a := range append(append([]client.RoleAction(nil), f.roles[i].Actions...), actions...) {
-			if _, ok := seen[a.ID]; ok {
-				return &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
-					Code:    "INVALID_ARGUMENT",
-					Message: "The action `" + a.ID + "` is repeated in the role `" + roleID + "`"}
-			}
-			seen[a.ID] = struct{}{}
+		merged := append(append([]client.RoleAction(nil), f.roles[i].Actions...), actions...)
+		if err := f.validateRoleActions(roleID, merged); err != nil {
+			return err
 		}
 
 		f.roles[i].Actions = append(f.roles[i].Actions, actions...)
 		sortRoleActions(f.roles[i].Actions)
+	}
+
+	return nil
+}
+
+// validateRoleActions 模拟权限中心对角色内操作的两条校验：
+// 按操作 ID 判重（授权维度不同也算重复）；关联资源类型相同的操作，授权维度必须一致。
+func (f *fakeGateway) validateRoleActions(roleID string, actions []client.RoleAction) error {
+	actionTypes := make(map[string]string, len(f.actions))
+	for _, a := range f.actions {
+		actionTypes[a.ID] = a.ResourceTypeID
+	}
+
+	seen := make(map[string]struct{}, len(actions))
+	scopeByType := make(map[string]string)
+	for _, a := range actions {
+		if _, ok := seen[a.ID]; ok {
+			return &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
+				Code:    "INVALID_ARGUMENT",
+				Message: "The action `" + a.ID + "` is repeated in the role `" + roleID + "`"}
+		}
+		seen[a.ID] = struct{}{}
+
+		ownType := actionTypes[a.ID]
+		if scope, ok := scopeByType[ownType]; ok && scope != a.ResourceTypeID {
+			return &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
+				Code: "INVALID_ARGUMENT",
+				Message: "The resource type id `" + a.ResourceTypeID + "` of the action `" + a.ID +
+					"` is different from other actions in the same resource type in role `" + roleID + "`"}
+		}
+		scopeByType[ownType] = a.ResourceTypeID
 	}
 
 	return nil
@@ -317,21 +353,6 @@ func (f *fakeGateway) BatchDeleteRoleActions(_ *kit.Kit, roleID string, actionID
 		}
 		f.roles[i].Actions = kept
 	}
-
-	return nil
-}
-
-func (f *fakeGateway) ListRoleDisplayResourceTypes(_ *kit.Kit, roleID string) (
-	[]client.DisplayResourceType, error) {
-
-	return f.displays[roleID], nil
-}
-
-func (f *fakeGateway) UpdateRoleDisplayResourceTypes(_ *kit.Kit, roleID string,
-	types []client.DisplayResourceType) error {
-
-	f.calls = append(f.calls, "set_display:"+roleID)
-	f.displays[roleID] = append([]client.DisplayResourceType(nil), types...)
 
 	return nil
 }
@@ -436,7 +457,6 @@ func TestPlanOnEmptySystemCreatesEverything(t *testing.T) {
 	require.Len(t, plan.CreateResourceTypes, len(model.ResourceTypes()))
 	require.Len(t, plan.CreateActions, len(model.Actions()))
 	require.Len(t, plan.CreateRoles, len(model.Roles()))
-	require.Len(t, plan.SetRoleDisplays, len(model.DisplayResourceTypes()))
 
 	require.False(t, plan.HasDeletions())
 	require.Empty(t, plan.Conflicts)
@@ -495,18 +515,39 @@ func TestPlanDetectsRenames(t *testing.T) {
 	require.Empty(t, plan.CreateRoles)
 }
 
-// 祖先链与操作关联资源类型走原地更新，不能靠删除重建，否则既有授权会全部失效。
+// withLegacyAppCreate 把线上 app_create 还原为业务维度，appCreatorBinding 为 false 时
+// 模拟上一次同步已把它从 app_creator 中移除、但未能加回的中间态。
+func (f *fakeGateway) withLegacyAppCreate(appCreatorBinding bool) *fakeGateway {
+	for i := range f.actions {
+		if f.actions[i].ID == model.ActionAppCreate {
+			f.actions[i].ResourceTypeID = model.ResourceTypeBiz
+		}
+	}
+
+	for i := range f.roles {
+		if f.roles[i].ID != model.RoleAppCreator {
+			continue
+		}
+		f.roles[i].Actions = []client.RoleAction{
+			{ID: model.ActionFindBusinessResource, ResourceTypeID: model.ResourceTypeBiz},
+		}
+		if appCreatorBinding {
+			f.roles[i].Actions = append(f.roles[i].Actions,
+				client.RoleAction{ID: model.ActionAppCreate, ResourceTypeID: model.ResourceTypeBiz})
+			sortRoleActions(f.roles[i].Actions)
+		}
+	}
+
+	return f
+}
+
+// 祖先链走原地更新；操作关联资源类型的更新会被权限中心忽略，只能重建该操作。
 func TestPlanUpdatesTopologyInPlace(t *testing.T) {
-	gw := newFakeGateway().withFullModel()
+	gw := newFakeGateway().withFullModel().withLegacyAppCreate(true)
 	for i := range gw.types {
 		if gw.types[i].ID == model.ResourceTypeApp {
 			gw.types[i].Ancestors = []string{model.ResourceTypeBiz}
 			gw.types[i].Name = "旧服务名"
-		}
-	}
-	for i := range gw.actions {
-		if gw.actions[i].ID == model.ActionAppCreate {
-			gw.actions[i].ResourceTypeID = model.ResourceTypeBiz
 		}
 	}
 
@@ -519,18 +560,74 @@ func TestPlanUpdatesTopologyInPlace(t *testing.T) {
 	require.Empty(t, plan.DeleteActions)
 	require.Len(t, plan.UpdateResourceTypeAncestors, 1)
 	require.Equal(t, model.ResourceTypeApp, plan.UpdateResourceTypeAncestors[0].ID)
-	require.Len(t, plan.UpdateActionResourceTypes, 1)
-	require.Equal(t, model.ActionAppCreate, plan.UpdateActionResourceTypes[0].ID)
-	require.Equal(t, model.ResourceTypeEnvironment, plan.UpdateActionResourceTypes[0].To)
+	require.Len(t, plan.RecreateActions, 1)
+	require.Equal(t, model.ActionAppCreate, plan.RecreateActions[0].Action.ID)
+	require.Equal(t, model.ResourceTypeEnvironment, plan.RecreateActions[0].Action.ResourceTypeID)
+	require.Equal(t, []string{model.RoleAppCreator, model.RoleBizOperator}, plan.RecreateActions[0].Roles)
 
 	require.NoError(t, s.Apply(testKit(), plan, ApplyOption{}))
 
 	// 祖先链更新已带上名称，同一次变更只发一个请求
 	require.Equal(t, 1, countCalls(gw.calls, "update_resource_type:"+model.ResourceTypeApp))
-	require.Equal(t, 1, countCalls(gw.calls, "update_action:"+model.ActionAppCreate))
+	require.Zero(t, countCalls(gw.calls, "update_action:"+model.ActionAppCreate))
 
 	// 施加后再次 Plan 应该没有变更，说明更新确实生效
 	again, err := s.Plan(testKit())
+	require.NoError(t, err)
+	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
+}
+
+// 重现线上：app_create 仍关联业务，且上一次同步已把它从 app_creator 中移除。
+// 直接给 app_creator 加 app_create@environment 会被拒，必须先重建操作；
+// 重建前要从 biz_operator 中移除，重建后再按本地定义把两个角色的绑定加回。
+func TestApplyRecreatesActionWhenResourceTypeChanges(t *testing.T) {
+	gw := newFakeGateway().withFullModel().withLegacyAppCreate(false)
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	err := gw.BatchCreateRoleActions(kt, model.RoleAppCreator, []client.RoleAction{
+		{ID: model.ActionAppCreate, ResourceTypeID: model.ResourceTypeEnvironment}})
+	require.ErrorContains(t, err, "is different from other actions in the same resource type")
+
+	plan, err := s.Plan(kt)
+	require.NoError(t, err)
+	require.Len(t, plan.RecreateActions, 1)
+	require.Equal(t, []string{model.RoleBizOperator}, plan.RecreateActions[0].Roles)
+	require.Empty(t, plan.DelRoleActions, "recreation removes the bindings itself")
+
+	gw.calls = nil
+	require.NoError(t, s.Apply(kt, plan, ApplyOption{}))
+	require.Equal(t, []string{
+		"del_role_actions:" + model.RoleBizOperator,
+		"delete_action:" + model.ActionAppCreate,
+		"create_actions",
+		"add_role_actions:" + model.RoleBizOperator,
+		"add_role_actions:" + model.RoleAppCreator,
+	}, gw.calls[:5])
+
+	again, err := s.Plan(kt)
+	require.NoError(t, err)
+	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
+}
+
+// 重建中途失败（操作已删、未建）后重跑，应按新建处理并补回全部角色绑定。
+func TestApplyResumesAfterActionDeleted(t *testing.T) {
+	gw := newFakeGateway().withFullModel().withLegacyAppCreate(false)
+	require.NoError(t, gw.BatchDeleteRoleActions(testKit(), model.RoleBizOperator,
+		[]string{model.ActionAppCreate}))
+	require.NoError(t, gw.DeleteAction(testKit(), model.ActionAppCreate))
+
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	plan, err := s.Plan(kt)
+	require.NoError(t, err)
+	require.Empty(t, plan.RecreateActions)
+	require.Len(t, plan.CreateActions, 1)
+
+	require.NoError(t, s.Apply(kt, plan, ApplyOption{}))
+
+	again, err := s.Plan(kt)
 	require.NoError(t, err)
 	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
 }
@@ -546,7 +643,7 @@ func countCalls(calls []string, target string) int {
 	return count
 }
 
-// 权限中心若忽略这两个字段，更新请求也会成功；必须回读校验并让命令失败，
+// 权限中心若忽略祖先链，更新请求也会成功；必须回读校验并让命令失败，
 // 否则会出现「模型显示已对齐、实际按旧拓扑鉴权」的静默错误。
 func TestApplyFailsWhenGatewayIgnoresTopologyUpdates(t *testing.T) {
 	gw := newFakeGateway().withFullModel()
@@ -677,24 +774,6 @@ func TestApplyKeepsAddBeforeRemoveForOtherActions(t *testing.T) {
 	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
 }
 
-// 展示层级不一致要能识别；线上多返回本地未声明的键不算差异。
-func TestPlanDiffsRoleDisplay(t *testing.T) {
-	gw := newFakeGateway().withFullModel()
-	gw.displays[model.RoleAppOperator] = []client.DisplayResourceType{
-		{RelatedResourceTypeID: model.ResourceTypeBiz,
-			DisplayResourceTypeID: model.ResourceTypeBiz},
-		{RelatedResourceTypeID: model.ResourceTypeApp,
-			DisplayResourceTypeID: model.ResourceTypeApp}, // 本地期望是 biz
-	}
-
-	s := mustSyncer(t, gw)
-	plan, err := s.Plan(testKit())
-	require.NoError(t, err)
-
-	require.Len(t, plan.SetRoleDisplays, 1)
-	require.Equal(t, model.RoleAppOperator, plan.SetRoleDisplays[0].RoleID)
-}
-
 // 线上多余的元素默认只报告不删除，避免误伤既有授权。
 func TestApplySkipsDeletionsByDefault(t *testing.T) {
 	gw := newFakeGateway().withFullModel()
@@ -791,21 +870,6 @@ func TestPlanDeleteAllRejectsUnregisteredSystem(t *testing.T) {
 func TestUniqueIDs(t *testing.T) {
 	require.Equal(t, []string{"a", "b"}, uniqueIDs([]string{"b", "a", "b"}))
 	require.Empty(t, uniqueIDs(nil))
-}
-
-// 新增角色时展示层级要随之配置，否则申请页的资源层级会是默认值。
-func TestApplyConfiguresDisplayForNewRoles(t *testing.T) {
-	gw := newFakeGateway()
-	s := mustSyncer(t, gw)
-	kt := testKit()
-
-	plan, err := s.Plan(kt)
-	require.NoError(t, err)
-	require.NoError(t, s.Apply(kt, plan, ApplyOption{}))
-
-	for id, want := range model.DisplayResourceTypes() {
-		require.Equal(t, want, gw.displays[id], "role %s display not configured", id)
-	}
 }
 
 func TestNewSyncerRejectsNilGateway(t *testing.T) {

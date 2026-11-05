@@ -147,11 +147,13 @@ func Roles() []client.Role {
 			// 服务写操作（app_edit/app_delete/release_*）只能在服务维度授予：
 			// 一旦放到项目维度，就是"该项目下全部服务都可写"，无法做到只授权特定服务。
 			// 列表与详情仍按 app_view 继承放行，保证能看见服务、点了引导申请。
-			Description: "管理指定项目及其全部环境；服务可查看，写操作需在服务维度单独授权",
+			// environment_create 关联的资源类型就是项目，按项目授权即"可在该项目下新建环境"，
+			// 否则除业务运维外没有角色能创建环境。
+			Description: "管理指定项目及其全部环境，可在项目下创建环境；服务可查看，写操作需在服务维度单独授权",
 			Actions: append(bizScoped(ActionFindBusinessResource),
 				projectScoped(ActionProjectView, ActionProjectEdit, ActionProjectDelete,
-					ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete,
-					ActionAppView)...),
+					ActionEnvironmentCreate, ActionEnvironmentView, ActionEnvironmentEdit,
+					ActionEnvironmentDelete, ActionAppView)...),
 		},
 		{
 			ID:          RoleProjectViewer,
@@ -178,69 +180,18 @@ func Roles() []client.Role {
 				environmentScoped(ActionEnvironmentView, ActionAppView)...),
 		},
 		{
-			ID:   RoleEnvironmentCreator,
-			Name: "环境创建者",
+			ID: RoleEnvironmentCreator,
+			// 不叫"环境创建者"：该角色不含 environment_create，叫创建者会被误当成"申请后可建环境"，
+			// 与 app_creator（含 app_create）的语义相反。建环境的权限在项目运维里。
+			Name: "环境负责人（创建后自动授予）",
 			// 只用于创建环境后的自动授权，与 V3 的 ResourceCreatorActions 对齐：
 			// 只授予该环境的查看/编辑/删除。若复用 environment_operator，创建者会额外获得
 			// 环境维度的 app_view，等于能看到该环境下的全部服务，比 V3 授权范围更大。
-			Description: "创建环境时自动授予；仅包含该环境的查看、编辑、删除，环境下的服务需单独授权",
+			Description: "创建环境后自动授予创建人；包含该环境的查看、编辑、删除，不含创建环境，" +
+				"环境下的服务需单独授权",
 			Actions: append(bizScoped(ActionFindBusinessResource),
 				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete)...),
 		},
-	}
-}
-
-// DisplayResourceTypes 返回每个角色的默认展示资源层级配置，键为角色 ID
-func DisplayResourceTypes() map[string][]client.DisplayResourceType {
-	// 只有 biz 一个授权维度的角色。
-	bizScopeOnly := []client.DisplayResourceType{
-		{RelatedResourceTypeID: ResourceTypeBiz, DisplayResourceTypeID: ResourceTypeBiz},
-	}
-	// 同时有 biz 与 app 两个授权维度的角色（服务运维/发布者/查看者）：
-	// 业务访问按 biz 展示；服务挂在环境下，展示粒度下移到环境，
-	// 授权页面才会展开「业务 → 项目 → 环境」再落到服务。
-	appScopes := []client.DisplayResourceType{
-		{RelatedResourceTypeID: ResourceTypeBiz, DisplayResourceTypeID: ResourceTypeBiz},
-		{RelatedResourceTypeID: ResourceTypeApp, DisplayResourceTypeID: ResourceTypeEnvironment},
-	}
-	// 项目维度角色按项目展示：授权时选到项目，即覆盖该项目下全部环境与服务。
-	projectScopes := []client.DisplayResourceType{
-		{RelatedResourceTypeID: ResourceTypeBiz, DisplayResourceTypeID: ResourceTypeBiz},
-		{RelatedResourceTypeID: ResourceTypeProject, DisplayResourceTypeID: ResourceTypeProject},
-		{RelatedResourceTypeID: ResourceTypeApp, DisplayResourceTypeID: ResourceTypeProject},
-	}
-	// 环境维度角色按环境展示：授权粒度止于单个环境，环境下的服务随环境一并被覆盖。
-	environmentScopes := []client.DisplayResourceType{
-		{RelatedResourceTypeID: ResourceTypeBiz, DisplayResourceTypeID: ResourceTypeBiz},
-		{RelatedResourceTypeID: ResourceTypeEnvironment, DisplayResourceTypeID: ResourceTypeEnvironment},
-		{RelatedResourceTypeID: ResourceTypeApp, DisplayResourceTypeID: ResourceTypeEnvironment},
-	}
-	// 环境创建者只含环境维度的操作，展示粒度止于环境。
-	environmentOnlyScopes := []client.DisplayResourceType{
-		{RelatedResourceTypeID: ResourceTypeBiz, DisplayResourceTypeID: ResourceTypeBiz},
-		{RelatedResourceTypeID: ResourceTypeEnvironment, DisplayResourceTypeID: ResourceTypeEnvironment},
-	}
-	// 服务创建者：业务访问按业务展示，app_create 按环境展示，
-	// 授权页面因此展开「业务 → 项目 → 环境」让用户选到具体环境。
-	appCreatorScopes := []client.DisplayResourceType{
-		{RelatedResourceTypeID: ResourceTypeBiz, DisplayResourceTypeID: ResourceTypeBiz},
-		{RelatedResourceTypeID: ResourceTypeEnvironment, DisplayResourceTypeID: ResourceTypeEnvironment},
-	}
-	return map[string][]client.DisplayResourceType{
-		RoleBizViewer:           bizScopeOnly,
-		RoleBizOperator:         bizScopeOnly,
-		RoleAppCreator:          appCreatorScopes,
-		RoleCredentialManager:   bizScopeOnly,
-		RoleProcConfigManager:   bizScopeOnly,
-		RoleAuditViewer:         bizScopeOnly,
-		RoleAppOperator:         appScopes,
-		RoleAppPublisher:        appScopes,
-		RoleAppViewer:           appScopes,
-		RoleProjectOperator:     projectScopes,
-		RoleProjectViewer:       projectScopes,
-		RoleEnvironmentOperator: environmentScopes,
-		RoleEnvironmentViewer:   environmentScopes,
-		RoleEnvironmentCreator:  environmentOnlyScopes,
 	}
 }
 

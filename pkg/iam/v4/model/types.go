@@ -109,7 +109,7 @@ const (
 	RoleAppPublisher = "app_publisher"
 	// RoleAppViewer 服务查看者，最小粒度只读
 	RoleAppViewer = "app_viewer"
-	// RoleProjectOperator 项目运维，管理指定项目及其全部环境
+	// RoleProjectOperator 项目运维，管理指定项目及其全部环境，含在项目下创建环境
 	RoleProjectOperator = "project_operator"
 	// RoleProjectViewer 项目查看者，查看指定项目及其全部环境
 	RoleProjectViewer = "project_viewer"
@@ -117,7 +117,7 @@ const (
 	RoleEnvironmentOperator = "environment_operator"
 	// RoleEnvironmentViewer 环境查看者，查看指定环境
 	RoleEnvironmentViewer = "environment_viewer"
-	// RoleEnvironmentCreator 环境创建者，环境创建后自动授予：只含该环境的查看/编辑/删除，
+	// RoleEnvironmentCreator 环境负责人，环境创建后自动授予创建人：只含该环境的查看/编辑/删除，不含创建环境，
 	// 环境下的服务需要单独授权，与 V3 的 ResourceCreatorActions 保持一致
 	RoleEnvironmentCreator = "environment_creator"
 )

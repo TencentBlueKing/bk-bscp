@@ -161,7 +161,7 @@ bk-bscp-authservice migrate diff-iam-v4
 bk-bscp-authservice migrate init-iam-v4
 ```
 
-V4 若 `init-iam-v4` 报"权限中心未接受原地更新"，说明该版本不支持修改 `resource_type_id`，需按提示 `delete-iam-v4` 后重建（会清空 BSCP 在 IAM 的授权，需提前导出重放）。
+V4 的 `update_action` 不支持修改 `resource_type_id`，`app_create` 改为关联环境时由 `init-iam-v4` 自动重建该操作（先从引用它的角色中移除，重建后按本地定义加回），不影响既有授权。若 `init-iam-v4` 报"权限中心未接受原地更新"，说明资源类型的祖先链未能更新，需按提示 `delete-iam-v4` 后重建（会清空 BSCP 在 IAM 的授权，需提前导出重放）。
 
 ## 六、实现位置
 

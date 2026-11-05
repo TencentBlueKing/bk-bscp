@@ -39,10 +39,12 @@ var iamV4TenantID string
 var migrateInitIAMV4Cmd = &cobra.Command{
 	Use:   "init-iam-v4",
 	Short: "Sync the IAM V4 permission model",
-	Long: "把本地定义的 V4 权限模型（资源类型、操作、角色、角色展示层级）同步到权限中心。\n" +
+	Long: "把本地定义的 V4 权限模型（资源类型、操作、角色）同步到权限中心。\n" +
+		"角色的展示层级不做同步，由权限中心按授权维度默认展示，线上已有配置保持不变。\n" +
 		"先与线上状态求差异再施加变更，可重复执行：模型未变时不会产生任何写请求。\n" +
-		"资源类型的祖先链、操作关联的资源类型会原地更新（更新后回读校验），\n" +
-		"避免删除重建导致既有授权全部失效；若权限中心未接受更新，命令会失败并提示改用 delete-iam-v4。\n" +
+		"资源类型的祖先链原地更新（更新后回读校验），若权限中心未接受更新，命令会失败并提示改用 delete-iam-v4；\n" +
+		"操作关联的资源类型不支持更新，会先从引用它的角色中移除、删除后重建，再按本地定义加回角色，\n" +
+		"授权挂在角色上，既有授权不受影响。\n" +
 		"只做新增与更新；线上多余的元素仅报告，删除请用 prune-iam-v4。",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runIAMV4Sync(false); err != nil {
@@ -90,8 +92,8 @@ var migrateDeleteIAMV4Cmd = &cobra.Command{
 		"3. 删除全部资源类型。\n" +
 		"删除顺序遵循依赖关系，角色下的全部授权会一并失效且无法恢复。\n" +
 		"系统本身保留，回调地址与 clients 白名单不受影响。\n" +
-		"仅在 init-iam-v4 报「权限中心未接受原地更新」时使用：该场景下祖先链或操作关联的" +
-		"资源类型只能重建，清空后必须执行 migrate init-iam-v4，并提前导出/重放既有授权。",
+		"仅在 init-iam-v4 报「权限中心未接受原地更新」时使用：该场景下资源类型的祖先链" +
+		"只能重建，清空后必须执行 migrate init-iam-v4，并提前导出/重放既有授权。",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := runIAMV4DeleteAll(); err != nil {
 			fmt.Println("清空 IAM V4 模型失败:", err)
