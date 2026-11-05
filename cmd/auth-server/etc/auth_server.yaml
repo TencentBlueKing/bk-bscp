@@ -61,13 +61,17 @@ iam:
   # appSecret is bscp app secret.
   appSecret: xxxx
   # 项目/环境维度权限校验开关，V3、V4 共用，仅 auth-server 生效。
-  # 关闭时只校验业务维度：项目/环境操作不请求权限中心；
-  # 服务创建仍校验，但只认业务维度（资源实例仍是目标环境，路径只声明业务）；
-  # 服务其它操作的鉴权路径退化为 /biz,{bizID}/。
-  # 开启后追加项目/环境维度校验，服务创建按目标环境授权，服务鉴权路径为三级拓扑。
+  # 关闭时项目/环境资源本身不鉴权（不请求权限中心），服务等服务级资源仍逐实例校验；
+  # 开启后项目/环境按实例校验，服务创建按目标环境授权。
   # 未配置时读取环境变量 BK_BSCP_IAM_PROJECT_ENV_AUTH，仍为空则视为 false。
   project_environment_auth:
     enabled: false
+    # IAM 侧已注册的资源拓扑，取值 auto/legacy/hierarchical，仅 auth-server 生效。
+    # auto: 启动时探测服务资源的父链，探测失败则启动失败，需显式配置 legacy 或 hierarchical。
+    # legacy: 业务 → 服务，服务路径为 /biz,{bizID}/，用于权限中心尚未升级模型的环境。
+    # hierarchical: 业务 → 项目 → 环境 → 服务。
+    # 未配置时读取环境变量 BK_BSCP_IAM_RESOURCE_TOPOLOGY，仍为空则视为 auto。
+    topology: auto
   # defines tls related options.
   tls:
     # server should be accessed without verifying the TLS certificate.

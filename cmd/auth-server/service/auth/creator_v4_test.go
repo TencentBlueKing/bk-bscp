@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 	clientv4 "github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/model"
@@ -29,10 +30,11 @@ import (
 
 // fakeV4Gateway 记录授权请求，避免单测依赖真实网关。
 type fakeV4Gateway struct {
-	operator string
-	items    []clientv4.Authorization
-	calls    int
-	err      error
+	operator    string
+	items       []clientv4.Authorization
+	permissions []clientv4.ApplyPermission
+	calls       int
+	err         error
 }
 
 func (f *fakeV4Gateway) AddAuthorizations(_ *kit.Kit, operator string,
@@ -45,10 +47,11 @@ func (f *fakeV4Gateway) AddAuthorizations(_ *kit.Kit, operator string,
 	return f.err
 }
 
-func (f *fakeV4Gateway) GeneratePermApplyURL(_ *kit.Kit, _ []clientv4.ApplyPermission) (
+func (f *fakeV4Gateway) GeneratePermApplyURL(_ *kit.Kit, permissions []clientv4.ApplyPermission) (
 	string, error) {
 
-	return "", nil
+	f.permissions = permissions
+	return "http://iam.example.com/apply", nil
 }
 
 func testKit() *kit.Kit {
@@ -195,4 +198,41 @@ func TestBizIDFromAncestors(t *testing.T) {
 // 未启用 V4 时 useV4 必须为假，确保 V3 行为不受影响。
 func TestUseV4Gating(t *testing.T) {
 	require.False(t, new(Auth).useV4())
+}
+
+// 申请链接的祖先链必须与鉴权路径同源：旧拓扑下服务只声明业务一层，
+// 漏传拓扑会让链接带上权限中心并不存在的 project/environment 节点而被拒绝。
+func TestGenApplyURLV4FollowsTopology(t *testing.T) {
+	cases := []struct {
+		name     string
+		topology meta.ResourceTopology
+		want     []clientv4.ResourceRef
+	}{
+		{"legacy", meta.TopologyLegacy, []clientv4.ResourceRef{
+			{Type: model.ResourceTypeBiz, ID: "100001"},
+		}},
+		{"hierarchical", meta.TopologyHierarchical, []clientv4.ResourceRef{
+			{Type: model.ResourceTypeBiz, ID: "100001"},
+			{Type: model.ResourceTypeProject, ID: "40001"},
+			{Type: model.ResourceTypeEnvironment, ID: "50001"},
+		}},
+	}
+
+	for _, c := range cases {
+		gw := new(fakeV4Gateway)
+		a := &Auth{v4Cli: gw, topology: c.topology}
+
+		url, err := a.genApplyURLV4(testKit(), []*meta.ResourceAttribute{{
+			Basic:         meta.Basic{Type: meta.App, Action: meta.View, ResourceID: 30001},
+			BizID:         100001,
+			ProjectID:     40001,
+			EnvironmentID: 50001,
+		}})
+		require.NoError(t, err, c.name)
+		require.NotEmpty(t, url, c.name)
+		require.Len(t, gw.permissions, 1, c.name)
+		require.Equal(t, model.ActionAppView, gw.permissions[0].ActionID, c.name)
+		require.Len(t, gw.permissions[0].Resources, 1, c.name)
+		require.Equal(t, c.want, gw.permissions[0].Resources[0].Ancestors, c.name)
+	}
 }

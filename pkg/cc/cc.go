@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/config"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 )
 
@@ -109,6 +110,21 @@ func AuthServer() AuthServerSetting {
 	}
 
 	return *s
+}
+
+// ModelTenantID 返回权限中心模型（资源类型、操作、实例视图等）所属的租户，按当前服务的配置取值。
+func ModelTenantID() string {
+	return ResolveModelTenantID(AuthServer().FeatureFlags.EnableMultiTenantMode)
+}
+
+// ResolveModelTenantID 按租户模式解析权限模型所属的租户。
+// 模型属于平台而非业务租户：多租户环境使用运营租户 system，单租户环境使用 default，与 IAM 版本无关。
+func ResolveModelTenantID(multiTenant bool) string {
+	if multiTenant {
+		return constant.SystemTenantID
+	}
+
+	return constant.DefaultTenantID
 }
 
 // ConfigServer return config server Setting.

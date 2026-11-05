@@ -130,6 +130,9 @@ func (a *Auth) fillAppScope(kt *kit.Kit, resources []*meta.ResourceAttribute) er
 // 权限检查这类不带业务上下文的调用方常常不传归属（0 值），若直接拼路径会得到空串，
 // 权限中心按无拓扑处理，结果就是"已经授权了却一直判无权限"。
 // 因此统一在鉴权入口解析实例的真实归属，未指定实例时再补默认归属，供 V3/V4 共用。
+//
+// 项目/环境维度开关只影响这两类资源本身：它们不参与鉴权时无需补默认归属，
+// 但服务创建（app_create）的归属仍要回查，见 needsEnvironmentScope。
 func (a *Auth) fillResourceScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
 	if err := a.fillAppScope(kt, resources); err != nil {
 		return err
@@ -139,13 +142,42 @@ func (a *Auth) fillResourceScope(kt *kit.Kit, resources []*meta.ResourceAttribut
 		return err
 	}
 
+	if !a.projectEnvAuth {
+		// 项目资源本身不进入鉴权，补了默认项目也不会被使用。
+		return nil
+	}
+
 	return a.fillProjectScope(kt, resources)
+}
+
+// needsEnvironmentScope 判断资源是否需要回查环境的真实父级（业务与项目）。
+//
+// 服务创建的授权维度是目标环境，新拓扑下路径为 /biz,{biz}/project,{pid}/，
+// 因此只要拓扑不是 legacy 就必须回查，与项目/环境维度开关无关：
+// 跳过回查会让 project 祖先直接采信调用方提交的 project_id，
+// 拥有项目 P1 权限的调用方配上 P2 下的环境就能拼出 P1 的路径。
+// 环境资源本身只在开启项目/环境维度校验时才需要归属。
+func (a *Auth) needsEnvironmentScope(res *meta.ResourceAttribute) bool {
+	if res == nil || res.Action == meta.SkipAction {
+		return false
+	}
+
+	switch res.Type {
+	case meta.Environment:
+		return a.projectEnvAuth
+	case meta.App:
+		// 服务只有创建动作按环境维度鉴权
+		return res.Action == meta.Create && !a.topology.IsLegacy()
+	default:
+		return false
+	}
 }
 
 // fillEnvironmentScope 补齐「按项目或环境鉴权」的归属。
 //
-// 覆盖两类资源：环境操作（view/update/delete/create）与在环境下创建服务（app_create，
-// 授权维度是目标环境）。它们的鉴权路径都需要 project_id 作祖先，缺少环境实例时按默认环境补齐。
+// 覆盖两类资源：在环境下创建服务（app_create，授权维度是目标环境）与环境操作
+// （view/update/delete/create，仅开启项目/环境维度校验时参与）。它们的鉴权路径都需要
+// project_id 作祖先，缺少环境实例时按默认环境补齐。
 // 已有环境实例时父级一律以回查到的真实路径为准，请求里带的业务与项目只当作线索、不参与拼路径。
 func (a *Auth) fillEnvironmentScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
 	envScopes, err := a.lookupEnvironmentScopes(kt, resources)
@@ -154,16 +186,13 @@ func (a *Auth) fillEnvironmentScope(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	for _, res := range resources {
-		if res == nil {
+		if !a.needsEnvironmentScope(res) {
 			continue
 		}
 
 		isEnv := res.Type == meta.Environment
 		// 服务创建按目标环境授权，与环境操作共用同一套归属
 		isAppCreate := res.Type == meta.App && res.Action == meta.Create
-		if !isEnv && !isAppCreate {
-			continue
-		}
 
 		hasInstance := (!isEnv || res.Action != meta.Create) && res.ResourceID != 0
 		if hasInstance {
@@ -262,12 +291,11 @@ func (a *Auth) lookupEnvironmentScopes(kt *kit.Kit, resources []*meta.ResourceAt
 	envIDs := make([]uint32, 0)
 	seenEnvIDs := make(map[uint32]struct{})
 	for _, res := range resources {
-		if res == nil || res.Action == meta.SkipAction {
+		if !a.needsEnvironmentScope(res) || res.ResourceID == 0 {
 			continue
 		}
-		isExistingEnvironment := res.Type == meta.Environment && res.Action != meta.Create
-		isAppCreate := res.Type == meta.App && res.Action == meta.Create
-		if (!isExistingEnvironment && !isAppCreate) || res.ResourceID == 0 {
+		// 创建环境时资源实例是所属项目，没有可回查的环境实例。
+		if res.Type == meta.Environment && res.Action == meta.Create {
 			continue
 		}
 		if _, ok := seenEnvIDs[res.ResourceID]; ok {
