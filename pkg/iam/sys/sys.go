@@ -43,6 +43,16 @@ func (s *Sys) GetSystemToken(ctx context.Context) (string, error) {
 	return s.client.GetSystemToken(ctx)
 }
 
+// ResourceTypes 返回权限中心已注册的资源类型，用于探测资源拓扑，只读不改动线上模型。
+func (s *Sys) ResourceTypes(ctx context.Context) ([]client.ResourceType, error) {
+	resp, err := s.client.GetSystemInfo(ctx, []client.SystemQueryField{client.FieldResourceTypes})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Data.ResourceTypes, nil
+}
+
 // Register register auth model to iam.
 //
 // 资源之间存在依赖：操作引用资源类型与实例视图，实例视图引用资源类型。因此写入顺序固定为

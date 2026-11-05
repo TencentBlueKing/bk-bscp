@@ -29,6 +29,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	pbapp "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/app"
+	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
 // fakeAuthzV4Gateway 记录 V4 鉴权请求，便于断言开关是否真正改变了发往权限中心的资源。
@@ -93,8 +94,8 @@ func appViewAndProjectViewReq() *pbas.AuthorizeBatchReq {
 }
 
 // 关闭项目/环境维度后，项目资源直接放行且不请求权限中心，
-// 服务鉴权路径退化为业务单级，也不再回查环境归属。
-func TestAuthorizeBatchDisabledOnlyAuthorizesBusinessDimension(t *testing.T) {
+// 服务仍按服务实例鉴权，路径保持与注册父链一致的三级形态。
+func TestAuthorizeBatchDisabledSkipsProjectAndEnvironment(t *testing.T) {
 	gw := &fakeAuthzV4Gateway{allow: map[string]bool{"app_view|30001": true}}
 	ds := &fakeAppDS{apps: map[uint32]*pbapp.App{
 		30001: {Id: 30001, BizId: 100001, ProjectId: 40001, EnvId: 50001},
@@ -109,15 +110,56 @@ func TestAuthorizeBatchDisabledOnlyAuthorizesBusinessDimension(t *testing.T) {
 	require.True(t, resp.Decisions[0].Authorized)
 	require.True(t, resp.Decisions[1].Authorized)
 
-	// 只对服务发起一次鉴权，且路径只声明业务一层。
+	// 只对服务发起一次鉴权，路径与注册父链一致，不能缩成业务单级。
 	require.Equal(t, 1, gw.calls)
 	require.Equal(t, model.ActionAppView, gw.actionIDs[0])
 	require.Len(t, gw.resources[0], 1)
-	require.Equal(t, "/biz,100001/", gw.resources[0][0].Attributes[clientv4.IAMPathAttrKey])
+	require.Equal(t, "/biz,100001/project,40001/environment,50001/",
+		gw.resources[0][0].Attributes[clientv4.IAMPathAttrKey])
 
 	// 服务归属仍需回查以归一化业务，环境的父级不需要解析。
 	require.Equal(t, 1, ds.calls)
 	require.Zero(t, ds.environmentCalls)
+}
+
+// 关闭项目/环境维度校验时，服务创建仍按目标环境授权，项目祖先必须回查环境自身归属：
+// 否则拥有项目 40001 权限的调用方拿项目 40002 下的环境就能拼出项目 40001 的路径。
+func TestAuthorizeBatchDisabledAppCreateUsesRealEnvironmentParent(t *testing.T) {
+	gw := &fakeAuthzV4Gateway{allow: map[string]bool{"app_create|50002": true}}
+	ds := &fakeAppDS{environmentInfos: map[uint32]*pbds.InstanceInfo{
+		50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
+	}}
+	a := newSwitchAuth(t, false, gw, ds)
+
+	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), &pbas.AuthorizeBatchReq{
+		User: pbas.PbUserInfo(&meta.UserInfo{UserName: "tester"}),
+		Resources: pbas.PbResourceAttributes([]*meta.ResourceAttribute{
+			{
+				Basic:     meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
+				BizID:     100001,
+				ProjectID: 40001,
+			},
+		}),
+	})
+	require.NoError(t, err)
+	require.Len(t, resp.Decisions, 1)
+
+	require.Equal(t, 1, ds.environmentCalls, "服务创建的祖先必须回查")
+	require.Equal(t, 1, gw.calls)
+	require.Equal(t, model.ActionAppCreate, gw.actionIDs[0])
+	require.Equal(t, "/biz,100001/project,40002/",
+		gw.resources[0][0].Attributes[clientv4.IAMPathAttrKey])
+}
+
+// 资源项缺少 basic 时按参数错误返回，而不是落到 nil pointer panic。
+func TestAuthorizeBatchRejectsResourceWithoutBasic(t *testing.T) {
+	a := &Auth{disableWriteOpt: &options.DisableWriteOption{}}
+
+	_, err := a.AuthorizeBatch(authBatchCtx("tester"), &pbas.AuthorizeBatchReq{
+		User:      pbas.PbUserInfo(&meta.UserInfo{UserName: "tester"}),
+		Resources: []*pbas.ResourceAttribute{{BizId: 2}},
+	})
+	require.ErrorContains(t, err, "basic is required")
 }
 
 // 开启项目/环境维度后，项目与服务各自按实例维度校验，路径为完整三级拓扑。

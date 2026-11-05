@@ -22,7 +22,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/cc"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
@@ -164,15 +163,7 @@ func confirmPrompt(prompt string) error {
 // modelTenantID 注册权限模型时携带的租户，调用前需已加载配置。
 // 模型属于平台而非业务租户，多租户环境用运营租户 system，单租户环境用 default，与 IAM 版本无关。
 func modelTenantID() string {
-	return resolveModelTenantID(cc.AuthServer().FeatureFlags.EnableMultiTenantMode)
-}
-
-func resolveModelTenantID(multiTenant bool) string {
-	if multiTenant {
-		return constant.SystemTenantID
-	}
-
-	return constant.DefaultTenantID
+	return cc.ModelTenantID()
 }
 
 // NewIamSys new a iamSystem

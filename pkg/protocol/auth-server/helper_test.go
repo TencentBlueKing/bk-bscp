@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server/types"
 )
 
@@ -55,4 +56,19 @@ func TestPullResourceReqRejectsOversizedPageLimit(t *testing.T) {
 
 	_, err := req.PullResourceReq()
 	require.ErrorContains(t, err, "limit should")
+}
+
+// 资源项缺少 basic 时不能触发 nil pointer panic：转换后退化为空资源，
+// 由鉴权入口按参数错误返回。
+func TestResourceAttributesToleratesMissingBasic(t *testing.T) {
+	converted := ResourceAttributes([]*ResourceAttribute{
+		{BizId: 2},
+		nil,
+	})
+
+	require.Len(t, converted, 2)
+	require.NotNil(t, converted[0])
+	require.Equal(t, meta.Basic{}, converted[0].Basic)
+	require.Equal(t, uint32(2), converted[0].BizID)
+	require.Nil(t, converted[1])
 }

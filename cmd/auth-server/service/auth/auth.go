@@ -85,9 +85,11 @@ type Auth struct {
 	appScopes gcache.Cache
 	// defaultScopes 缓存按业务解析出的默认项目/环境，用于归属为 0 的历史服务
 	defaultScopes gcache.Cache
-	// projectEnvAuth 是否启用项目/环境维度校验，关闭时只校验业务维度，
-	// 服务的鉴权路径退化为业务单级，与项目/环境维度引入前一致。
+	// projectEnvAuth 是否启用项目/环境维度校验，关闭时项目/环境资源本身不参与鉴权，
+	// 服务等服务级资源仍然逐实例校验。
 	projectEnvAuth bool
+	// topology IAM 侧注册的资源拓扑，决定服务等资源的祖先链层级。
+	topology meta.ResourceTopology
 }
 
 // Option 定义 Auth 的可选配置。
@@ -100,9 +102,16 @@ func WithProjectEnvironmentAuth(enabled bool) Option {
 	}
 }
 
+// WithResourceTopology 设置 IAM 侧注册的资源拓扑。
+func WithResourceTopology(topology meta.ResourceTopology) Option {
+	return func(a *Auth) {
+		a.topology = topology
+	}
+}
+
 // authOptions 返回当前生效的权限维度选项。
 func (a *Auth) authOptions() PermissionOptions {
-	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvAuth}
+	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvAuth, Topology: a.topology}
 }
 
 // v4Gateway 是本包用到的 V4 网关能力。
@@ -141,6 +150,9 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 		// 默认启用项目/环境维度校验，保持与改造后实现一致；
 		// 运行时是否启用由 auth-server 依据配置开关显式传入。
 		projectEnvAuth: true,
+		// 默认按新拓扑（业务 → 项目 → 环境 → 服务）拼路径，
+		// 实际取值由 auth-server 启动时探测或配置显式指定。
+		topology: meta.TopologyHierarchical,
 	}
 
 	for _, opt := range opts {
@@ -152,8 +164,10 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 
 // WithIAMV4 启用权限中心 V4：鉴权、申请链接与创建者授权改走 V4 实现。
 func (a *Auth) WithIAMV4(cli *clientv4.Client, cfg authv4.Config) error {
-	// 权限维度开关以 Auth 上的取值为准，避免调用方与鉴权器各持一份导致 V3/V4 行为不一致。
+	// 权限维度开关与资源拓扑以 Auth 上的取值为准，
+	// 避免调用方与鉴权器各持一份导致 V3/V4 行为不一致。
 	cfg.IgnoreProjectEnvironment = !a.projectEnvAuth
+	cfg.Topology = a.topology
 
 	authorizer, err := authv4.NewAuthorizer(cli, cfg)
 	if err != nil {
@@ -171,10 +185,28 @@ func (a *Auth) useV4() bool {
 	return a.v4 != nil
 }
 
+// validateResourceBasics 校验调用方提交的资源项结构完整。
+// 缺少 basic 时资源类型与动作都无从解析，直接进入映射层只会得到难以定位的错误，
+// 这里统一按参数错误返回，提示调用方修正请求体结构。
+func validateResourceBasics(resources []*pbas.ResourceAttribute) error {
+	for idx, res := range resources {
+		if res == nil || res.GetBasic() == nil {
+			return errf.New(errf.InvalidParameter,
+				fmt.Sprintf("resource %d is invalid, basic is required", idx))
+		}
+	}
+
+	return nil
+}
+
 // AuthorizeBatch authorize resource batch.
 func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) (*pbas.AuthorizeBatchResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 	resp := new(pbas.AuthorizeBatchResp)
+
+	if err := validateResourceBasics(req.Resources); err != nil {
+		return nil, err
+	}
 
 	if len(req.Resources) == 0 {
 		resp.Decisions = make([]*pbas.Decision, 0)
@@ -197,14 +229,10 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 
 	// 服务挂在环境下，鉴权路径需要项目与环境两级归属。调用方常常只带 biz 与实例 ID，
 	// 在这里统一回查或按默认项目/环境补齐，V3 与 V4 共用同一份归属，避免两套路径不一致。
+	// 关闭项目/环境维度校验时项目/环境资源本身被跳过，但服务与服务创建仍要按真实归属归一化，
+	// 否则调用方可以伪造业务或项目拼接鉴权路径。
 	resources := pbas.ResourceAttributes(req.Resources)
-	if a.projectEnvAuth {
-		if err := a.fillResourceScope(kt, resources); err != nil {
-			return nil, err
-		}
-	} else if err := a.fillAppScope(kt, resources); err != nil {
-		// 关闭项目/环境维度校验时，项目与环境不参与鉴权，无需解析它们的父级；
-		// 服务仍需按自身真实归属归一化业务，避免调用方伪造业务拼接鉴权路径。
+	if err := a.fillResourceScope(kt, resources); err != nil {
 		return nil, err
 	}
 
@@ -354,13 +382,14 @@ func (a *Auth) GetPermissionToApply(ctx context.Context, req *pbas.GetPermission
 	kt := kit.FromGrpcContext(ctx)
 	resp := new(pbas.GetPermissionToApplyResp)
 
+	if err := validateResourceBasics(req.Resources); err != nil {
+		return nil, err
+	}
+
 	resourceAttributes := pbas.ResourceAttributes(req.Resources)
-	// 申请链接要回显「业务 → 项目 → 环境」，与鉴权使用同一份归属。
-	if a.projectEnvAuth {
-		if err := a.fillResourceScope(kt, resourceAttributes); err != nil {
-			return nil, err
-		}
-	} else if err := a.fillAppScope(kt, resourceAttributes); err != nil {
+	// 申请链接要回显「业务 → 项目 → 环境」，与鉴权使用同一份归属；
+	// 关闭项目/环境维度校验时服务创建仍按环境维度申请，归属必须同样回查。
+	if err := a.fillResourceScope(kt, resourceAttributes); err != nil {
 		return nil, err
 	}
 
@@ -410,6 +439,8 @@ func (a *Auth) genApplyURLV4(kt *kit.Kit, resources []*meta.ResourceAttribute) (
 	for _, res := range resources {
 		mapped, err := adaptorv4.AdaptWithOptions(res, adaptorv4.Options{
 			ProjectEnvironmentAuth: a.projectEnvAuth,
+			// 申请链接的祖先链必须与鉴权路径同源，否则旧拓扑下会提交权限中心不存在的节点。
+			Topology: a.topology,
 		})
 		if err != nil {
 			return "", err

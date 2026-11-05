@@ -22,17 +22,20 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/model"
 )
 
-// Options 控制资源映射时启用的权限维度。
+// Options 控制资源映射时启用的权限维度与拓扑形态。
 type Options struct {
 	// ProjectEnvironmentAuth 是否启用项目与环境维度的权限校验。
-	// 关闭时这两类资源直接跳过；服务创建仍校验，但实例仍用目标环境、
-	// 路径只声明业务一层；服务其它操作的鉴权路径同样退化为业务单级。
+	// 关闭时只有这两类资源本身被跳过；服务相关操作仍然校验，
+	// 拓扑路径也保持与注册父链一致的完整形态。
 	ProjectEnvironmentAuth bool
+	// Topology IAM 侧注册的资源拓扑，决定资源路径的层级。
+	// 零值按新模型（三级路径）处理，避免调用方漏传时把路径裁成旧模型。
+	Topology meta.ResourceTopology
 }
 
-// defaultOptions 返回默认开启项目/环境维度校验的选项。
+// defaultOptions 返回默认开启项目/环境维度校验、按新拓扑映射的选项。
 func defaultOptions() Options {
-	return Options{ProjectEnvironmentAuth: true}
+	return Options{ProjectEnvironmentAuth: true, Topology: meta.TopologyHierarchical}
 }
 
 // Mapped 是 meta 域模型映射到 IAM V4 之后的结果。
@@ -52,9 +55,9 @@ type Mapped struct {
 	ProjectID string
 	// EnvironmentID 所属环境 ID。服务用它补出三级路径的最后一级
 	EnvironmentID string
-	// LegacyBizPath 为 true 时，非根资源的拓扑路径只声明业务一层。
-	// 仅用于关闭项目/环境维度校验后的兼容模式。
-	LegacyBizPath bool
+	// legacyBizPath 为 true 时非根资源的拓扑路径只声明业务一层。
+	// 只在旧拓扑（业务 → 服务）下使用，新拓扑必须给出完整祖先链。
+	legacyBizPath bool
 }
 
 // skipped 构造一个直接放行的映射结果。
@@ -96,8 +99,8 @@ func (m *Mapped) AuthResource() *client.AuthResource {
 // iamPath 按资源类型拼出从根到父级的拓扑路径。
 // 项目挂业务，环境挂项目，服务挂环境（三级路径），路径必须与权限中心注册的祖先链一致。
 func (m *Mapped) iamPath() string {
-	// 兼容模式：只声明业务一层祖先，项目/环境维度不参与判断。
-	if m.LegacyBizPath {
+	// 旧拓扑下资源直接挂在业务下，只能声明业务一层。
+	if m.legacyBizPath {
 		return client.BuildIAMPath(model.ResourceTypeBiz, m.BizID)
 	}
 
@@ -117,8 +120,8 @@ func (m *Mapped) iamPath() string {
 
 // ancestors 按资源类型返回申请链接用的祖先链，顺序从根到父级。
 func (m *Mapped) ancestors() []client.ResourceRef {
-	// 兼容模式：申请链接与鉴权保持一致，只回显业务一层祖先。
-	if m.LegacyBizPath {
+	// 申请链接的祖先链必须与鉴权路径、注册拓扑保持一致。
+	if m.legacyBizPath {
 		return []client.ResourceRef{{Type: model.ResourceTypeBiz, ID: m.BizID}}
 	}
 
@@ -204,7 +207,7 @@ func AdaptWithOptions(a *meta.ResourceAttribute, opts Options) (*Mapped, error) 
 	case meta.Project:
 		return adaptProject(a)
 	case meta.Environment:
-		return adaptEnvironment(a)
+		return adaptEnvironment(a, opts)
 	case meta.Commit, meta.ConfigItem, meta.Content, meta.CRInstance, meta.Release,
 		meta.ReleasedCI, meta.Strategy, meta.StrategySet, meta.PSH, meta.Repo, meta.Sidecar:
 		return skipped(), nil
@@ -221,51 +224,39 @@ func adaptBiz(a *meta.ResourceAttribute) (*Mapped, error) {
 	return bizScoped(model.ActionFindBusinessResource, a.BizID), nil
 }
 
+// adaptApp 映射服务相关操作。
+//
+// 服务的拓扑路径必须与权限中心注册的父链一致：新拓扑为「业务 → 项目 → 环境」三级，
+// 旧拓扑只有业务一级。项目/环境维度校验开关只决定这两类资源本身是否校验，
+// 不会改变服务路径——路径与父链不符时，权限中心无法用它匹配任何服务级授权。
 func adaptApp(a *meta.ResourceAttribute, opts Options) (*Mapped, error) {
 	switch a.Action {
 	case meta.Create:
-		if !opts.ProjectEnvironmentAuth {
-			// 关闭项目/环境维度校验：服务创建仍然校验，但只认业务维度。
-			// 动作在权限中心只关联环境实例，因此资源实例仍用目标环境，
-			// 路径只声明业务一层，项目/环境维度的授权不再参与判断。
-			return environmentScopedWithBizPath(model.ActionAppCreate, a), nil
-		}
-
 		// 服务创建按环境授权：语义是"允许在哪个环境下创建服务"，此时还没有 app 实例，
 		// 授权维度落在服务将要归属的环境上（ResourceID 即目标环境 ID），
 		// 路径为 /biz,{bizID}/project,{projectID}/，按业务或项目维度的授权经继承覆盖。
-		return environmentScoped(model.ActionAppCreate, a), nil
+		// 旧拓扑下 app_create 只关联业务实例，只能按业务维度发起。
+		if opts.Topology.IsLegacy() {
+			return bizScoped(model.ActionAppCreate, a.BizID), nil
+		}
+
+		return environmentScoped(model.ActionAppCreate, a, opts.Topology), nil
 	case meta.Find:
 		// 查询服务列表属于业务级别操作
 		return bizScoped(model.ActionFindBusinessResource, a.BizID), nil
 	case meta.View:
-		return appScopedWithOptions(model.ActionAppView, a, opts), nil
+		return appScoped(model.ActionAppView, a, opts.Topology), nil
 	case meta.Update:
-		return appScopedWithOptions(model.ActionAppEdit, a, opts), nil
+		return appScoped(model.ActionAppEdit, a, opts.Topology), nil
 	case meta.Delete:
-		return appScopedWithOptions(model.ActionAppDelete, a, opts), nil
+		return appScoped(model.ActionAppDelete, a, opts.Topology), nil
 	case meta.GenerateRelease:
-		return appScopedWithOptions(model.ActionReleaseGenerate, a, opts), nil
+		return appScoped(model.ActionReleaseGenerate, a, opts.Topology), nil
 	case meta.Publish:
-		return appScopedWithOptions(model.ActionReleasePublish, a, opts), nil
+		return appScoped(model.ActionReleasePublish, a, opts.Topology), nil
 	default:
 		return nil, fmt.Errorf("unsupported bscp action for app: %s", a.Action)
 	}
-}
-
-// appScopedWithOptions 构造按服务维度鉴权的映射，并按开关决定拓扑路径的层级。
-func appScopedWithOptions(actionID string, a *meta.ResourceAttribute, opts Options) *Mapped {
-	m := appScoped(actionID, a)
-
-	// 兼容模式下项目/环境不参与鉴权，清空它们的 ID：
-	// 鉴权路径只到业务一层，判定结果也不再与这些归属相关。
-	if !opts.ProjectEnvironmentAuth {
-		m.LegacyBizPath = true
-		m.ProjectID = ""
-		m.EnvironmentID = ""
-	}
-
-	return m
 }
 
 // adaptProject 项目按项目实例授权，实现项目级隔离：
@@ -292,16 +283,16 @@ func adaptProject(a *meta.ResourceAttribute) (*Mapped, error) {
 // adaptEnvironment 环境是独立授权资源，按环境实例鉴权：
 // 授予某个环境的权限只覆盖该环境；项目或业务维度的授权经拓扑路径覆盖其下全部环境。
 // 创建时环境实例还不存在，按所属项目授权。
-func adaptEnvironment(a *meta.ResourceAttribute) (*Mapped, error) {
+func adaptEnvironment(a *meta.ResourceAttribute, opts Options) (*Mapped, error) {
 	switch a.Action {
 	case meta.Create:
 		return projectScoped(model.ActionEnvironmentCreate, a), nil
 	case meta.View:
-		return environmentScoped(model.ActionEnvironmentView, a), nil
+		return environmentScoped(model.ActionEnvironmentView, a, opts.Topology), nil
 	case meta.Update:
-		return environmentScoped(model.ActionEnvironmentEdit, a), nil
+		return environmentScoped(model.ActionEnvironmentEdit, a, opts.Topology), nil
 	case meta.Delete:
-		return environmentScoped(model.ActionEnvironmentDelete, a), nil
+		return environmentScoped(model.ActionEnvironmentDelete, a, opts.Topology), nil
 	default:
 		return nil, fmt.Errorf("unsupported bscp action for environment: %s", a.Action)
 	}
@@ -360,11 +351,12 @@ func bizScoped(actionID string, bizID uint32) *Mapped {
 }
 
 // appScoped 构造按服务维度鉴权的映射。
-// 服务挂在环境下，鉴权路径固定为三级：/biz,{biz}/project,{project}/environment,{env}/。
+// 新拓扑下服务挂在环境下，鉴权路径为三级：/biz,{biz}/project,{project}/environment,{env}/；
+// 旧拓扑下服务直接挂业务，路径只有 /biz,{biz}/。
 // 归属为 0 时按 0 拼接（不省略层级），与 V3 的 appIAMPath 完全一致：
 // 历史服务还没回填项目/环境时，业务维度的授权仍能通过路径继承覆盖它，
 // 项目/环境维度的授权则因为 ID 对不上而自然不命中。
-func appScoped(actionID string, a *meta.ResourceAttribute) *Mapped {
+func appScoped(actionID string, a *meta.ResourceAttribute, topology meta.ResourceTopology) *Mapped {
 	return &Mapped{
 		ActionID:      actionID,
 		ResourceType:  model.ResourceTypeApp,
@@ -372,6 +364,7 @@ func appScoped(actionID string, a *meta.ResourceAttribute) *Mapped {
 		BizID:         formatID(a.BizID),
 		ProjectID:     formatID(a.ProjectID),
 		EnvironmentID: formatID(a.EnvironmentID),
+		legacyBizPath: topology.IsLegacy(),
 	}
 }
 
@@ -386,28 +379,21 @@ func projectScoped(actionID string, a *meta.ResourceAttribute) *Mapped {
 }
 
 // environmentScoped 构造按环境维度鉴权的映射。
+// 新拓扑下环境挂项目，路径为 /biz,{biz}/project,{project}/；
+// 旧拓扑没有环境资源类型，只声明业务一层。
 // 与 V3 的 environmentIAMPath 一致：项目归属为 0 时照样拼成 /biz,{biz}/project,0/，
 // 业务维度的授权仍可覆盖该环境，项目维度的授权因为 ID 对不上而不命中。
-func environmentScoped(actionID string, a *meta.ResourceAttribute) *Mapped {
+func environmentScoped(actionID string, a *meta.ResourceAttribute,
+	topology meta.ResourceTopology) *Mapped {
+
 	return &Mapped{
-		ActionID:     actionID,
-		ResourceType: model.ResourceTypeEnvironment,
-		ResourceID:   formatID(a.ResourceID),
-		BizID:        formatID(a.BizID),
-		ProjectID:    formatID(a.ProjectID),
+		ActionID:      actionID,
+		ResourceType:  model.ResourceTypeEnvironment,
+		ResourceID:    formatID(a.ResourceID),
+		BizID:         formatID(a.BizID),
+		ProjectID:     formatID(a.ProjectID),
+		legacyBizPath: topology.IsLegacy(),
 	}
-}
-
-// environmentScopedWithBizPath 构造按环境维度鉴权、但路径只声明业务一层的映射。
-// 关闭项目/环境维度校验时服务创建使用：动作仍落在环境上（模型约束），
-// 判定只认业务维度。
-func environmentScopedWithBizPath(actionID string, a *meta.ResourceAttribute) *Mapped {
-	m := environmentScoped(actionID, a)
-	m.LegacyBizPath = true
-	// 项目不参与鉴权，清空后判定结果与缓存键都不再依赖它。
-	m.ProjectID = ""
-
-	return m
 }
 
 func formatID(id uint32) string {

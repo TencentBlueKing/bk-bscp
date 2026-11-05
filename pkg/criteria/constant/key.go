@@ -106,6 +106,8 @@ const (
 	DefaultLanguage = "zh-cn"
 	// DefaultTenantID is default tenant id
 	DefaultTenantID = "default"
+	// SystemTenantID is the system tenant id, used for platform level models and operations in multi-tenant mode
+	SystemTenantID = "system"
 )
 
 // Note:

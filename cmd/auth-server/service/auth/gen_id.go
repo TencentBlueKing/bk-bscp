@@ -80,14 +80,15 @@ func genBizIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 	return &iamReq, nil
 }
 
-func genAppIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
+func genAppIAMResource(a *meta.ResourceAttribute, topology meta.ResourceTopology) (*bkiam.Request, error) {
 	// 服务创建按目标环境授权：此时还没有服务实例，资源节点用环境而不是服务。
+	// 旧拓扑下 app_create 关联的是业务实例，不能提交环境节点。
 	if a.Action == meta.Create {
 		return &bkiam.Request{
 			System:    sys.SystemIDBSCP,
 			Subject:   dummyIAMUser,
 			Action:    bkiam.NewAction(string(sys.AppCreate)),
-			Resources: []iam.ResourceNode{environmentResourceNode(a)},
+			Resources: []iam.ResourceNode{appCreateResourceNode(a, topology)},
 		}, nil
 	}
 
@@ -95,7 +96,7 @@ func genAppIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 		System:  sys.SystemIDBSCP,
 		Subject: dummyIAMUser,
 		Resources: []iam.ResourceNode{
-			appResourceNode(a),
+			appResourceNode(a, topology),
 		},
 	}
 
@@ -169,13 +170,16 @@ func genBizIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, e
 	return action, nil
 }
 
-// genAppIAMApplicationWithOptions 构造服务相关的申请链接资源。
-// 关闭项目/环境维度校验时，申请链接只体现业务 → 服务，与改造前一致。
-func genAppIAMApplicationWithOptions(a *meta.ResourceAttribute,
-	opts PermissionOptions) (bkiam.ApplicationAction, error) {
+// genAppIAMApplication 构造服务相关的申请链接资源。
+//
+// 申请链接只用于向权限中心提交申请单，不参与鉴权判定，但节点链必须与权限中心注册的
+// 实例视图一致：新拓扑下服务需要「业务 → 项目 → 环境 → 服务」、服务创建需要
+// 「业务 → 项目 → 环境」，缺少中间层级会被直接拒绝，表现为 1902412 not satisfy instance selection。
+// 旧拓扑下服务直接挂在业务下，提交项目/环境节点同样会被拒绝。
+// 归属（业务/项目/环境）缺失时拼不出合法链，此时不生成申请项，避免提交 ID 为 0 的非法节点。
+func genAppIAMApplication(a *meta.ResourceAttribute, topology meta.ResourceTopology) (
+	bkiam.ApplicationAction, error) {
 
-	action := bkiam.ApplicationAction{}
-	resourceNodes := []iam.ApplicationResourceNode{}
 	resourceNodeBiz := iam.ApplicationResourceNode{
 		Type: string(sys.Business),
 		ID:   strconv.FormatUint(uint64(a.BizID), 10),
@@ -184,80 +188,125 @@ func genAppIAMApplicationWithOptions(a *meta.ResourceAttribute,
 		Type: string(sys.Project),
 		ID:   strconv.FormatUint(uint64(a.ProjectID), 10),
 	}
-	resourceNodeEnv := iam.ApplicationResourceNode{
-		Type: string(sys.Environment),
-		ID:   strconv.FormatUint(uint64(a.EnvironmentID), 10),
-	}
-	resourceNodeApp := iam.ApplicationResourceNode{
-		Type: string(sys.Application),
-		ID:   strconv.FormatUint(uint64(a.ResourceID), 10),
-	}
 
 	// 没有服务实例时（例如克隆只按业务维度校验 app_edit）无法生成实例级申请项。
 	if a.Action != meta.Create && a.ResourceID == 0 {
-		return action, nil
+		return bkiam.ApplicationAction{}, nil
+	}
+
+	if topology.IsLegacy() {
+		return genLegacyAppIAMApplication(a, resourceNodeBiz)
 	}
 
 	switch a.Action {
 	case meta.Create:
-		if !opts.ProjectEnvironmentAuth {
-			// 关闭项目/环境维度校验：申请链接同样只声明业务一层。
-			// 没有目标环境实例时无法构造合法实例，不生成申请项。
-			if a.ResourceID == 0 {
-				return action, nil
-			}
-
-			action.ID = string(sys.AppCreate)
-			action.RelatedResourceTypes = []bkiam.ApplicationRelatedResourceType{
-				{
-					SystemID:  sys.SystemIDBSCP,
-					Type:      string(sys.Environment),
-					Instances: []bkiam.ApplicationResourceInstance{{resourceNodeBiz}},
-				},
-			}
-			return action, nil
+		// 服务创建按目标环境授权：申请项的资源类型是环境，ResourceID 即目标环境 ID。
+		if a.BizID == 0 || a.ProjectID == 0 || a.ResourceID == 0 {
+			return bkiam.ApplicationAction{}, nil
 		}
 
-		// 服务创建按目标环境授权，申请链接的拓扑是「业务 → 项目 → 环境」。
-		action.ID = string(sys.AppCreate)
-		resourceNodes = append(resourceNodes, resourceNodeBiz, resourceNodeProject, resourceNodeEnv)
-		action.RelatedResourceTypes = []bkiam.ApplicationRelatedResourceType{
-			{
-				SystemID:  sys.SystemIDBSCP,
-				Type:      string(sys.Environment),
-				Instances: []bkiam.ApplicationResourceInstance{resourceNodes},
-			},
+		return bkiam.ApplicationAction{
+			ID: string(sys.AppCreate),
+			RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+				SystemID: sys.SystemIDBSCP,
+				Type:     string(sys.Environment),
+				Instances: []bkiam.ApplicationResourceInstance{{
+					resourceNodeBiz,
+					resourceNodeProject,
+					{
+						Type: string(sys.Environment),
+						ID:   strconv.FormatUint(uint64(a.ResourceID), 10),
+					},
+				}},
+			}},
+		}, nil
+	case meta.View, meta.Update, meta.Delete, meta.Publish, meta.GenerateRelease:
+		// 服务本身是申请项的资源类型，需要完整三级祖先。
+		if a.BizID == 0 || a.ProjectID == 0 || a.EnvironmentID == 0 {
+			return bkiam.ApplicationAction{}, nil
 		}
-		return action, nil
-	case meta.View:
-		action.ID = string(sys.AppView)
-	case meta.Update:
-		action.ID = string(sys.AppEdit)
-	case meta.Delete:
-		action.ID = string(sys.AppDelete)
-	case meta.Publish:
-		action.ID = string(sys.ReleasePublish)
-	case meta.GenerateRelease:
-		action.ID = string(sys.ReleaseGenerate)
+
+		return bkiam.ApplicationAction{
+			ID: string(appApplicationActionID(a.Action)),
+			RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+				SystemID: sys.SystemIDBSCP,
+				Type:     string(sys.Application),
+				Instances: []bkiam.ApplicationResourceInstance{{
+					resourceNodeBiz,
+					resourceNodeProject,
+					{
+						Type: string(sys.Environment),
+						ID:   strconv.FormatUint(uint64(a.EnvironmentID), 10),
+					},
+					{
+						Type: string(sys.Application),
+						ID:   strconv.FormatUint(uint64(a.ResourceID), 10),
+					},
+				}},
+			}},
+		}, nil
 	default:
-		return action, fmt.Errorf("unsupported bscp action: %s", a.Action)
+		return bkiam.ApplicationAction{}, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}
-
-	resourceNodes = append(resourceNodes, resourceNodeBiz)
-	if opts.ProjectEnvironmentAuth {
-		resourceNodes = append(resourceNodes, resourceNodeProject, resourceNodeEnv)
-	}
-	resourceNodes = append(resourceNodes, resourceNodeApp)
-
-	action.RelatedResourceTypes = []bkiam.ApplicationRelatedResourceType{
-		{
-			SystemID:  sys.SystemIDBSCP,
-			Type:      string(sys.Application),
-			Instances: []bkiam.ApplicationResourceInstance{resourceNodes},
-		},
-	}
-	return action, nil
 }
+
+// genLegacyAppIAMApplication 构造旧拓扑（业务 → 服务）下的服务申请项。
+// 旧拓扑里没有项目、环境资源类型，节点链只能到业务一层。
+func genLegacyAppIAMApplication(a *meta.ResourceAttribute,
+	resourceNodeBiz iam.ApplicationResourceNode) (bkiam.ApplicationAction, error) {
+
+	if a.BizID == 0 {
+		return bkiam.ApplicationAction{}, nil
+	}
+
+	switch a.Action {
+	case meta.Create:
+		return bkiam.ApplicationAction{
+			ID: string(sys.AppCreate),
+			RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+				SystemID: sys.SystemIDCMDB,
+				Type:     string(sys.Business),
+				Instances: []bkiam.ApplicationResourceInstance{{
+					resourceNodeBiz,
+				}},
+			}},
+		}, nil
+	case meta.View, meta.Update, meta.Delete, meta.Publish, meta.GenerateRelease:
+		return bkiam.ApplicationAction{
+			ID: string(appApplicationActionID(a.Action)),
+			RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
+				SystemID: sys.SystemIDBSCP,
+				Type:     string(sys.Application),
+				Instances: []bkiam.ApplicationResourceInstance{{
+					resourceNodeBiz,
+					{
+						Type: string(sys.Application),
+						ID:   strconv.FormatUint(uint64(a.ResourceID), 10),
+					},
+				}},
+			}},
+		}, nil
+	default:
+		return bkiam.ApplicationAction{}, fmt.Errorf("unsupported bscp action: %s", a.Action)
+	}
+}
+
+// appApplicationActionID 返回服务实例级操作对应的权限中心动作 ID。
+func appApplicationActionID(action meta.Action) client.ActionID {
+	switch action {
+	case meta.Update:
+		return sys.AppEdit
+	case meta.Delete:
+		return sys.AppDelete
+	case meta.Publish:
+		return sys.ReleasePublish
+	case meta.GenerateRelease:
+		return sys.ReleaseGenerate
+	default:
+		return sys.AppView
+	}
+}
+
 func genCredIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction, error) {
 	action := bkiam.ApplicationAction{
 		RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
@@ -306,8 +355,13 @@ func genAuditIAMApplication(a *meta.ResourceAttribute) (bkiam.ApplicationAction,
 	return action, nil
 }
 
-// genAppResourceWithOptions generate application related iam resource.
-func genAppResourceWithOptions(a *meta.ResourceAttribute, opts PermissionOptions) (
+// genAppResource generate application related iam resource.
+//
+// 服务的鉴权路径必须与权限中心注册的父链一致：权限中心不反查拓扑，
+// 也不接受比父链更短或更长的路径，对不上会让服务级授权全部匹配不到。
+// 新拓扑为「业务 → 项目 → 环境」三级，旧拓扑只有业务一级。
+// 项目/环境维度校验开关只决定是否单独校验这两类资源，不改变服务自身路径的完整性。
+func genAppResource(a *meta.ResourceAttribute, topology meta.ResourceTopology) (
 	client.ActionID, []client.Resource, error) {
 
 	bizRes := client.Resource{
@@ -316,30 +370,24 @@ func genAppResourceWithOptions(a *meta.ResourceAttribute, opts PermissionOptions
 		ID:     strconv.FormatUint(uint64(a.BizID), 10),
 	}
 
-	// 服务挂在环境下，鉴权路径为 业务 → 项目 → 环境 三级，
-	// 按业务、项目或环境维度的授权都能据此覆盖到该服务；
-	// 关闭项目/环境维度校验时路径退化为业务单级，与改造前一致。
 	appRes := client.Resource{
 		System: sys.SystemIDBSCP,
 		Type:   sys.Application,
 		ID:     strconv.FormatUint(uint64(a.ResourceID), 10),
 		Attribute: map[string]interface{}{
-			client.IamPathKey: []string{appIAMPathWithOptions(a, opts)},
+			client.IamPathKey: []string{appIAMPath(a, topology)},
 		},
 	}
 
 	switch a.Action {
 	case meta.Create:
-		if !opts.ProjectEnvironmentAuth {
-			// 关闭项目/环境维度校验：服务创建仍然校验，但只认业务维度。
-			// 动作在权限中心只关联环境实例，因此资源实例仍用目标环境，
-			// 路径只声明业务一层，项目/环境维度的授权不再参与判断。
-			return sys.AppCreate, []client.Resource{environmentClientResourceWithBizPath(a)}, nil
+		// 服务创建在新拓扑下按目标环境授权（ResourceID 即环境 ID），
+		// 旧拓扑下 app_create 只关联业务实例，只能按业务维度发起。
+		if topology.IsLegacy() {
+			return sys.AppCreate, []client.Resource{bizRes}, nil
 		}
 
-		// 服务创建按目标环境授权：授权维度落在服务将要归属的环境上（ResourceID 即环境 ID），
-		// 路径为 /biz,{bizID}/project,{projectID}/，业务/项目维度的授权经继承覆盖。
-		return sys.AppCreate, []client.Resource{environmentClientResource(a)}, nil
+		return sys.AppCreate, []client.Resource{environmentClientResource(a, topology)}, nil
 	case meta.Update:
 		// update app is related to bscp application resource
 		return sys.AppEdit, []client.Resource{appRes}, nil
@@ -851,32 +899,32 @@ func projectIAMPath(a *meta.ResourceAttribute) string {
 	return bizOnlyIAMPath(a.BizID)
 }
 
-// bizOnlyIAMPath 返回只声明业务一层的拓扑路径，用于关闭项目/环境维度校验后的资源。
+// bizOnlyIAMPath 返回只声明业务一层的拓扑路径，用于根资源（项目）的父级声明。
 func bizOnlyIAMPath(bizID uint32) string {
 	return fmt.Sprintf("/%s,%d/", sys.Business, bizID)
 }
 
-// environmentIAMPath 返回环境实例的拓扑路径，声明「业务 → 项目」两级拓扑，
-// 按业务或项目维度的授权据此覆盖项目下的全部环境。
-func environmentIAMPath(a *meta.ResourceAttribute) string {
-	return fmt.Sprintf("/%s,%d/%s,%d/", sys.Business, a.BizID, sys.Project, a.ProjectID)
-}
-
-// appIAMPath 返回服务实例的拓扑路径，声明「业务 → 项目 → 环境」三级拓扑，
-// 按业务、项目或环境维度的授权据此覆盖环境下的全部服务。
-func appIAMPath(a *meta.ResourceAttribute) string {
-	return fmt.Sprintf("/%s,%d/%s,%d/%s,%d/", sys.Business, a.BizID,
-		sys.Project, a.ProjectID, sys.Environment, a.EnvironmentID)
-}
-
-// appIAMPathWithOptions 返回服务实例的拓扑路径：开启项目/环境维度校验时是三级拓扑，
-// 关闭时只声明业务一层，与项目/环境维度引入前的鉴权路径一致。
-func appIAMPathWithOptions(a *meta.ResourceAttribute, opts PermissionOptions) string {
-	if !opts.ProjectEnvironmentAuth {
+// environmentIAMPath 返回环境实例的拓扑路径。
+// 新拓扑声明「业务 → 项目」两级，按业务或项目维度的授权据此覆盖项目下的全部环境；
+// 旧拓扑没有项目资源类型，只声明业务一层。
+func environmentIAMPath(a *meta.ResourceAttribute, topology meta.ResourceTopology) string {
+	if topology.IsLegacy() {
 		return bizOnlyIAMPath(a.BizID)
 	}
 
-	return appIAMPath(a)
+	return fmt.Sprintf("/%s,%d/%s,%d/", sys.Business, a.BizID, sys.Project, a.ProjectID)
+}
+
+// appIAMPath 返回服务实例的拓扑路径。
+// 新拓扑声明「业务 → 项目 → 环境」三级，按业务、项目或环境维度的授权据此覆盖环境下的全部服务；
+// 旧拓扑下服务直接挂在业务下，只声明业务一层。
+func appIAMPath(a *meta.ResourceAttribute, topology meta.ResourceTopology) string {
+	if topology.IsLegacy() {
+		return bizOnlyIAMPath(a.BizID)
+	}
+
+	return fmt.Sprintf("/%s,%d/%s,%d/%s,%d/", sys.Business, a.BizID,
+		sys.Project, a.ProjectID, sys.Environment, a.EnvironmentID)
 }
 
 // projectResourceNode 构造项目实例节点。
@@ -892,27 +940,47 @@ func projectResourceNode(a *meta.ResourceAttribute) iam.ResourceNode {
 }
 
 // environmentResourceNode 构造环境实例节点。
-func environmentResourceNode(a *meta.ResourceAttribute) iam.ResourceNode {
+func environmentResourceNode(a *meta.ResourceAttribute, topology meta.ResourceTopology) iam.ResourceNode {
 	return iam.ResourceNode{
 		System: sys.SystemIDBSCP,
 		Type:   string(sys.Environment),
 		ID:     strconv.FormatUint(uint64(a.ResourceID), 10),
 		Attribute: map[string]interface{}{
-			client.IamPathKey: []string{environmentIAMPath(a)},
+			client.IamPathKey: []string{environmentIAMPath(a, topology)},
 		},
 	}
 }
 
 // appResourceNode 构造服务实例节点。
-func appResourceNode(a *meta.ResourceAttribute) iam.ResourceNode {
+func appResourceNode(a *meta.ResourceAttribute, topology meta.ResourceTopology) iam.ResourceNode {
 	return iam.ResourceNode{
 		System: sys.SystemIDBSCP,
 		Type:   string(sys.Application),
 		ID:     strconv.FormatUint(uint64(a.ResourceID), 10),
 		Attribute: map[string]interface{}{
-			client.IamPathKey: []string{appIAMPath(a)},
+			client.IamPathKey: []string{appIAMPath(a, topology)},
 		},
 	}
+}
+
+// bizResourceNode 构造业务实例节点，用于旧拓扑下的服务创建。
+func bizResourceNode(bizID uint32) iam.ResourceNode {
+	return iam.ResourceNode{
+		System:    sys.SystemIDCMDB,
+		Type:      string(sys.Business),
+		ID:        strconv.FormatUint(uint64(bizID), 10),
+		Attribute: map[string]interface{}{},
+	}
+}
+
+// appCreateResourceNode 返回服务创建动作的资源节点：
+// 新拓扑按目标环境授权，旧拓扑按业务授权（app_create 只关联业务实例）。
+func appCreateResourceNode(a *meta.ResourceAttribute, topology meta.ResourceTopology) iam.ResourceNode {
+	if topology.IsLegacy() {
+		return bizResourceNode(a.BizID)
+	}
+
+	return environmentResourceNode(a, topology)
 }
 
 // projectClientResource 构造项目实例资源。
@@ -928,27 +996,13 @@ func projectClientResource(a *meta.ResourceAttribute) client.Resource {
 }
 
 // environmentClientResource 构造环境实例资源。
-func environmentClientResource(a *meta.ResourceAttribute) client.Resource {
+func environmentClientResource(a *meta.ResourceAttribute, topology meta.ResourceTopology) client.Resource {
 	return client.Resource{
 		System: sys.SystemIDBSCP,
 		Type:   sys.Environment,
 		ID:     strconv.FormatUint(uint64(a.ResourceID), 10),
 		Attribute: map[string]interface{}{
-			client.IamPathKey: []string{environmentIAMPath(a)},
-		},
-	}
-}
-
-// environmentClientResourceWithBizPath 返回只声明业务一层祖先的环境资源。
-// 关闭项目/环境维度校验时，服务创建的授权维度仍是环境（模型约束），
-// 但路径不声明项目，判定只认业务维度，不会因为缺少项目/环境归属而误判。
-func environmentClientResourceWithBizPath(a *meta.ResourceAttribute) client.Resource {
-	return client.Resource{
-		System: sys.SystemIDBSCP,
-		Type:   sys.Environment,
-		ID:     strconv.FormatUint(uint64(a.ResourceID), 10),
-		Attribute: map[string]interface{}{
-			client.IamPathKey: []string{bizOnlyIAMPath(a.BizID)},
+			client.IamPathKey: []string{environmentIAMPath(a, topology)},
 		},
 	}
 }
@@ -1071,7 +1125,9 @@ func projectApplicationResource(a *meta.ResourceAttribute) []bkiam.ApplicationRe
 
 // genEnvResource 环境按环境实例隔离：创建按所属项目授权（此时环境实例还不存在），
 // 查看/编辑/删除按环境实例授权。
-func genEnvResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resource, error) {
+func genEnvResource(a *meta.ResourceAttribute, topology meta.ResourceTopology) (
+	client.ActionID, []client.Resource, error) {
+
 	// 创建环境时还没有环境实例，鉴权落在所属项目上。
 	projectRes := client.Resource{
 		System: sys.SystemIDBSCP,
@@ -1081,7 +1137,7 @@ func genEnvResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 			client.IamPathKey: []string{projectIAMPath(a)},
 		},
 	}
-	envRes := environmentClientResource(a)
+	envRes := environmentClientResource(a, topology)
 
 	switch a.Action {
 	case meta.Create:
@@ -1097,7 +1153,7 @@ func genEnvResource(a *meta.ResourceAttribute) (client.ActionID, []client.Resour
 	}
 }
 
-func genEnvIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
+func genEnvIAMResource(a *meta.ResourceAttribute, topology meta.ResourceTopology) (*bkiam.Request, error) {
 	iamReq := bkiam.Request{
 		System:  sys.SystemIDBSCP,
 		Subject: dummyIAMUser,
@@ -1117,13 +1173,13 @@ func genEnvIAMResource(a *meta.ResourceAttribute) (*bkiam.Request, error) {
 		}}
 	case meta.View:
 		iamReq.Action = bkiam.NewAction(string(sys.EnvironmentView))
-		iamReq.Resources = []iam.ResourceNode{environmentResourceNode(a)}
+		iamReq.Resources = []iam.ResourceNode{environmentResourceNode(a, topology)}
 	case meta.Update:
 		iamReq.Action = bkiam.NewAction(string(sys.EnvironmentEdit))
-		iamReq.Resources = []iam.ResourceNode{environmentResourceNode(a)}
+		iamReq.Resources = []iam.ResourceNode{environmentResourceNode(a, topology)}
 	case meta.Delete:
 		iamReq.Action = bkiam.NewAction(string(sys.EnvironmentDelete))
-		iamReq.Resources = []iam.ResourceNode{environmentResourceNode(a)}
+		iamReq.Resources = []iam.ResourceNode{environmentResourceNode(a, topology)}
 	default:
 		return nil, fmt.Errorf("unsupported bscp action: %s", a.Action)
 	}

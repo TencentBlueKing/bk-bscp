@@ -100,6 +100,12 @@ func PbResourceAttributes(resourceAttributes []*meta.ResourceAttribute) []*Resou
 
 // Basic convert pb Basic to meta type Basic
 func (m *Basic) Basic() meta.Basic {
+	// 请求体里 resources 项缺少 basic 时不能解引用其中的字段，
+	// 否则整个调用会以 nil pointer panic 结束；这里退化为空值，由鉴权入口按参数错误返回。
+	if m == nil {
+		return meta.Basic{}
+	}
+
 	return meta.Basic{
 		Type:       meta.ResourceType(m.Type),
 		Action:     meta.Action(m.Action),

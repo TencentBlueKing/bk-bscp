@@ -17,8 +17,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-
-	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
 )
 
 // 租户 ID 必须落在 kit 上，客户端只从 kit 取值填充 X-Bk-Tenant-Id。
@@ -41,22 +39,5 @@ func TestModelCommandsRegisterTenantFlag(t *testing.T) {
 		flag := sub.Flags().Lookup("tenant-id")
 		require.NotNilf(t, flag, "command %q should register --tenant-id", sub.Use)
 		require.Emptyf(t, flag.DefValue, "command %q should leave --tenant-id empty by default", sub.Use)
-	}
-}
-
-func TestResolveModelTenantID(t *testing.T) {
-	cases := []struct {
-		name        string
-		multiTenant bool
-		want        string
-	}{
-		{name: "multi tenant uses system", multiTenant: true, want: constant.SystemTenantID},
-		{name: "single tenant uses default", multiTenant: false, want: constant.DefaultTenantID},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			require.Equal(t, c.want, resolveModelTenantID(c.multiTenant))
-		})
 	}
 }

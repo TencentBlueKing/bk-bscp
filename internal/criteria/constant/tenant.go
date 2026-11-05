@@ -12,9 +12,13 @@
 
 package constant
 
+import (
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
+)
+
 const (
 	// DefaultTenantID 默认租户ID,单租户环境使用
-	DefaultTenantID = "default"
+	DefaultTenantID = constant.DefaultTenantID
 	// SystemTenantID 系统租户ID,系统内部使用
-	SystemTenantID = "system"
+	SystemTenantID = constant.SystemTenantID
 )

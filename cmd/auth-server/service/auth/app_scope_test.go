@@ -107,8 +107,15 @@ func (f *fakeAppDS) fetchAppInfo(in *pbds.FetchInstanceInfoReq) (*pbds.FetchInst
 	return resp, nil
 }
 
+// newAppScopeAuth 构造按新拓扑、开启项目/环境维度校验的 Auth，便于验证完整归属补齐。
 func newAppScopeAuth(ds pbds.DataClient) *Auth {
-	return &Auth{ds: ds, appScopes: newAppScopeCache(), defaultScopes: newDefaultScopeCache()}
+	return &Auth{
+		ds:             ds,
+		projectEnvAuth: true,
+		topology:       meta.TopologyHierarchical,
+		appScopes:      newAppScopeCache(),
+		defaultScopes:  newDefaultScopeCache(),
+	}
 }
 
 func appResource(action meta.Action, appID uint32) *meta.ResourceAttribute {
@@ -345,6 +352,81 @@ func TestFillResourceScopeAppCreateUsesTargetEnvironmentParent(t *testing.T) {
 	require.Equal(t, uint32(40002), res.ProjectID)
 	require.Equal(t, uint32(100001), res.BizID)
 	require.Equal(t, uint32(50002), res.EnvironmentID, "环境 ID 即资源实例 ID")
+}
+
+// 关闭项目/环境维度校验但权限中心已是新拓扑时，服务创建的鉴权路径仍带项目祖先：
+// 项目必须回查目标环境的真实归属，不能采信请求里的 project_id。
+func TestFillResourceScopeAppCreateRejectsForgedProjectWhenAuthDisabled(t *testing.T) {
+	ds := &fakeAppDS{
+		environmentInfos: map[uint32]*pbds.InstanceInfo{
+			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
+		},
+	}
+	a := newAppScopeAuth(ds)
+	a.projectEnvAuth = false
+
+	res := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
+		BizID:     100001,
+		ProjectID: 40001,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Equal(t, 1, ds.environmentCalls, "开关关闭时服务创建同样要回查环境父级")
+	require.Equal(t, uint32(40002), res.ProjectID, "项目祖先必须取自环境自身路径")
+	require.Equal(t, uint32(50002), res.EnvironmentID)
+}
+
+// 开关关闭时 project_id 为 0 也要补齐，否则服务创建的申请链接会直接丢掉该申请项。
+func TestFillResourceScopeAppCreateFillsProjectWhenAuthDisabled(t *testing.T) {
+	ds := &fakeAppDS{
+		environmentInfos: map[uint32]*pbds.InstanceInfo{
+			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
+		},
+	}
+	a := newAppScopeAuth(ds)
+	a.projectEnvAuth = false
+
+	res := &meta.ResourceAttribute{
+		Basic: meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
+		BizID: 100001,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+	require.Equal(t, uint32(40002), res.ProjectID)
+}
+
+// 开关关闭时项目/环境资源本身不参与鉴权，不做无谓的回查与默认归属补齐。
+func TestFillResourceScopeSkipsProjectEnvironmentLookupWhenAuthDisabled(t *testing.T) {
+	ds := &fakeAppDS{}
+	a := newAppScopeAuth(ds)
+	a.projectEnvAuth = false
+
+	resources := []*meta.ResourceAttribute{
+		{Basic: meta.Basic{Type: meta.Project, Action: meta.View, ResourceID: 40001}, BizID: 100001},
+		{Basic: meta.Basic{Type: meta.Environment, Action: meta.View, ResourceID: 50001}, BizID: 100001},
+		{Basic: meta.Basic{Type: meta.Environment, Action: meta.Create}, BizID: 100001},
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), resources))
+
+	require.Zero(t, ds.environmentCalls)
+	require.Zero(t, ds.defaultCalls)
+	require.Zero(t, resources[0].ProjectID)
+}
+
+// 旧拓扑下服务创建只按业务授权，没有项目祖先需要回查。
+func TestFillResourceScopeAppCreateSkipsLookupInLegacyTopology(t *testing.T) {
+	ds := &fakeAppDS{}
+	a := newAppScopeAuth(ds)
+	a.projectEnvAuth = false
+	a.topology = meta.TopologyLegacy
+
+	res := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
+		BizID:     100001,
+		ProjectID: 40001,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+	require.Zero(t, ds.environmentCalls)
 }
 
 func TestFillResourceScopePropagatesEnvironmentLookupError(t *testing.T) {
