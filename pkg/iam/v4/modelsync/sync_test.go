@@ -279,6 +279,18 @@ func (f *fakeGateway) BatchCreateRoleActions(_ *kit.Kit, roleID string,
 		if f.roles[i].ID != roleID {
 			continue
 		}
+
+		// 与真实权限中心一致：角色内按操作 ID 判重，授权维度不同也算重复。
+		seen := make(map[string]struct{}, len(f.roles[i].Actions)+len(actions))
+		for _, a := range append(append([]client.RoleAction(nil), f.roles[i].Actions...), actions...) {
+			if _, ok := seen[a.ID]; ok {
+				return &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
+					Code:    "INVALID_ARGUMENT",
+					Message: "The action `" + a.ID + "` is repeated in the role `" + roleID + "`"}
+			}
+			seen[a.ID] = struct{}{}
+		}
+
 		f.roles[i].Actions = append(f.roles[i].Actions, actions...)
 		sortRoleActions(f.roles[i].Actions)
 	}
@@ -597,6 +609,72 @@ func TestPlanDiffsRoleActions(t *testing.T) {
 	}
 	require.Contains(t, removed, model.ActionAuditView)
 	require.Contains(t, removed, model.ActionAppView)
+}
+
+// 权限中心按操作 ID 判重，同一操作换授权维度时必须先移除旧维度再添加新维度，
+// 否则会报 The action `app_create` is repeated in the role `app_creator`。
+func TestApplyRescopesRoleActionByRemovingFirst(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	for i := range gw.roles {
+		if gw.roles[i].ID != model.RoleAppCreator {
+			continue
+		}
+		gw.roles[i].Actions = []client.RoleAction{
+			{ID: model.ActionAppCreate, ResourceTypeID: model.ResourceTypeBiz},
+			{ID: model.ActionFindBusinessResource, ResourceTypeID: model.ResourceTypeBiz},
+		}
+	}
+
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	plan, err := s.Plan(kt)
+	require.NoError(t, err)
+	require.Len(t, plan.AddRoleActions, 1)
+	require.Len(t, plan.DelRoleActions, 1)
+
+	gw.calls = nil
+	require.NoError(t, s.Apply(kt, plan, ApplyOption{}))
+	require.Equal(t, []string{
+		"del_role_actions:" + model.RoleAppCreator,
+		"add_role_actions:" + model.RoleAppCreator,
+	}, gw.calls, "rescoped action must be removed once before being re-added")
+
+	again, err := s.Plan(kt)
+	require.NoError(t, err)
+	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
+}
+
+// 换维度的操作先删，其余新增仍先于移除，避免角色中途出现空窗。
+func TestApplyKeepsAddBeforeRemoveForOtherActions(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	for i := range gw.roles {
+		if gw.roles[i].ID != model.RoleAppCreator {
+			continue
+		}
+		gw.roles[i].Actions = []client.RoleAction{
+			{ID: model.ActionAppCreate, ResourceTypeID: model.ResourceTypeBiz},
+			{ID: model.ActionAuditView, ResourceTypeID: model.ResourceTypeBiz},
+		}
+	}
+
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	plan, err := s.Plan(kt)
+	require.NoError(t, err)
+
+	gw.calls = nil
+	require.NoError(t, s.Apply(kt, plan, ApplyOption{}))
+	require.Equal(t, []string{
+		"del_role_actions:" + model.RoleAppCreator,
+		"add_role_actions:" + model.RoleAppCreator,
+		"del_role_actions:" + model.RoleAppCreator,
+	}, gw.calls)
+
+	again, err := s.Plan(kt)
+	require.NoError(t, err)
+	require.False(t, again.HasChanges(), "expected no changes, got:\n%s", again)
 }
 
 // 展示层级不一致要能识别；线上多返回本地未声明的键不算差异。

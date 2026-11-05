@@ -705,7 +705,17 @@ func (s *Syncer) applyRoles(kt *kit.Kit, plan *Plan, opt *ApplyOption) error {
 		opt.logf("已更新角色 %s：%s", u.ID, u.Detail)
 	}
 
-	// 先加后删，避免中途出现角色没有任何操作的空窗
+	// 权限中心在角色内按操作 ID 判重，同一操作换授权维度时旧维度不先移除，新维度就加不进去，
+	// 因此这类操作先删后加；其余操作仍先加后删，避免中途出现角色没有任何操作的空窗。
+	rescoped := rescopedRoleActionIDs(plan)
+	for _, roleID := range sortedKeys(rescoped) {
+		ids := rescoped[roleID]
+		if err := s.gw.BatchDeleteRoleActions(kt, roleID, ids); err != nil {
+			return errors.Wrapf(err, "remove rescoped actions from role %s", roleID)
+		}
+		opt.logf("已移除角色 %s 待更换授权维度的操作 %v", roleID, ids)
+	}
+
 	for _, c := range plan.AddRoleActions {
 		if err := s.gw.BatchCreateRoleActions(kt, c.RoleID, c.Actions); err != nil {
 			return errors.Wrapf(err, "add actions to role %s", c.RoleID)
@@ -714,9 +724,20 @@ func (s *Syncer) applyRoles(kt *kit.Kit, plan *Plan, opt *ApplyOption) error {
 	}
 
 	for _, c := range plan.DelRoleActions {
+		removed := make(map[string]struct{}, len(rescoped[c.RoleID]))
+		for _, id := range rescoped[c.RoleID] {
+			removed[id] = struct{}{}
+		}
+
 		ids := make([]string, 0, len(c.Actions))
 		for _, a := range c.Actions {
+			if _, ok := removed[a.ID]; ok {
+				continue
+			}
 			ids = append(ids, a.ID)
+		}
+		if len(ids) == 0 {
+			continue
 		}
 
 		if err := s.gw.BatchDeleteRoleActions(kt, c.RoleID, ids); err != nil {
@@ -875,6 +896,43 @@ func diffRoleActions(online, local []client.RoleAction) (add, del []client.RoleA
 	sortRoleActions(del)
 
 	return add, del
+}
+
+// rescopedRoleActionIDs 找出各角色内同时出现在新增与移除列表里的操作 ID，即只换了授权维度的操作。
+func rescopedRoleActionIDs(plan *Plan) map[string][]string {
+	adding := make(map[string]map[string]struct{}, len(plan.AddRoleActions))
+	for _, c := range plan.AddRoleActions {
+		ids := make(map[string]struct{}, len(c.Actions))
+		for _, a := range c.Actions {
+			ids[a.ID] = struct{}{}
+		}
+		adding[c.RoleID] = ids
+	}
+
+	result := make(map[string][]string)
+	for _, c := range plan.DelRoleActions {
+		for _, a := range c.Actions {
+			if _, ok := adding[c.RoleID][a.ID]; ok {
+				result[c.RoleID] = append(result[c.RoleID], a.ID)
+			}
+		}
+	}
+
+	for roleID, ids := range result {
+		result[roleID] = uniqueIDs(ids)
+	}
+
+	return result
+}
+
+func sortedKeys(m map[string][]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
 }
 
 func sortRoleActions(actions []client.RoleAction) {
