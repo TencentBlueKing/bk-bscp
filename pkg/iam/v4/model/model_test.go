@@ -55,7 +55,6 @@ func TestModelCounts(t *testing.T) {
 	// 项目 4 个 + 环境 4 个 + 服务与业务 17 个
 	require.Len(t, Actions(), 25)
 	require.Len(t, Roles(), 14)
-	require.Len(t, DisplayResourceTypes(), 14)
 }
 
 func TestIDsAreUnique(t *testing.T) {
@@ -101,48 +100,6 @@ func TestRoleActionsAreValid(t *testing.T) {
 			require.True(t, validScopes[ownType][ra.ResourceTypeID],
 				"role %s action %s has invalid scope %s", role.ID, ra.ID, ra.ResourceTypeID)
 		}
-	}
-}
-
-// 每个角色的展示层级配置必须覆盖它实际用到的全部授权维度，
-// 且展示粒度必须是授权粒度自身或其祖先。
-func TestDisplayResourceTypesCoverRoleScopes(t *testing.T) {
-	display := DisplayResourceTypes()
-
-	for _, role := range Roles() {
-		configured := make(map[string]string)
-		for _, d := range display[role.ID] {
-			configured[d.RelatedResourceTypeID] = d.DisplayResourceTypeID
-		}
-
-		for _, ra := range role.Actions {
-			displayType, ok := configured[ra.ResourceTypeID]
-			require.True(t, ok, "role %s scope %s has no display config", role.ID, ra.ResourceTypeID)
-			require.True(t, validScopes[ra.ResourceTypeID][displayType],
-				"role %s display %s is not an ancestor of scope %s",
-				role.ID, displayType, ra.ResourceTypeID)
-		}
-	}
-}
-
-// 服务挂在环境下：只授服务的角色（服务运维/发布者/查看者）展示层级必须在环境，
-// 否则授权页面只会在业务层展开，看不到项目与环境。
-func TestAppRolesDisplayAtEnvironment(t *testing.T) {
-	display := DisplayResourceTypes()
-
-	for _, roleID := range []string{RoleAppOperator, RoleAppPublisher, RoleAppViewer} {
-		var found bool
-		for _, d := range display[roleID] {
-			if d.RelatedResourceTypeID != ResourceTypeApp {
-				continue
-			}
-
-			found = true
-			require.Equal(t, ResourceTypeEnvironment, d.DisplayResourceTypeID,
-				"role %s should display app at environment", roleID)
-		}
-
-		require.True(t, found, "role %s has no app display config", roleID)
 	}
 }
 
@@ -295,6 +252,25 @@ func TestProjectAndEnvironmentRolesKeepBizScopeOnlyForBusinessAccess(t *testing.
 	}
 }
 
+// 项目运维必须能在自己的项目下创建环境，否则只有业务运维能建环境，
+// 用户为了建环境只能申请整个业务的权限。
+// 环境负责人（创建后自动授予）则不含环境创建：它只管已创建的那个环境。
+func TestEnvironmentCreateGrantedOnProject(t *testing.T) {
+	scopes := make(map[string]string)
+	for _, role := range Roles() {
+		for _, ra := range role.Actions {
+			if ra.ID == ActionEnvironmentCreate {
+				scopes[role.ID] = ra.ResourceTypeID
+			}
+		}
+	}
+
+	require.Equal(t, ResourceTypeProject, scopes[RoleProjectOperator],
+		"project operator should create environments on project scope")
+	require.NotContains(t, scopes, RoleEnvironmentCreator)
+	require.NotContains(t, scopes, RoleProjectViewer)
+}
+
 // 服务挂在环境下：项目/环境维度角色只继承「查看」，不得继承写操作。
 //
 // 写操作一旦声明在项目或环境维度，语义就是"该项目/环境下全部服务都可写"，
@@ -379,20 +355,6 @@ func TestAppCreatorScopesCreationOnly(t *testing.T) {
 	require.Len(t, actions, 2, "keep this role minimal")
 }
 
-// 服务创建者角色的展示层级必须下移到环境，授权页面才会展开「业务 → 项目 → 环境」，
-// 让用户先选项目、再选环境。
-func TestAppCreatorDisplaysEnvironmentChain(t *testing.T) {
-	var envDisplay string
-	for _, scope := range DisplayResourceTypes()[RoleAppCreator] {
-		if scope.RelatedResourceTypeID == ResourceTypeEnvironment {
-			envDisplay = scope.DisplayResourceTypeID
-		}
-	}
-
-	require.Equal(t, ResourceTypeEnvironment, envDisplay,
-		"app_create should be displayed on environment so the apply page drills biz -> project -> environment")
-}
-
 // 服务维度角色必须同时含 biz 与 app 两种授权维度，这是 IAM V4 允许角色跨维度的直接体现，
 // 也是 dev 环境需要实测确认的关键假设。
 func TestAppScopedRolesAreCrossDimension(t *testing.T) {
@@ -440,13 +402,4 @@ func TestEnvironmentCreatorScopesEnvironmentOnly(t *testing.T) {
 	require.NotContains(t, actions, ActionAppView,
 		"environment creator must not see every app in the environment")
 	require.Len(t, actions, 4, "keep this role minimal")
-
-	// 展示粒度止于环境，授权页面才能按「业务 → 项目 → 环境」展示这次自动授权。
-	var envDisplay string
-	for _, scope := range DisplayResourceTypes()[RoleEnvironmentCreator] {
-		if scope.RelatedResourceTypeID == ResourceTypeEnvironment {
-			envDisplay = scope.DisplayResourceTypeID
-		}
-	}
-	require.Equal(t, ResourceTypeEnvironment, envDisplay)
 }

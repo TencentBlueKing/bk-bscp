@@ -14,7 +14,6 @@ package service
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/runtime/shutdown"
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
@@ -69,8 +68,3 @@ func (g *gateway) Healthz(w http.ResponseWriter, r *http.Request) {
 
 	rest.WriteResp(w, rest.NewBaseResp(errf.OK, "healthy"))
 }
-
-var iamToken = struct {
-	token            string
-	tokenRefreshTime time.Time
-}{}

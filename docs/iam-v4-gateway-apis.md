@@ -52,7 +52,11 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 
 仅由 `auth-server migrate init-iam-v4` / `diff-iam-v4` / `prune-iam-v4` / `delete-iam-v4` 调用，常驻服务不涉及。同步内容为 4 个资源类型（`biz` → `project` → `environment` → `app`）、25 个操作、14 个角色，定义在 `pkg/iam/v4/model/model.go`。
 
-资源类型的祖先链（`ancestors`）与操作的关联资源类型（`resource_type_id`）走 `update_resource_type` / `update_action` 原地更新（请求体字段为空即不改），`init-iam-v4` 在更新后回读校验。这样把服务的祖先链从 `[biz]` 调整为 `[biz, project, environment]`、把 `app_create` 的关联资源类型从 `biz` 调整为 `environment` 时，不需要删模型，既有角色授权不受影响。若权限中心忽略这两个字段（更新返回成功但状态未变），命令会失败并提示改走 `delete-iam-v4` 重建，不会静默按旧拓扑鉴权。
+资源类型的祖先链（`ancestors`）走 `update_resource_type` 原地更新（请求体字段为空即不改），`init-iam-v4` 在更新后回读校验。这样把服务的祖先链从 `[biz]` 调整为 `[biz, project, environment]` 时，不需要删模型。若权限中心忽略该字段（更新返回成功但状态未变），命令会失败并提示改走 `delete-iam-v4` 重建，不会静默按旧拓扑鉴权。
+
+操作的关联资源类型（`resource_type_id`）不能用 `update_action` 修改：实测权限中心返回成功但不生效。`init-iam-v4` 改为重建该操作：先用 `batch_delete_role_action` 从引用它的角色中移除，再 `delete_action`、`batch_create_action` 按新类型创建，最后由角色同步按本地定义加回。例如 `app_create` 从 `biz` 调整为 `environment` 时，会先从 `biz_operator` 等角色中移除，重建后给 `biz_operator` 加回 `app_create@biz`、给 `app_creator` 加 `app_create@environment`。授权挂在角色的授权维度上而不是操作上，只要该维度内还有其他操作，既有授权不受影响；重建期间（秒级）引用该操作的角色暂时没有这项权限。
+
+权限中心对角色内操作有两条校验，模型调整时需要注意：同一操作在一个角色里只能出现一次（换授权维度要先删后加）；关联资源类型相同的操作，在同一角色里授权维度必须一致。
 
 ### 系统
 
@@ -87,7 +91,7 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 
 `delete_resource_type`、`delete_action`、`delete_role` 只有两个子命令会调用：`prune-iam-v4` 只删线上存在、本地定义已移除的元素；`delete-iam-v4` 不比较差异，把线上全部角色、操作、资源类型一并删掉。两者都必须人工确认后才执行（`prune-iam-v4` 必须交互输入 `yes`，`delete-iam-v4` 可加 `--yes` 跳过交互）。`init-iam-v4` 只做新增与更新。删除角色会使该角色下全部授权失效，删除操作会让引用它的角色失去该权限，均不可逆。
 
-两个删除命令的适用场景不同：本地只是删掉了几项定义时用 `prune-iam-v4`；资源类型的祖先链、操作关联的资源类型不走删除，由 `init-iam-v4` 原地更新并回读校验。只有权限中心拒绝或忽略该更新时（`init-iam-v4` 会明确报错），才需要 `delete-iam-v4` 清空再 `init-iam-v4` 重建，此时应提前导出既有授权并在重建后重放。`delete-iam-v4` 保留系统本身，回调地址与 `clients` 白名单不受影响，但清空到重建之间线上没有任何操作与角色，鉴权会全部失败，因此必须在同一维护窗口内完成重建。
+两个删除命令的适用场景不同：本地只是删掉了几项定义时用 `prune-iam-v4`；资源类型的祖先链不走删除，由 `init-iam-v4` 原地更新并回读校验；操作关联的资源类型由 `init-iam-v4` 自动重建该操作。只有权限中心拒绝或忽略祖先链更新时（`init-iam-v4` 会明确报错），才需要 `delete-iam-v4` 清空再 `init-iam-v4` 重建，此时应提前导出既有授权并在重建后重放。`delete-iam-v4` 保留系统本身，回调地址与 `clients` 白名单不受影响，但清空到重建之间线上没有任何操作与角色，鉴权会全部失败，因此必须在同一维护窗口内完成重建。
 
 `batch_delete_role_action` 走 query 参数 `ids` 传逗号连接的操作 ID，而非请求体，与添加接口的形态不同。
 
@@ -98,9 +102,11 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 | 查询展示层级 | `list_role_display_resource_types` | `GET /api/v1/open/mgmt/systems/{system_id}/roles/{role_id}/display-resource-types/` |
 | 覆盖展示层级 | `update_role_display_resource_types` | `PUT /api/v1/open/mgmt/systems/{system_id}/roles/{role_id}/display-resource-types/` |
 
-这两个接口的路径前缀是 `/api/v1/open/mgmt/`，**不含 `rbac`**，申请网关权限时容易漏掉。`PUT` 是全量覆盖，未传入的关联资源类型会回退为默认值（拓扑树第一层资源类型）后整体校验。
+这两个接口的路径前缀是 `/api/v1/open/mgmt/`，**不含 `rbac`**，申请网关权限时容易漏掉。`PUT` 是全量覆盖，列表不能为空；未传入的关联资源类型会回退为默认值（拓扑树第一层资源类型）后整体校验，且同一资源树下的展示层级必须一致（如 `biz→biz, app→app` 会被拒绝）。
 
-## 三、申请清单（23 个接口名）
+`init-iam-v4` 不调用这两个接口：BSCP 的角色按业务、项目、环境、服务分维度授权，分层展示无法满足"同一资源树展示层级一致"的约束，因此交给权限中心按默认值展示，线上已有的配置保持不变（接口不允许清空）。客户端仍保留封装，需要人工调整时可单独调用。
+
+## 三、申请清单（21 个必需 + 2 个可选接口名）
 
 运行时必备：
 
@@ -131,6 +137,11 @@ update_role
 delete_role
 batch_create_role_action
 batch_delete_role_action
+```
+
+可选（仅在需要人工调整角色展示层级时）：
+
+```
 list_role_display_resource_types
 update_role_display_resource_types
 ```
