@@ -17,7 +17,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 )
 
 // 探测必须带上模型租户：V4 客户端读 kit.TenantID，V3 客户端从 ctx 元数据取租户。
@@ -31,4 +33,49 @@ func TestTopologyProbeKitCarriesTenant(t *testing.T) {
 
 	_, ok := ctx.Deadline()
 	require.True(t, ok, "probe context should carry the detect timeout")
+}
+
+// CheckPermission 的申请信息只应包含未通过的资源，已授权资源不能重复返回。
+func TestUnauthorizedResources(t *testing.T) {
+	resources := []*pbas.ResourceAttribute{
+		{Basic: &pbas.Basic{Type: string(meta.Biz), Action: string(meta.FindBusinessResource)}, BizId: 1},
+		{Basic: &pbas.Basic{Type: string(meta.Credential), Action: string(meta.View)}, BizId: 1},
+	}
+
+	tests := []struct {
+		name      string
+		decisions []*pbas.Decision
+		want      int
+	}{
+		{
+			name:      "all authorized",
+			decisions: []*pbas.Decision{{Authorized: true}, {Authorized: true}},
+			want:      0,
+		},
+		{
+			name:      "only credential missing",
+			decisions: []*pbas.Decision{{Authorized: true}, {Authorized: false}},
+			want:      1,
+		},
+		{
+			name:      "nil decision kept",
+			decisions: []*pbas.Decision{nil, {Authorized: false}},
+			want:      2,
+		},
+		{
+			name:      "mismatched decisions fallback to all",
+			decisions: []*pbas.Decision{{Authorized: true}},
+			want:      2,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Len(t, unauthorizedResources(tc.decisions, resources), tc.want)
+		})
+	}
+
+	missing := unauthorizedResources([]*pbas.Decision{{Authorized: true}, {Authorized: false}}, resources)
+	require.Len(t, missing, 1)
+	require.Equal(t, string(meta.Credential), missing[0].Basic.Type)
 }
