@@ -449,8 +449,14 @@ func (s *Service) CheckPermission(ctx context.Context, req *pbas.CheckPermission
 		return resp, nil
 	}
 
+	// 与 Authorize 保持一致：只为未通过的资源生成申请信息，已拥有权限的资源不重复返回。
+	missingResources := unauthorizedResources(abResp.Decisions, req.Resources)
+	if len(missingResources) == 0 {
+		return resp, nil
+	}
+
 	gpReq := &pbas.GetPermissionToApplyReq{
-		Resources: req.Resources,
+		Resources: missingResources,
 	}
 
 	permResp, err := s.GetPermissionToApply(kt.RpcCtx(), gpReq)
@@ -479,6 +485,25 @@ func (s *Service) CheckPermission(ctx context.Context, req *pbas.CheckPermission
 		}
 	}
 	return resp, nil
+}
+
+// unauthorizedResources 按鉴权结果筛出未通过校验的资源，顺序与入参保持一致。
+// decisions 与 resources 长度不一致时无法可靠对齐，退回全量资源，避免漏掉需要申请的权限。
+func unauthorizedResources(decisions []*pbas.Decision,
+	resources []*pbas.ResourceAttribute) []*pbas.ResourceAttribute {
+
+	if len(decisions) != len(resources) {
+		return resources
+	}
+
+	missing := make([]*pbas.ResourceAttribute, 0, len(resources))
+	for idx, decision := range decisions {
+		if decision == nil || !decision.Authorized {
+			missing = append(missing, resources[idx])
+		}
+	}
+
+	return missing
 }
 
 // initLogicModule init logic module.

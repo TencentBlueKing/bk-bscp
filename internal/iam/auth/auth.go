@@ -320,7 +320,7 @@ func (a authorizer) AuthorizeDecision(kt *kit.Kit, resources ...*meta.ResourceAt
 // Authorize authorize if user has permission to the resources.
 // If user is unauthorized, assign apply url and resources into error.
 func (a authorizer) Authorize(kt *kit.Kit, resources ...*meta.ResourceAttribute) error {
-	_, authorized, err := a.AuthorizeDecision(kt, resources...)
+	decisions, authorized, err := a.AuthorizeDecision(kt, resources...)
 	if err != nil {
 		return errf.New(errf.DoAuthorizeFailed, i18n.T(kt, "authorize failed"))
 	}
@@ -329,8 +329,15 @@ func (a authorizer) Authorize(kt *kit.Kit, resources ...*meta.ResourceAttribute)
 		return nil
 	}
 
+	// 只申请本次校验未通过的资源：接口通常一次校验多个资源（如业务查看 + 秘钥查看），
+	// 已拥有权限的资源若一并提交，会重复出现在前端提示和申请链接里。
+	missingResources := unauthorizedResources(decisions, resources)
+	if len(missingResources) == 0 {
+		return status.New(codes.PermissionDenied, "permission denied").Err()
+	}
+
 	req := &pbas.GetPermissionToApplyReq{
-		Resources: pbas.PbResourceAttributes(resources),
+		Resources: pbas.PbResourceAttributes(missingResources),
 	}
 
 	permResp, err := a.authClient.GetPermissionToApply(kt.RpcCtx(), req)
@@ -369,6 +376,26 @@ func (a authorizer) Authorize(kt *kit.Kit, resources ...*meta.ResourceAttribute)
 		return errf.New(errf.PermissionDenied, i18n.T(kt, "grpc status with details failed, err: %v", err))
 	}
 	return st.Err()
+}
+
+// unauthorizedResources 按鉴权结果筛出未通过校验的资源。
+// decisions 与 resources 按入参顺序一一对应；长度不一致时无法可靠对齐，退回全量资源，
+// 避免漏掉必须申请的权限。nil 判定视为未知，同样保留。
+func unauthorizedResources(decisions []*meta.Decision,
+	resources []*meta.ResourceAttribute) []*meta.ResourceAttribute {
+
+	if len(decisions) != len(resources) {
+		return resources
+	}
+
+	missing := make([]*meta.ResourceAttribute, 0, len(resources))
+	for idx, decision := range decisions {
+		if decision == nil || !decision.Authorized {
+			missing = append(missing, resources[idx])
+		}
+	}
+
+	return missing
 }
 
 // GrantResourceCreatorAction grant a user's resource creator action.
