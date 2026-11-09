@@ -107,6 +107,8 @@
             action: 'update',
             resource_id: appId.value,
           },
+          ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+          ...(+envId.value > 0 ? { environment_id: +envId.value } : {}),
         },
       ],
     });

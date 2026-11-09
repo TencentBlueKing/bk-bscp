@@ -168,6 +168,8 @@
             action: 'update',
             resource_id: props.service.id,
           },
+          ...(props.service.project_id > 0 ? { project_id: props.service.project_id } : {}),
+          ...(props.service.env_id > 0 ? { environment_id: props.service.env_id } : {}),
         },
       ],
     };

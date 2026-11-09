@@ -12,7 +12,7 @@ interface IAppData {
     data_type?: string;
   };
 }
-const { spaceId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
+const { spaceId, projectId, permissionQuery, showApplyPermDialog } = storeToRefs(useGlobalStore());
 
 export default defineStore('service', () => {
   // 服务详情数据
@@ -40,6 +40,8 @@ export default defineStore('service', () => {
               action: 'update',
               resource_id: appData.value.id,
             },
+            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+            ...(+appData.value.env_id > 0 ? { environment_id: +appData.value.env_id } : {}),
           },
         ],
       };

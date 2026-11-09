@@ -154,6 +154,8 @@
               action: 'view',
               resource_id: service.id,
             },
+            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+            ...(+props.envId > 0 ? { environment_id: +props.envId } : {}),
           },
         ],
       };

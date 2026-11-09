@@ -39,13 +39,23 @@ form::-webkit-scrollbar-thumb {
   box-shadow: inset 0 0 6px #cccccc4d;
 }
 
+// 保持普通块布局：组件库挂载到 body 的临时节点（popover、message、textarea 测量节点等）
+// 若参与 flex 布局，会与 #app 并排并挤压主内容宽度，导致页面右侧出现空白
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-height: 100vh;
   overflow: hidden;
   background-color: #fff;
+}
+
+// 组件库挂在 body 下的临时 textarea（输入框尺寸计算节点）不参与页面布局，
+// 否则会把文档撑高，在页面下方留下可滚动的空白；:not([style]) 避免影响业务代码动态创建的复制用 textarea
+body > textarea:not([style]) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 h1 {

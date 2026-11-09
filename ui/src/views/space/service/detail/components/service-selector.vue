@@ -128,6 +128,8 @@
               action: 'view',
               resource_id: service.id,
             },
+            ...(service.project_id > 0 ? { project_id: service.project_id } : {}),
+            ...(service.env_id > 0 ? { environment_id: service.env_id } : {}),
           },
         ],
       };
