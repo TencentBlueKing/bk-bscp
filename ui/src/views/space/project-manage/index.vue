@@ -55,7 +55,9 @@
                 <template #default="{ row }">{{ row.spec?.app_count }}</template>
               </bk-table-column>
               <bk-table-column :label="t('创建人')" :width="160">
-                <template #default="{ row }">{{ row.revision?.creator }}</template>
+                <template #default="{ row }">
+                  <user-name :name="row.revision?.creator || '--'" />
+                </template>
               </bk-table-column>
               <bk-table-column :label="t('创建时间')" :width="200">
                 <template #default="{ row }">{{ datetimeFormat(row.revision?.create_at) }}</template>
@@ -120,6 +122,7 @@
   import tableEmpty from '../../../components/table/table-empty.vue';
   import ProjectFormDialog from './components/project-form-dialog.vue';
   import SearchSelector from '../../../components/search-selector.vue';
+  import UserName from '../../../components/user-name.vue';
   import { InfoBox } from 'bkui-vue';
   import { getProjectList, deleteProject } from '../../../api/project';
   import { permissionCheck } from '../../../api';
