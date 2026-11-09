@@ -76,6 +76,8 @@ type Service struct {
 	// disableWriteOpt defines which biz's write operation needs to be disabled
 	disableWriteOpt *options.DisableWriteOption
 	iamSettings     cc.IAM
+	// iamTokens 按租户缓存系统 token，用于校验资源回调
+	iamTokens *systemTokenCache
 	// iam logic module.
 	iam *iam.IAM
 	// iamV4Lgc iam v4 资源回调的处理逻辑，仅当 iam.version 为 v4 时非空
@@ -117,6 +119,7 @@ func NewService(sd serviced.Discover, iamSettings cc.IAM, disableAuth bool,
 		disableAuth:     disableAuth,
 		disableWriteOpt: disableWriteOpt,
 		iamSettings:     iamSettings,
+		iamTokens:       newSystemTokenCache(systemTokenTTL),
 		spaceMgr:        spaceMgr,
 	}
 
@@ -828,21 +831,17 @@ func (s *Service) QuerySpaceByAppID(ctx context.Context, req *pbas.QuerySpaceByA
 // V3 与 V4 的系统 token 来自不同接口，按运行时配置取用对应的那个。
 func (s *Service) IAMVerify(ctx context.Context, req *pbas.IAMVerifyReq) (*pbas.IAMVerifyResp, error) {
 	kt := kit.FromGrpcContext(ctx)
-	if iamToken.token != "" && time.Since(iamToken.tokenRefreshTime) <= time.Minute && req.GetToken() == iamToken.token {
-		return &pbas.IAMVerifyResp{IsAuthorized: true}, nil
-	}
-
-	token, err := s.getSystemToken(kt)
+	ok, err := s.iamTokens.verify(kt.TenantID, req.GetToken(), func() (string, error) {
+		return s.getSystemToken(kt)
+	})
 	if err != nil {
-		logs.Errorf("check request authorization get system token failed, error: %s, rid: %s", err.Error(), kt.Rid)
+		logs.Errorf("check request authorization get system token failed, tenant: %s, error: %s, rid: %s",
+			kt.TenantID, err.Error(), kt.Rid)
 		return &pbas.IAMVerifyResp{IsAuthorized: false}, err
 	}
 
-	iamToken.token = token
-	iamToken.tokenRefreshTime = time.Now()
-
-	if req.GetToken() != iamToken.token {
-		logs.Errorf("request token does not match the system token, rid: %s", kt.Rid)
+	if !ok {
+		logs.Errorf("request token does not match the system token, tenant: %s, rid: %s", kt.TenantID, kt.Rid)
 		return &pbas.IAMVerifyResp{IsAuthorized: false}, errors.New("request password not match system token")
 	}
 

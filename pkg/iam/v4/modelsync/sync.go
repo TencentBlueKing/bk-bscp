@@ -47,10 +47,6 @@ type Gateway interface {
 	DeleteRole(kt *kit.Kit, id string) error
 	BatchCreateRoleActions(kt *kit.Kit, roleID string, actions []client.RoleAction) error
 	BatchDeleteRoleActions(kt *kit.Kit, roleID string, actionIDs []string) error
-
-	ListRoleDisplayResourceTypes(kt *kit.Kit, roleID string) ([]client.DisplayResourceType, error)
-	UpdateRoleDisplayResourceTypes(kt *kit.Kit, roleID string,
-		types []client.DisplayResourceType) error
 }
 
 var _ Gateway = (*client.Client)(nil)
@@ -272,18 +268,6 @@ func (s *Syncer) planFullModel(plan *Plan) {
 	plan.CreateResourceTypes = model.ResourceTypes()
 	plan.CreateActions = model.Actions()
 	plan.CreateRoles = model.Roles()
-
-	for _, role := range model.Roles() {
-		want, ok := model.DisplayResourceTypes()[role.ID]
-		if !ok {
-			continue
-		}
-
-		plan.SetRoleDisplays = append(plan.SetRoleDisplays, RoleDisplayChange{
-			RoleID: role.ID, Types: want,
-			Detail: formatDisplayTypes(want) + "（随新角色配置）",
-		})
-	}
 }
 
 func (s *Syncer) diffModel(kt *kit.Kit, plan *Plan) error {
@@ -303,9 +287,10 @@ func (s *Syncer) diffModel(kt *kit.Kit, plan *Plan) error {
 	}
 
 	s.diffResourceTypes(onlineTypes, plan)
-	s.diffActions(onlineActions, plan)
+	s.diffActions(onlineActions, onlineRoles, plan)
+	s.diffRoles(onlineRoles, plan)
 
-	return s.diffRoles(kt, onlineRoles, plan)
+	return nil
 }
 
 // mergeClients 把期望的调用方并入线上列表，返回合并结果与新增项。
@@ -367,7 +352,7 @@ func (s *Syncer) diffResourceTypes(online []client.ResourceType, plan *Plan) {
 	}
 }
 
-func (s *Syncer) diffActions(online []client.Action, plan *Plan) {
+func (s *Syncer) diffActions(online []client.Action, onlineRoles []client.Role, plan *Plan) {
 	onlineMap := make(map[string]client.Action, len(online))
 	for _, a := range online {
 		onlineMap[a.ID] = a
@@ -384,11 +369,15 @@ func (s *Syncer) diffActions(online []client.Action, plan *Plan) {
 			continue
 		}
 
-		// 关联资源类型同样走原地更新，例如 app_create 从业务维度改为环境维度。
+		// update_action 不接受 resource_type_id，关联资源类型变更只能重建，
+		// 例如 app_create 从业务维度改为环境维度。重建时按本地名称创建，无需另行改名。
 		if cur.ResourceTypeID != local.ResourceTypeID {
-			plan.UpdateActionResourceTypes = append(plan.UpdateActionResourceTypes,
-				ActionResourceTypeUpdate{ID: local.ID, Name: local.Name,
-					From: cur.ResourceTypeID, To: local.ResourceTypeID})
+			plan.RecreateActions = append(plan.RecreateActions, ActionRecreate{
+				Action: local, From: cur.ResourceTypeID,
+				Roles: rolesReferencingAction(onlineRoles, local.ID),
+			})
+
+			continue
 		}
 
 		if cur.Name != local.Name {
@@ -404,13 +393,20 @@ func (s *Syncer) diffActions(online []client.Action, plan *Plan) {
 	}
 }
 
-func (s *Syncer) diffRoles(kt *kit.Kit, online []client.Role, plan *Plan) error {
+// diffRoles 比较角色元信息与角色内的操作。
+// 角色的展示层级（display_resource_types）不由同步管理：权限中心要求同一资源树下的展示层级一致，
+// 与按维度分层展示的配置冲突，交给权限中心按授权维度默认展示。
+func (s *Syncer) diffRoles(online []client.Role, plan *Plan) {
 	onlineMap := make(map[string]client.Role, len(online))
 	for _, r := range online {
 		onlineMap[r.ID] = r
 	}
 
-	displays := model.DisplayResourceTypes()
+	// 重建的操作会先从全部角色中移除，角色同步须把它们当作线上不存在，按本地定义重新加回。
+	recreated := make(map[string]struct{}, len(plan.RecreateActions))
+	for _, r := range plan.RecreateActions {
+		recreated[r.Action.ID] = struct{}{}
+	}
 
 	localMap := make(map[string]struct{})
 	for _, local := range model.Roles() {
@@ -419,13 +415,6 @@ func (s *Syncer) diffRoles(kt *kit.Kit, online []client.Role, plan *Plan) error 
 		cur, ok := onlineMap[local.ID]
 		if !ok {
 			plan.CreateRoles = append(plan.CreateRoles, local)
-			// 新角色的展示层级在创建后一并配置
-			if want, has := displays[local.ID]; has {
-				plan.SetRoleDisplays = append(plan.SetRoleDisplays, RoleDisplayChange{
-					RoleID: local.ID, Types: want,
-					Detail: formatDisplayTypes(want) + "（随新角色配置）",
-				})
-			}
 
 			continue
 		}
@@ -437,7 +426,7 @@ func (s *Syncer) diffRoles(kt *kit.Kit, online []client.Role, plan *Plan) error 
 		}
 
 		// 线上返回的操作按 ID 字母序排列，与本地定义顺序无关，只能按集合比较。
-		add, del := diffRoleActions(cur.Actions, local.Actions)
+		add, del := diffRoleActions(withoutActions(cur.Actions, recreated), local.Actions)
 		if len(add) > 0 {
 			plan.AddRoleActions = append(plan.AddRoleActions,
 				RoleActionsChange{RoleID: local.ID, Actions: add})
@@ -446,10 +435,6 @@ func (s *Syncer) diffRoles(kt *kit.Kit, online []client.Role, plan *Plan) error 
 			plan.DelRoleActions = append(plan.DelRoleActions,
 				RoleActionsChange{RoleID: local.ID, Actions: del})
 		}
-
-		if err := s.diffRoleDisplay(kt, local.ID, displays[local.ID], plan); err != nil {
-			return err
-		}
 	}
 
 	for _, r := range online {
@@ -457,42 +442,6 @@ func (s *Syncer) diffRoles(kt *kit.Kit, online []client.Role, plan *Plan) error 
 			plan.DeleteRoles = append(plan.DeleteRoles, r.ID)
 		}
 	}
-
-	return nil
-}
-
-// diffRoleDisplay 比较角色的展示资源层级。
-// 线上会把未显式配置的关联资源类型按默认值一并返回，因此只比对本地声明的那些键。
-func (s *Syncer) diffRoleDisplay(kt *kit.Kit, roleID string,
-	want []client.DisplayResourceType, plan *Plan) error {
-
-	if len(want) == 0 {
-		return nil
-	}
-
-	cur, err := s.gw.ListRoleDisplayResourceTypes(kt, roleID)
-	if err != nil {
-		return errors.Wrapf(err, "list display resource types of role %s", roleID)
-	}
-
-	curMap := make(map[string]string, len(cur))
-	for _, t := range cur {
-		curMap[t.RelatedResourceTypeID] = t.DisplayResourceTypeID
-	}
-
-	for _, t := range want {
-		if curMap[t.RelatedResourceTypeID] != t.DisplayResourceTypeID {
-			plan.SetRoleDisplays = append(plan.SetRoleDisplays, RoleDisplayChange{
-				RoleID: roleID, Types: want,
-				Detail: fmt.Sprintf("%s（线上 %s）", formatDisplayTypes(want),
-					formatDisplayTypes(cur)),
-			})
-
-			return nil
-		}
-	}
-
-	return nil
 }
 
 // Apply 按依赖顺序施加变更：新增与更新自上而下（资源类型→操作→角色），
@@ -527,67 +476,41 @@ func (s *Syncer) Apply(kt *kit.Kit, plan *Plan, opt ApplyOption) error {
 	return s.verifyInPlaceUpdates(kt, plan)
 }
 
-// verifyInPlaceUpdates 回读线上模型，确认祖先链与操作关联资源类型确实已更新。
+// verifyInPlaceUpdates 回读线上模型，确认祖先链确实已更新。
 //
-// 这两个字段决定鉴权路径的拓扑，权限中心若忽略它们，更新请求也会"成功"。
+// 祖先链决定鉴权路径的拓扑，权限中心若忽略它，更新请求也会"成功"。
 // 不回读校验就会出现「模型显示已对齐、实际按旧拓扑鉴权」的静默错误，
 // 因此这里显式发现差异并让命令失败，由运维改走 delete-iam-v4 + init-iam-v4。
 func (s *Syncer) verifyInPlaceUpdates(kt *kit.Kit, plan *Plan) error {
-	if len(plan.UpdateResourceTypeAncestors) == 0 && len(plan.UpdateActionResourceTypes) == 0 {
+	if len(plan.UpdateResourceTypeAncestors) == 0 {
 		return nil
 	}
 
-	mismatches := make([]string, 0)
-
-	if len(plan.UpdateResourceTypeAncestors) > 0 {
-		online, err := s.listAllResourceTypes(kt)
-		if err != nil {
-			return err
-		}
-
-		onlineMap := make(map[string]client.ResourceType, len(online))
-		for _, rt := range online {
-			onlineMap[rt.ID] = rt
-		}
-
-		for _, u := range plan.UpdateResourceTypeAncestors {
-			cur, ok := onlineMap[u.ID]
-			if !ok {
-				continue
-			}
-			if !sameStrings(cur.Ancestors, u.To) {
-				mismatches = append(mismatches, fmt.Sprintf("资源类型 %s 的祖先链仍为 %v，期望 %v",
-					u.ID, cur.Ancestors, u.To))
-			}
-		}
+	online, err := s.listAllResourceTypes(kt)
+	if err != nil {
+		return err
 	}
 
-	if len(plan.UpdateActionResourceTypes) > 0 {
-		online, err := s.listAllActions(kt)
-		if err != nil {
-			return err
-		}
+	onlineMap := make(map[string]client.ResourceType, len(online))
+	for _, rt := range online {
+		onlineMap[rt.ID] = rt
+	}
 
-		onlineMap := make(map[string]client.Action, len(online))
-		for _, a := range online {
-			onlineMap[a.ID] = a
+	mismatches := make([]string, 0)
+	for _, u := range plan.UpdateResourceTypeAncestors {
+		cur, ok := onlineMap[u.ID]
+		if !ok {
+			continue
 		}
-
-		for _, u := range plan.UpdateActionResourceTypes {
-			cur, ok := onlineMap[u.ID]
-			if !ok {
-				continue
-			}
-			if cur.ResourceTypeID != u.To {
-				mismatches = append(mismatches, fmt.Sprintf("操作 %s 的关联资源类型仍为 %q，期望 %q",
-					u.ID, cur.ResourceTypeID, u.To))
-			}
+		if !sameStrings(cur.Ancestors, u.To) {
+			mismatches = append(mismatches, fmt.Sprintf("资源类型 %s 的祖先链仍为 %v，期望 %v",
+				u.ID, cur.Ancestors, u.To))
 		}
 	}
 
 	if len(mismatches) > 0 {
 		return errors.Errorf("权限中心未接受原地更新，模型与本地定义仍不一致：%s。"+
-			"这两项变更会影响鉴权路径拓扑，只能删除模型后重建："+
+			"祖先链会影响鉴权路径拓扑，只能删除模型后重建："+
 			"请执行 migrate delete-iam-v4 清空后重新 migrate init-iam-v4，并提前导出/重放既有授权",
 			strings.Join(mismatches, "；"))
 	}
@@ -660,30 +583,41 @@ func (s *Syncer) applyActions(kt *kit.Kit, plan *Plan, opt *ApplyOption) error {
 		opt.logf("已新增 %d 个操作", len(plan.CreateActions))
 	}
 
-	// 关联资源类型的更新会一并提交名称，同一操作不必再发一次改名请求
-	resourceTypeUpdated := make(map[string]struct{}, len(plan.UpdateActionResourceTypes))
-	for _, u := range plan.UpdateActionResourceTypes {
-		resourceTypeUpdated[u.ID] = struct{}{}
-	}
-
 	for _, r := range plan.RenameActions {
-		if _, ok := resourceTypeUpdated[r.ID]; ok {
-			continue
-		}
-
 		if err := s.gw.UpdateAction(kt, r.ID, &client.UpdateActionReq{Name: r.To}); err != nil {
 			return errors.Wrapf(err, "rename action %s", r.ID)
 		}
 		opt.logf("已重命名操作 %s 为 %q", r.ID, r.To)
 	}
 
-	for _, u := range plan.UpdateActionResourceTypes {
-		if err := s.gw.UpdateAction(kt, u.ID,
-			&client.UpdateActionReq{Name: u.Name, ResourceTypeID: u.To}); err != nil {
-			return errors.Wrapf(err, "update resource type of action %s", u.ID)
+	for _, r := range plan.RecreateActions {
+		if err := s.recreateAction(kt, r, opt); err != nil {
+			return err
 		}
-		opt.logf("已更新操作 %s 的关联资源类型 %s -> %s", u.ID, orNone(u.From), orNone(u.To))
 	}
+
+	return nil
+}
+
+// recreateAction 按新的关联资源类型重建操作。中途失败可直接重跑：
+// 重跑时操作已删则按新建处理，角色内缺失的绑定由角色同步补回。
+func (s *Syncer) recreateAction(kt *kit.Kit, r ActionRecreate, opt *ApplyOption) error {
+	id := r.Action.ID
+	for _, roleID := range r.Roles {
+		if err := s.gw.BatchDeleteRoleActions(kt, roleID, []string{id}); err != nil {
+			return errors.Wrapf(err, "remove action %s from role %s before recreating", id, roleID)
+		}
+	}
+
+	if err := s.gw.DeleteAction(kt, id); err != nil {
+		return errors.Wrapf(err, "delete action %s before recreating", id)
+	}
+
+	if _, err := s.gw.BatchCreateActions(kt, []client.Action{r.Action}); err != nil {
+		return errors.Wrapf(err, "recreate action %s", id)
+	}
+	opt.logf("已重建操作 %s，关联资源类型 %s -> %s（已从角色 %v 中移除，随后按本地定义加回）",
+		id, orNone(r.From), orNone(r.Action.ResourceTypeID), r.Roles)
 
 	return nil
 }
@@ -744,13 +678,6 @@ func (s *Syncer) applyRoles(kt *kit.Kit, plan *Plan, opt *ApplyOption) error {
 			return errors.Wrapf(err, "remove actions from role %s", c.RoleID)
 		}
 		opt.logf("已移除角色 %s 的操作 %v", c.RoleID, ids)
-	}
-
-	for _, c := range plan.SetRoleDisplays {
-		if err := s.gw.UpdateRoleDisplayResourceTypes(kt, c.RoleID, c.Types); err != nil {
-			return errors.Wrapf(err, "set display resource types of role %s", c.RoleID)
-		}
-		opt.logf("已配置角色 %s 的展示层级 %s", c.RoleID, formatDisplayTypes(c.Types))
 	}
 
 	return nil
@@ -923,6 +850,37 @@ func rescopedRoleActionIDs(plan *Plan) map[string][]string {
 	}
 
 	return result
+}
+
+// rolesReferencingAction 返回线上包含该操作的角色 ID，按字母序排列。
+func rolesReferencingAction(roles []client.Role, actionID string) []string {
+	ids := make([]string, 0)
+	for _, r := range roles {
+		for _, a := range r.Actions {
+			if a.ID == actionID {
+				ids = append(ids, r.ID)
+
+				break
+			}
+		}
+	}
+
+	return uniqueIDs(ids)
+}
+
+func withoutActions(actions []client.RoleAction, drop map[string]struct{}) []client.RoleAction {
+	if len(drop) == 0 {
+		return actions
+	}
+
+	kept := make([]client.RoleAction, 0, len(actions))
+	for _, a := range actions {
+		if _, ok := drop[a.ID]; !ok {
+			kept = append(kept, a)
+		}
+	}
+
+	return kept
 }
 
 func sortedKeys(m map[string][]string) []string {
