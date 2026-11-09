@@ -110,7 +110,7 @@
             </bk-button>
             <template v-else>
               <bk-button
-                v-cursor="{ active: !hasEditServicePerm }"
+                v-cursor="{ active: versionData.id === 0 && !hasEditServicePerm }"
                 :class="{ 'bk-text-with-no-perm': versionData.id === 0 && !hasEditServicePerm }"
                 :disabled="versionData.id === 0 && !hasEditServicePerm"
                 text
