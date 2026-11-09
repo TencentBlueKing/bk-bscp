@@ -87,6 +87,8 @@
         action: 'generate_release',
         resource_id: props.appId,
       },
+      ...(+props.projectId > 0 ? { project_id: +props.projectId } : {}),
+      ...(+props.envId > 0 ? { environment_id: +props.envId } : {}),
     },
   ]);
 

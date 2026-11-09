@@ -23,7 +23,7 @@
   import EnvAlertBar from '../../../../components/env-alert-bar.vue';
   import { useRoute, useRouter } from 'vue-router';
 
-  const { spaceId } = storeToRefs(useGlobalStore());
+  const { spaceId, projectId } = storeToRefs(useGlobalStore());
 
   const hasCreateServicePerm = ref(false);
   const permCheckLoading = ref(false);
@@ -42,8 +42,9 @@
   };
 
 
+  // 项目、环境切换或环境异步就绪后需重新判权，保证请求携带当前有效维度
   watch(
-    () => spaceId.value,
+    () => [spaceId.value, projectId.value, envId.value],
     () => {
       checkCreateServicePerm();
     },
@@ -56,6 +57,11 @@
   });
 
   const checkCreateServicePerm = async () => {
+    // 项目或环境 ID 未就绪时不发起请求，避免携带无效维度（+id > 0 同时排除空串、NaN、0、负数）
+    if (!(+projectId.value > 0) || !(+envId.value > 0)) {
+      hasCreateServicePerm.value = false;
+      return;
+    }
     permCheckLoading.value = true;
     const res = await permissionCheck({
       resources: [
@@ -65,6 +71,8 @@
             type: 'app',
             action: 'create',
           },
+          ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+          ...(+envId.value > 0 ? { environment_id: +envId.value } : {}),
         },
       ],
     });

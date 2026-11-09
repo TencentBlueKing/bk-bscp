@@ -350,6 +350,7 @@
             type: 'credential',
             action: 'manage',
           },
+          ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
         },
       ],
     });
@@ -367,6 +368,7 @@
               type: 'credential',
               action: 'manage',
             },
+            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
           },
         ],
       };

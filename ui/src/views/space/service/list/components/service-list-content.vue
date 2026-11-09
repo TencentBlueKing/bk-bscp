@@ -302,6 +302,8 @@
               type: 'app',
               action: 'create',
             },
+            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+            ...(+props.envId > 0 ? { environment_id: +props.envId } : {}),
           },
         ],
       };

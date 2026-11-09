@@ -16,7 +16,6 @@
         :placeholder="$t('全部')"
         :clearable="true"
         :is-record="isRecord"
-        :project-id="projectId"
         :env-id="envId"
         @change="handleAppChange"
         @clear="handleAppChange" />

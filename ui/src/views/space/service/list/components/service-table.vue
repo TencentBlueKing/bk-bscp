@@ -179,6 +179,8 @@
               action: 'delete',
               resource_id: row.id,
             },
+            ...(row.project_id > 0 ? { project_id: row.project_id } : {}),
+            ...(row.env_id > 0 ? { environment_id: row.env_id } : {}),
           },
         ],
       };
@@ -199,6 +201,8 @@
               action: 'update',
               resource_id: row.id,
             },
+            ...(row.project_id > 0 ? { project_id: row.project_id } : {}),
+            ...(row.env_id > 0 ? { environment_id: row.env_id } : {}),
           },
         ],
       };
@@ -220,6 +224,8 @@
             action: 'view',
             resource_id: row.id,
           },
+          ...(row.project_id > 0 ? { project_id: row.project_id } : {}),
+          ...(row.env_id > 0 ? { environment_id: row.env_id } : {}),
         },
       ],
     };
