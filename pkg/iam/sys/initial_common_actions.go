@@ -45,6 +45,7 @@ func genBizCommonActions() []client.CommonAction {
 			Actions: []client.ActionWithID{
 				{ID: BusinessViewResource},
 				{ID: AppCreate},
+				{ID: EnvironmentAppCreate},
 				{ID: AppView},
 				{ID: AppEdit},
 				{ID: AppDelete},

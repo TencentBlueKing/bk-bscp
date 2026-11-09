@@ -69,8 +69,14 @@ iam:
 | 项目查看 / 编辑 / 删除 | `project_view` / `project_edit` / `project_delete` | 项目 |
 | 环境创建 | `environment_create` | 项目 |
 | 环境查看 / 编辑 / 删除 | `environment_view` / `environment_edit` / `environment_delete` | 环境 |
-| 服务创建 | `app_create` | 环境 |
-| 服务克隆 | `app_create` + `app_edit` | 环境 + 业务（请求不带源服务实例，`app_edit` 按业务维度校验） |
+| 服务创建 | V3：`environment_app_create`，未通过时回退 `app_create`；V4：`app_create` | V3：环境，回退时为业务；V4：环境 |
+| 服务克隆 | 服务创建 + `app_edit` | 同服务创建 + 业务（请求不带源服务实例，`app_edit` 按业务维度校验） |
+
+权限中心 V3 的 `app_create` 带着按业务授予的存量策略，而 V3 不允许修改带策略操作的关联资源（1901409），
+因此 `app_create` 保持关联业务，作为「业务下任意环境都可创建服务」的粗粒度权限；按环境的细粒度权限是新操作
+`environment_app_create`（服务创建（环境级））。新拓扑下服务创建先按目标环境校验 `environment_app_create`，
+未通过再按目标环境的真实所属业务校验 `app_create`，任一通过即放行；无权限申请链接给出 `environment_app_create`。
+目标环境回查不到归属时不做回退。旧拓扑下只按业务校验 `app_create`。
 | 服务查看 / 编辑 / 删除 / 生成版本 / 上线版本 | `app_view` / `app_edit` / `app_delete` / `release_generate` / `release_publish` | 服务 |
 
 鉴权路径（`_bk_iam_path_`）表示资源的祖先链，IAM 不反查拓扑，路径写到哪一级就只认哪一级的授权。
@@ -109,17 +115,18 @@ iam:
 
 ### 关闭态下服务创建为什么仍用环境实例
 
-`app_create` 在 IAM 中只关联环境实例（没有业务实例定义），用业务实例发起鉴权或申请会被拒绝：
+按环境的服务创建操作（V3 为 `environment_app_create`，V4 为 `app_create`）在 IAM 中只关联环境实例
+（没有业务实例定义），用业务实例发起鉴权或申请会被拒绝：
 
 ```
-1902412  action(app_create) not support to grant instance
+1902412  action(environment_app_create) not support to grant instance
 ```
 
 因此服务创建始终用目标环境作为资源实例（`ResourceID` 即环境 ID），路径声明「业务 → 项目」两级。
 新拓扑下这两级祖先由鉴权侧按目标环境回查，与开关无关：
 请求里的 `project_id` 只当线索，回查不到时清空归属（鉴权退化为无权限），不会拿请求值冒充祖先。
-`project_id` 因此也不会因为开关关闭而缺失，申请链接能正常生成 `app_create` 项。
-调用方未指定目标环境（`ResourceID` 为 0）时，鉴权仍会发起，但申请链接不会生成 `app_create` 项，
+`project_id` 因此也不会因为开关关闭而缺失，申请链接能正常生成服务创建项。
+调用方未指定目标环境（`ResourceID` 为 0）时，鉴权仍会发起，但申请链接不会生成服务创建项，
 避免向权限中心提交不存在的实例。
 
 ### 关闭态下为什么不裁剪服务路径
@@ -144,7 +151,7 @@ iam:
 | 场景 | 是否需要初始化 |
 | --- | --- |
 | `topology: legacy` | 不需要。权限中心保持「业务 → 服务」即可，服务路径只用业务一层 |
-| `topology: hierarchical` | 需要 IAM 模型已是新拓扑：项目/环境资源类型与动作、服务三级祖先链、`app_create` 关联环境 |
+| `topology: hierarchical` | 需要 IAM 模型已是新拓扑：项目/环境资源类型与动作、服务三级祖先链、按环境的服务创建操作（V3 `environment_app_create`，V4 `app_create`）关联环境 |
 | `enabled: true` | 同时要求 `hierarchical`，否则启动失败 |
 
 旧拓扑下关闭开关与项目/环境维度引入前的版本行为完全一致：服务路径 `/biz,{bizID}/`、
@@ -202,7 +209,7 @@ V4 的 `update_action` 不支持修改 `resource_type_id`，`app_create` 改为�
    缺少 `basic` 会直接返回参数错误，不会落到空指针；
 3. 关闭态调用项目/环境接口，权限中心无记录；
 4. 关闭态创建服务时故意把 `project_id` 填成自己有权限的项目、`resource_id`（环境 ID）填到别人项目下的环境：
-   鉴权路径里的项目应被回查成该环境的真实项目，拼不出匹配授权时返回无权限；`project_id` 缺省时申请链接仍能生成 `app_create` 项；
+   鉴权路径里的项目应被回查成该环境的真实项目，拼不出匹配授权时返回无权限；`project_id` 缺省时申请链接仍能生成服务创建项；
 5. 开启态用带 `project_id` 与 `basic.resource_id`（环境 ID）的请求验证环境维度判定；
 6. 开关切换后重启 auth-server，行为立即变化，无缓存残留。
 
@@ -214,6 +221,6 @@ V4 的 `update_action` 不支持修改 `resource_type_id`，`app_create` 改为�
   `20260817161906_backfill_core_tables` 回填 `applications` 的 `project_id` / `environment_id`
   （不做业务路径兜底，避免绕过服务级隔离）；
 - `legacy` 拓扑下不校验项目/环境资源，服务路径只看业务一层；
-- 调用方未指定目标环境时（`hierarchical`），服务创建仍会发起鉴权，但不会生成 `app_create` 的申请链接；
+- 调用方未指定目标环境时（`hierarchical`），服务创建仍会发起鉴权，但不会生成服务创建的申请链接；
 - 关闭开关时项目/环境的写操作只受业务访问权限约束（保持改造前取舍），生产环境建议开启；
 - 开关与拓扑都是全局的，暂不支持按业务/租户灰度。

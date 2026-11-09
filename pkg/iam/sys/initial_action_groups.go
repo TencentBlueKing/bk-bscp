@@ -50,6 +50,7 @@ func genBusinessManagementActionGroups() []client.ActionGroup {
 			NameEn: "Application",
 			Actions: []client.ActionWithID{
 				{ID: AppCreate},
+				{ID: EnvironmentAppCreate},
 				{ID: AppView},
 				{ID: AppEdit},
 				{ID: AppDelete},

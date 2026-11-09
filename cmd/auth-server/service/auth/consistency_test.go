@@ -116,18 +116,20 @@ func TestV3V4AppCreateConsistency(t *testing.T) {
 	require.Equal(t, "biz", v4Mapped.ResourceType)
 	require.Equal(t, "100001", v4Mapped.ResourceID)
 
-	// 新拓扑：两边都按目标环境发起。
+	// 新拓扑：两边都按目标环境发起。V3 的 app_create 带着按业务授予的存量策略无法改关联资源，
+	// 按环境创建使用独立操作；V4 是新系统，沿用 app_create。
 	v3Action, v3Resources, err = AdaptAuthOptionsWithOptions(attr, PermissionOptions{
 		Topology: meta.TopologyHierarchical,
 	})
 	require.NoError(t, err)
+	require.Equal(t, sys.EnvironmentAppCreate, v3Action)
 	require.Len(t, v3Resources, 1)
 	require.Equal(t, "environment", string(v3Resources[0].Type))
 	require.Equal(t, "50001", v3Resources[0].ID)
 
 	v4Mapped, err = adaptorv4.AdaptWithOptions(attr, adaptorv4.Options{Topology: meta.TopologyHierarchical})
 	require.NoError(t, err)
-	require.Equal(t, string(v3Action), v4Mapped.ActionID)
+	require.Equal(t, string(sys.AppCreate), v4Mapped.ActionID)
 	require.Equal(t, "environment", v4Mapped.ResourceType)
 	require.Equal(t, "50001", v4Mapped.ResourceID)
 }

@@ -50,8 +50,11 @@ const (
 	// BusinessViewResource business view.
 	BusinessViewResource client.ActionID = "find_business_resource"
 
-	// AppCreate app create.
+	// AppCreate 按业务创建服务。线上已有按业务授予的策略，权限中心 V3 不允许修改带策略操作的关联资源，
+	// 因此保持关联业务，作为业务下任意环境可创建服务的粗粒度权限。
 	AppCreate client.ActionID = "app_create"
+	// EnvironmentAppCreate 按环境创建服务，细粒度权限。
+	EnvironmentAppCreate client.ActionID = "environment_app_create"
 	// AppView
 	AppView client.ActionID = "app_view"
 	// AppEdit app edit.
@@ -133,6 +136,7 @@ var ActionIDNameMap = map[client.ActionID]string{
 	BusinessViewResource: "业务访问",
 
 	AppCreate:               "服务创建",
+	EnvironmentAppCreate:    "服务创建（环境级）",
 	AppView:                 "服务查看",
 	AppEdit:                 "服务编辑",
 	AppDelete:               "服务删除",

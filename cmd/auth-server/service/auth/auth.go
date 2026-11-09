@@ -275,8 +275,66 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 		index++
 	}
 
+	if err := a.authorizeAppCreateByBusiness(ctx, opts.Subject, decisions); err != nil {
+		logs.Errorf("authorize app create by business failed, req: %#v, err: %v, rid: %s", req, err, kt.Rid)
+		return nil, err
+	}
+
 	resp.Decisions = pbas.PbDecisions(decisions)
 	return resp, nil
+}
+
+// authorizeAppCreateByBusiness 对按环境未通过的服务创建，再按目标环境所属业务校验一次 app_create。
+//
+// 存量的服务创建授权都在业务维度的 app_create 上，而权限中心 V3 不允许修改带策略操作的关联资源，
+// 新拓扑下按环境创建只能使用 environment_app_create。app_create 仍代表「业务下任意环境都可创建服务」，
+// 两者任一通过即放行。业务取自目标环境回查到的真实归属，回查不到时为 0，不做回退。
+func (a *Auth) authorizeAppCreateByBusiness(ctx context.Context, subject client.Subject,
+	decisions []*meta.Decision) error {
+
+	if a.topology.IsLegacy() {
+		return nil
+	}
+
+	pending := make([]*meta.Decision, 0)
+	batch := make([]*client.AuthBatch, 0)
+	for _, decision := range decisions {
+		res := decision.Resource
+		if decision.Authorized || res.Type != meta.App || res.Action != meta.Create || res.BizID == 0 {
+			continue
+		}
+
+		pending = append(pending, decision)
+		batch = append(batch, &client.AuthBatch{
+			Action: client.Action{ID: string(sys.AppCreate)},
+			Resources: []client.Resource{{
+				System: sys.SystemIDCMDB,
+				Type:   sys.Business,
+				ID:     strconv.FormatUint(uint64(res.BizID), 10),
+			}},
+		})
+	}
+
+	if len(batch) == 0 {
+		return nil
+	}
+
+	authDecisions, err := a.auth.AuthorizeBatch(ctx, &client.AuthBatchOptions{
+		System:  sys.SystemIDBSCP,
+		Subject: subject,
+		Batch:   batch,
+	})
+	if err != nil {
+		return err
+	}
+
+	for i, decision := range authDecisions {
+		if i < len(pending) && decision.Authorized {
+			pending[i].Authorized = true
+		}
+	}
+
+	return nil
 }
 
 // authorizeBatchV4 走权限中心 V4 的批量鉴权。
