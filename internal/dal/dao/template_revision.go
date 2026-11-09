@@ -54,10 +54,16 @@ type TemplateRevision interface {
 	DeleteForTmplWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, templateID uint32) error
 	// BatchCreateWithTx batch create template revisions instances with transaction.
 	BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx, revisions []*table.TemplateRevision) error
-	// ListLatestRevisionsGroupByTemplateIds Lists the latest version groups by template ids
+	// ListLatestRevisionsGroupByTemplateIds Lists the latest version groups by template ids, drafts are excluded.
 	ListLatestRevisionsGroupByTemplateIds(kit *kit.Kit, templateIDs []uint32) ([]*table.TemplateRevision, error)
-	// GetLatestTemplateRevision get latest template revision.
+	// GetLatestTemplateRevision get latest formal template revision, the draft revision is excluded.
 	GetLatestTemplateRevision(kit *kit.Kit, bizID, templateID uint32) (*table.TemplateRevision, error)
+	// GetDraftByTemplateID get the draft revision of one template, gorm.ErrRecordNotFound is returned if not exist.
+	GetDraftByTemplateID(kit *kit.Kit, bizID, templateID uint32) (*table.TemplateRevision, error)
+	// UpdateWithTx update one template revision instance in place with transaction.
+	UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, revision *table.TemplateRevision) error
+	// DeleteDraftForTmplWithTx delete the draft revision of one template with transaction.
+	DeleteDraftForTmplWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, templateID uint32) error
 	// GetTemplateRevisionById get template revision by id.
 	GetTemplateRevisionById(kit *kit.Kit, bizID, id uint32) (*table.TemplateRevision, error)
 	// ListLatestGroupByTemplateIdsWithTx Lists the latest version groups by template ids with transaction.
@@ -75,7 +81,8 @@ type templateRevisionDao struct {
 	auditDao AuditDao
 }
 
-// ListLatestGroupByTemplateIdsWithTx Lists the latest version groups by template ids with transaction.
+// ListLatestGroupByTemplateIdsWithTx Lists the latest version groups by template ids with transaction,
+// drafts are excluded.
 func (dao *templateRevisionDao) ListLatestGroupByTemplateIdsWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID uint32,
 	templateIDs []uint32) ([]*table.TemplateRevision, error) {
 
@@ -85,7 +92,7 @@ func (dao *templateRevisionDao) ListLatestGroupByTemplateIdsWithTx(kit *kit.Kit,
 	// 再通过最大 templateRevisionIDs 获取 templateRevision 数据
 	var templateRevisionIDs []struct{ Id uint32 }
 	if err := q.Select(m.ID.Max().As("id")).
-		Where(m.BizID.Eq(bizID), m.TemplateID.In(templateIDs...)).
+		Where(m.BizID.Eq(bizID), m.TemplateID.In(templateIDs...), m.IsDraft.Is(false)).
 		Group(m.TemplateID).
 		Scan(&templateRevisionIDs); err != nil {
 		return nil, err
@@ -109,12 +116,75 @@ func (dao *templateRevisionDao) GetTemplateRevisionById(kit *kit.Kit, bizID uint
 	return q.Where(m.BizID.Eq(bizID), m.ID.Eq(id)).Take()
 }
 
-// GetLatestTemplateRevision get latest template revision.
+// GetLatestTemplateRevision get latest formal template revision, the draft revision is excluded.
 func (dao *templateRevisionDao) GetLatestTemplateRevision(kit *kit.Kit, bizID uint32, templateID uint32) (
 	*table.TemplateRevision, error) {
 	m := dao.genQ.TemplateRevision
 	q := dao.genQ.TemplateRevision.WithContext(kit.Ctx)
-	return q.Where(m.BizID.Eq(bizID), m.TemplateID.Eq(templateID)).Order(m.ID.Desc()).Take()
+	return q.Where(m.BizID.Eq(bizID), m.TemplateID.Eq(templateID), m.IsDraft.Is(false)).
+		Order(m.ID.Desc()).Take()
+}
+
+// GetDraftByTemplateID get the draft revision of one template.
+// 一个配置模板最多只存在一个草稿版本，不存在草稿时返回 gorm.ErrRecordNotFound。
+func (dao *templateRevisionDao) GetDraftByTemplateID(kit *kit.Kit, bizID, templateID uint32) (
+	*table.TemplateRevision, error) {
+	m := dao.genQ.TemplateRevision
+	q := dao.genQ.TemplateRevision.WithContext(kit.Ctx)
+	return q.Where(m.BizID.Eq(bizID), m.TemplateID.Eq(templateID), m.IsDraft.Is(true)).
+		Order(m.ID.Desc()).Take()
+}
+
+// UpdateWithTx update one template revision instance in place with transaction.
+// 原地更新已存在的版本记录，用于草稿版本转正，不产生新的版本记录。
+func (dao *templateRevisionDao) UpdateWithTx(kit *kit.Kit, tx *gen.QueryTx, g *table.TemplateRevision) error {
+	if g == nil {
+		return errors.New("template revision is nil")
+	}
+
+	if g.ID == 0 || g.Spec == nil || g.Attachment == nil {
+		return errors.New("template revision id, spec and attachment should be set")
+	}
+
+	m := tx.TemplateRevision
+	q := tx.TemplateRevision.WithContext(kit.Ctx)
+
+	ts := tx.TemplateSpace
+	tsRecord, err := tx.TemplateSpace.WithContext(kit.Ctx).Where(ts.ID.Eq(g.Attachment.TemplateSpaceID)).Take()
+	if err != nil {
+		return err
+	}
+
+	ad := dao.auditDao.Decorator(kit, g.Attachment.BizID, &table.AuditField{
+		ResourceInstance: fmt.Sprintf(constant.TemplateSpaceName+constant.ResSeparator+constant.TemplateRevision+
+			constant.ResSeparator+constant.TemplateAbsolutePath, tsRecord.Spec.Name, g.Spec.RevisionName,
+			path.Join(g.Spec.Path, g.Spec.Name)),
+		Status: enumor.Success,
+		Detail: g.Spec.RevisionMemo,
+	}).PrepareUpdate(g)
+	if err = ad.Do(tx.Query); err != nil {
+		return err
+	}
+
+	// 显式指定需要更新的列，确保 is_draft 等零值字段（如草稿转正时的 false）也能被正确写入
+	if _, err = q.Select(m.RevisionName, m.RevisionMemo, m.Name, m.Path, m.FileType, m.FileMode,
+		m.User, m.UserGroup, m.Privilege, m.Signature, m.ByteSize, m.Md5, m.Charset, m.IsDraft).
+		Where(m.BizID.Eq(g.Attachment.BizID), m.ID.Eq(g.ID)).Updates(g); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteDraftForTmplWithTx delete the draft revision of one template with transaction.
+// 一个配置模板最多只保留一个草稿版本，保存版本前先清理已有草稿。
+func (dao *templateRevisionDao) DeleteDraftForTmplWithTx(kit *kit.Kit, tx *gen.QueryTx, bizID, templateID uint32) error {
+	m := tx.TemplateRevision
+	q := tx.TemplateRevision.WithContext(kit.Ctx)
+	if _, err := q.Where(m.BizID.Eq(bizID), m.TemplateID.Eq(templateID), m.IsDraft.Is(true)).Delete(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Create one template revision instance.
@@ -392,14 +462,15 @@ func (dao *templateRevisionDao) BatchCreateWithTx(kit *kit.Kit, tx *gen.QueryTx,
 	return tx.Query.TemplateRevision.WithContext(kit.Ctx).CreateInBatches(revisions, 200)
 }
 
-// ListLatestRevisionsGroupByTemplateIds Lists the latest version groups by template ids
+// ListLatestRevisionsGroupByTemplateIds Lists the latest version groups by template ids, drafts are excluded.
 func (dao *templateRevisionDao) ListLatestRevisionsGroupByTemplateIds(kit *kit.Kit,
 	templateIDs []uint32) ([]*table.TemplateRevision, error) {
 	m := dao.genQ.TemplateRevision
 	// 根据templateIDs获取一列最大 templateRevisionIDs
 	// 再通过最大 templateRevisionIDs 获取 templateRevision 数据
 	var templateRevisionIDs []struct{ Id uint32 }
-	if err := m.WithContext(kit.Ctx).Select(m.ID.Max().As("id")).Where(m.TemplateID.In(templateIDs...)).
+	if err := m.WithContext(kit.Ctx).Select(m.ID.Max().As("id")).Where(m.TemplateID.In(templateIDs...),
+		m.IsDraft.Is(false)).
 		Group(m.TemplateID).
 		Scan(&templateRevisionIDs); err != nil {
 		return nil, err

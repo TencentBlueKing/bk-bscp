@@ -6220,6 +6220,10 @@ message CreateConfigTemplateReq {
   uint32 template_space_id = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "模板空间ID",
   }];
+  bool is_draft = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否保存为草稿版本，草稿版本不参与配置下发"
+    default: "false"
+  }];
 }
 
 message CreateConfigTemplateResp {
@@ -6248,6 +6252,10 @@ message UpdateConfigTemplateReq {
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "高亮风格" }];
   string file_mode = 15
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "目标平台: win、unix" }];
+  bool is_draft = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否保存为草稿版本，草稿版本不参与配置下发"
+    default: "false"
+  }];
 }
 
 message UpdateConfigTemplateResp {}

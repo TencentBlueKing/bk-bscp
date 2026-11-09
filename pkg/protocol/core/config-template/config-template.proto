@@ -55,6 +55,9 @@ message BindTemplate {
   repeated uint32 cc_process_ids = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "关联cc中未通过服务模板创建的进程实例ID"
   }];
+  bool is_draft = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "当前编辑版本是否为草稿版本，草稿版本不参与配置下发"
+  }];
 }
 
 // ConfigTemplateAttachment source resource reference: pkg/dal/table/config_template.go

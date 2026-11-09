@@ -41,6 +41,7 @@ func newTemplateRevision(db *gorm.DB, opts ...gen.DOOption) templateRevision {
 	_templateRevision.ByteSize = field.NewUint64(tableName, "byte_size")
 	_templateRevision.Md5 = field.NewString(tableName, "md5")
 	_templateRevision.Charset = field.NewString(tableName, "charset")
+	_templateRevision.IsDraft = field.NewBool(tableName, "is_draft")
 	_templateRevision.BizID = field.NewUint32(tableName, "biz_id")
 	_templateRevision.TemplateSpaceID = field.NewUint32(tableName, "template_space_id")
 	_templateRevision.TemplateID = field.NewUint32(tableName, "template_id")
@@ -71,6 +72,7 @@ type templateRevision struct {
 	ByteSize        field.Uint64
 	Md5             field.String
 	Charset         field.String
+	IsDraft         field.Bool
 	BizID           field.Uint32
 	TemplateSpaceID field.Uint32
 	TemplateID      field.Uint32
@@ -107,6 +109,7 @@ func (t *templateRevision) updateTableName(table string) *templateRevision {
 	t.ByteSize = field.NewUint64(table, "byte_size")
 	t.Md5 = field.NewString(table, "md5")
 	t.Charset = field.NewString(table, "charset")
+	t.IsDraft = field.NewBool(table, "is_draft")
 	t.BizID = field.NewUint32(table, "biz_id")
 	t.TemplateSpaceID = field.NewUint32(table, "template_space_id")
 	t.TemplateID = field.NewUint32(table, "template_id")
@@ -141,7 +144,7 @@ func (t *templateRevision) GetFieldByName(fieldName string) (field.OrderExpr, bo
 }
 
 func (t *templateRevision) fillFieldMap() {
-	t.fieldMap = make(map[string]field.Expr, 20)
+	t.fieldMap = make(map[string]field.Expr, 21)
 	t.fieldMap["id"] = t.ID
 	t.fieldMap["revision_name"] = t.RevisionName
 	t.fieldMap["revision_memo"] = t.RevisionMemo
@@ -156,6 +159,7 @@ func (t *templateRevision) fillFieldMap() {
 	t.fieldMap["byte_size"] = t.ByteSize
 	t.fieldMap["md5"] = t.Md5
 	t.fieldMap["charset"] = t.Charset
+	t.fieldMap["is_draft"] = t.IsDraft
 	t.fieldMap["biz_id"] = t.BizID
 	t.fieldMap["template_space_id"] = t.TemplateSpaceID
 	t.fieldMap["template_id"] = t.TemplateID

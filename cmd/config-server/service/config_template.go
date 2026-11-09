@@ -232,6 +232,7 @@ func (s *Service) CreateConfigTemplate(ctx context.Context, req *pbcs.CreateConf
 		HighlightStyle:  req.GetHighlightStyle(),
 		FileMode:        req.GetFileMode(),
 		TemplateSpaceId: req.GetTemplateSpaceId(),
+		IsDraft:         req.GetIsDraft(),
 	})
 	if err != nil {
 		return nil, err
@@ -342,6 +343,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbcs.UpdateConf
 		Charset:          req.GetCharset(),
 		HighlightStyle:   req.GetHighlightStyle(),
 		FileMode:         req.GetFileMode(),
+		IsDraft:          req.GetIsDraft(),
 	})
 
 	if err != nil {

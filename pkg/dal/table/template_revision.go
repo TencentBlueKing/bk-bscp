@@ -114,6 +114,8 @@ type TemplateRevisionSpec struct {
 	Permission   *FilePermission `json:"permission" gorm:"embedded"`
 	ContentSpec  *ContentSpec    `json:"content" gorm:"embedded"`
 	Charset      FileCharset     `json:"charset" gorm:"column:charset"`
+	// IsDraft 是否为草稿版本，草稿版本仅用于配置模板编辑态的临时保存，不参与配置下发
+	IsDraft bool `json:"is_draft" gorm:"column:is_draft"`
 }
 
 // ValidateCreate validate template revision spec when it is created.

@@ -43,6 +43,10 @@ message TemplateRevisionSpec {
   string content = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "配置文件内容，仅列表接口 with_content=true 时返回"
   }];
+  bool is_draft = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "是否为草稿版本，草稿版本不参与配置下发"
+    default: "false"
+  }];
 }
 
 // TemplateRevisionAttachment source resource reference: pkg/dal/table/template_revision.go
