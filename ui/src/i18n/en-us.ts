@@ -115,7 +115,6 @@ export default {
 
   // 导航栏
   服务配置中心: 'BSCP',
-  回到旧版: 'Back to Old Version',
   新版体验: 'New Version Experience',
   服务管理: 'Service Management',
   分组管理: 'Group Management',
