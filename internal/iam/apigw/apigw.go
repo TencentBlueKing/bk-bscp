@@ -385,6 +385,10 @@ type ImportResourceDocsBySwaggerResp struct {
 	Message string      `json:"message"`
 }
 
+// apiTypeOfficial 官方网关。蓝鲸 API 网关约定 1 为官方、10 为普通云 API。
+// 网关名需以 bk- 开头；同步接口对已存在的网关同样会按该字段更新官方标记。
+const apiTypeOfficial = 1
+
 // SyncApiReq 输入参数
 type SyncApiReq struct {
 	// Description 网关描述
@@ -393,6 +397,8 @@ type SyncApiReq struct {
 	Maintainers []string `json:"maintainers"`
 	// IsPublic 网关是否公开
 	IsPublic bool `json:"is_public"`
+	// ApiType 网关类型，1 表示官方网关
+	ApiType int `json:"api_type"`
 }
 
 // SyncApiResp 输出参数
