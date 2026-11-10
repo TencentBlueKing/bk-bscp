@@ -344,6 +344,7 @@
       detail: md.render(logModules.value[path]),
     });
   });
+  logList.value.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
   if (logList.value.length > 0) {
     bscpVersion.value = logList.value[0].title;
