@@ -162,12 +162,23 @@ func genEnvironmentActions() []client.ResourceAction {
 func genApplicationActions() []client.ResourceAction {
 	actions := make([]client.ResourceAction, 0)
 
-	// 服务创建按环境授权：创建时尚无服务实例，授权维度落在服务将要归属的环境上，
-	// 授权页面因此展开「业务 → 项目 → 环境」；业务/项目维度的授权经路径继承覆盖。
+	// app_create 已有按业务授予的策略，权限中心不允许修改带策略操作的关联资源，必须保持关联业务。
 	actions = append(actions, client.ResourceAction{
 		ID:                   AppCreate,
 		Name:                 ActionIDNameMap[AppCreate],
 		NameEn:               "Create APP",
+		Type:                 Create,
+		RelatedResourceTypes: businessResource,
+		RelatedActions:       []client.ActionID{BusinessViewResource},
+		Version:              1,
+	})
+
+	// 按环境创建服务：创建时尚无服务实例，授权维度落在服务将要归属的环境上，
+	// 授权页面因此展开「业务 → 项目 → 环境」；业务/项目维度的授权经路径继承覆盖。
+	actions = append(actions, client.ResourceAction{
+		ID:                   EnvironmentAppCreate,
+		Name:                 ActionIDNameMap[EnvironmentAppCreate],
+		NameEn:               "Create APP By Environment",
 		Type:                 Create,
 		RelatedResourceTypes: environmentResource,
 		RelatedActions:       []client.ActionID{BusinessViewResource},

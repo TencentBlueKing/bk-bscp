@@ -84,10 +84,15 @@ func genAppIAMResource(a *meta.ResourceAttribute, topology meta.ResourceTopology
 	// 服务创建按目标环境授权：此时还没有服务实例，资源节点用环境而不是服务。
 	// 旧拓扑下 app_create 关联的是业务实例，不能提交环境节点。
 	if a.Action == meta.Create {
+		action := sys.EnvironmentAppCreate
+		if topology.IsLegacy() {
+			action = sys.AppCreate
+		}
+
 		return &bkiam.Request{
 			System:    sys.SystemIDBSCP,
 			Subject:   dummyIAMUser,
-			Action:    bkiam.NewAction(string(sys.AppCreate)),
+			Action:    bkiam.NewAction(string(action)),
 			Resources: []iam.ResourceNode{appCreateResourceNode(a, topology)},
 		}, nil
 	}
@@ -206,7 +211,7 @@ func genAppIAMApplication(a *meta.ResourceAttribute, topology meta.ResourceTopol
 		}
 
 		return bkiam.ApplicationAction{
-			ID: string(sys.AppCreate),
+			ID: string(sys.EnvironmentAppCreate),
 			RelatedResourceTypes: []bkiam.ApplicationRelatedResourceType{{
 				SystemID: sys.SystemIDBSCP,
 				Type:     string(sys.Environment),
@@ -387,7 +392,7 @@ func genAppResource(a *meta.ResourceAttribute, topology meta.ResourceTopology) (
 			return sys.AppCreate, []client.Resource{bizRes}, nil
 		}
 
-		return sys.AppCreate, []client.Resource{environmentClientResource(a, topology)}, nil
+		return sys.EnvironmentAppCreate, []client.Resource{environmentClientResource(a, topology)}, nil
 	case meta.Update:
 		// update app is related to bscp application resource
 		return sys.AppEdit, []client.Resource{appRes}, nil

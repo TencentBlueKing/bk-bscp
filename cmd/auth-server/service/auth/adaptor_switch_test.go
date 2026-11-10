@@ -75,7 +75,7 @@ func TestAdaptAuthOptionsDisabledAppCreateKeepsEnvironmentParent(t *testing.T) {
 	// 资源实例仍是目标环境（模型约束），路径必须与注册父链一致，不能只声明业务。
 	action, resources, err := AdaptAuthOptionsWithOptions(a, projectEnvAuthDisabled)
 	require.NoError(t, err)
-	require.Equal(t, sys.AppCreate, action)
+	require.Equal(t, sys.EnvironmentAppCreate, action)
 	require.Len(t, resources, 1)
 	require.Equal(t, sys.Environment, resources[0].Type)
 	require.Equal(t, "50001", resources[0].ID)
@@ -87,7 +87,7 @@ func TestAdaptAuthOptionsDisabledAppCreateKeepsEnvironmentParent(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, application)
 	require.Len(t, application.Actions, 1)
-	require.Equal(t, string(sys.AppCreate), application.Actions[0].ID)
+	require.Equal(t, string(sys.EnvironmentAppCreate), application.Actions[0].ID)
 	require.Len(t, application.Actions[0].RelatedResourceTypes, 1)
 	require.Equal(t, string(sys.Environment), application.Actions[0].RelatedResourceTypes[0].Type)
 
@@ -229,7 +229,7 @@ func TestAdaptAuthOptionsEnabledKeepsProjectEnvironmentModel(t *testing.T) {
 	}
 	action, resources, err = AdaptAuthOptionsWithOptions(create, PermissionOptions{ProjectEnvironmentAuth: true})
 	require.NoError(t, err)
-	require.Equal(t, sys.AppCreate, action)
+	require.Equal(t, sys.EnvironmentAppCreate, action)
 	require.Len(t, resources, 1)
 	require.Equal(t, sys.Environment, resources[0].Type)
 	require.Equal(t, "50001", resources[0].ID)

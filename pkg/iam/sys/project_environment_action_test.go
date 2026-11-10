@@ -203,9 +203,9 @@ func TestApplicationIsUnderEnvironment(t *testing.T) {
 	}
 }
 
-// 服务创建按环境授权：创建时尚无服务实例，授权落在服务将要归属的环境上，
-// 授权页面因此需要先选项目、再选环境。
-func TestAppCreateIsScopedPerEnvironment(t *testing.T) {
+// app_create 线上带着按业务授予的策略，权限中心 V3 不允许修改带策略操作的关联资源类型，
+// 因此它必须保持关联业务，作为「业务下任意环境可创建服务」的粗粒度权限。
+func TestAppCreateStaysScopedPerBusiness(t *testing.T) {
 	actions := staticActions(t)
 
 	action, ok := actions[AppCreate]
@@ -214,17 +214,75 @@ func TestAppCreateIsScopedPerEnvironment(t *testing.T) {
 	}
 
 	related := relatedResource(t, action)
-	if related.SystemID != SystemIDBSCP || related.ID != Environment {
-		t.Errorf("app_create should be authorized on bscp environment, got %s/%s",
+	if related.SystemID != SystemIDCMDB || related.ID != Business {
+		t.Errorf("app_create should be authorized on cmdb business, got %s/%s",
 			related.SystemID, related.ID)
+	}
+}
+
+// 按环境的服务创建是独立的新操作：创建时尚无服务实例，授权落在服务将要归属的环境上，
+// 授权页面因此需要先选项目、再选环境。
+func TestEnvironmentAppCreateIsScopedPerEnvironment(t *testing.T) {
+	actions := staticActions(t)
+
+	action, ok := actions[EnvironmentAppCreate]
+	if !ok {
+		t.Fatalf("app action %q is not registered", EnvironmentAppCreate)
+	}
+
+	if action.Type != Create {
+		t.Errorf("%q should be a create action, got %q", EnvironmentAppCreate, action.Type)
+	}
+
+	related := relatedResource(t, action)
+	if related.SystemID != SystemIDBSCP || related.ID != Environment {
+		t.Errorf("%q should be authorized on bscp environment, got %s/%s",
+			EnvironmentAppCreate, related.SystemID, related.ID)
 	}
 
 	if len(related.InstanceSelections) != 1 ||
 		related.InstanceSelections[0].SystemID != SystemIDBSCP ||
 		related.InstanceSelections[0].ID != EnvironmentSelection {
-		t.Errorf("app_create should select instances from %q, got %v",
-			EnvironmentSelection, related.InstanceSelections)
+		t.Errorf("%q should select instances from %q, got %v",
+			EnvironmentAppCreate, EnvironmentSelection, related.InstanceSelections)
 	}
+}
+
+// 权限中心要求同一系统内操作的中英文名称唯一，两个服务创建操作必须能区分。
+func TestStaticActionNamesAreUnique(t *testing.T) {
+	names := make(map[string]client.ActionID)
+	namesEn := make(map[string]client.ActionID)
+
+	for _, action := range GenerateStaticActions() {
+		if other, ok := names[action.Name]; ok {
+			t.Errorf("action %q and %q share name %q", other, action.ID, action.Name)
+		}
+		names[action.Name] = action.ID
+
+		if other, ok := namesEn[action.NameEn]; ok {
+			t.Errorf("action %q and %q share english name %q", other, action.ID, action.NameEn)
+		}
+		namesEn[action.NameEn] = action.ID
+	}
+}
+
+// 新的服务创建操作要出现在「服务」操作组，否则权限中心页面里找不到它。
+func TestApplicationActionGroupIncludesEnvironmentAppCreate(t *testing.T) {
+	for _, group := range GenerateStaticActionGroups() {
+		if group.NameEn != "Application" {
+			continue
+		}
+
+		for _, action := range group.Actions {
+			if action.ID == EnvironmentAppCreate {
+				return
+			}
+		}
+
+		t.Fatalf("action group %q should include %q", group.Name, EnvironmentAppCreate)
+	}
+
+	t.Fatalf("action group %q is not registered", "Application")
 }
 
 // 环境创建者自动授权需要在资源创建者配置里注册环境。
