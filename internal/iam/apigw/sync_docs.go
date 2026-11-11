@@ -35,6 +35,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 		Description: apiGwOpt.Description,
 		Maintainers: apiGwOpt.Maintainers,
 		IsPublic:    true,
+		ApiType:     apiTypeOfficial,
 	})
 	if err != nil {
 		return fmt.Errorf("create or update gateway failed, err: %s", err.Error())
