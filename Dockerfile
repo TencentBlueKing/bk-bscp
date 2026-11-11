@@ -21,6 +21,10 @@ COPY build/bk-bscp/bk-bscp-vaultserver/vault-sidecar /bk-bscp/
 COPY build/bk-bscp/bk-bscp-vaultserver/vault-plugins/bk-bscp-secret /etc/vault/vault-plugins/
 # 把 system_bk_bscp.json 放到容器内 /bk-bscp/etc/itsm/
 COPY scripts/itsm-templates/system_bk_bscp.json /bk-bscp/etc/itsm/system_bk_bscp.json
+# AIDev Skill 同步包，由 Helm Job 的 initContainer 复制给 bk-aidev-init 使用
+COPY scripts/bkai-syncing/package /bk-bscp/bkai
+COPY .agents/skills/bkbscp-kv-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-kv-config/SKILL.md
+COPY .agents/skills/bkbscp-file-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-file-config/SKILL.md
 # 复制 Python 模块到镜像中
 COPY render/python /bk-bscp/render/python
 WORKDIR /bk-bscp/render/python
