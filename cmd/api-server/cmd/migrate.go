@@ -14,7 +14,9 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -49,6 +51,10 @@ var migrateInitApigatewayCmd = &cobra.Command{
 		if err := apigw.ReleaseSwagger(cc.ApiServer().Esb, cc.ApiServer().ApiGateway, "zh",
 			fmt.Sprintf("%s+%s", strings.TrimPrefix(version.GITTAG, "v"), time.Now().Format("20060102150405"))); err != nil {
 			fmt.Println(err)
+			// MCP 同步失败需让迁移 Job 失败重试；其余失败沿用原有行为，不阻断发布
+			if errors.Is(err, apigw.ErrMcpSync) {
+				os.Exit(1)
+			}
 			return
 		}
 	},

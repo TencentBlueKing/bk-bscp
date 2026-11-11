@@ -195,6 +195,10 @@ build_ui:
 docker:
 	@docker build -t bk-bscp-hyper:latest .
 
+.PHONY: bkai-image
+bkai-image:
+	@docker build -f scripts/bkai-syncing/Dockerfile -t bk-bscp-bkai-init:latest .
+
 .PHONY: i18n
 i18n:
 	@go generate ./internal/i18n/translations/translations.go
@@ -249,3 +253,4 @@ push-image:
 	fi
 	$(MAKE) build_bscp
 	docker build -t ${REPO}/bk-bscp-hyper:${TAG} . --push
+	docker build -f scripts/bkai-syncing/Dockerfile -t ${REPO}/bk-bscp-bkai-init:${TAG} . --push

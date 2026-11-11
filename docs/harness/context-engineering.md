@@ -65,8 +65,8 @@
 |-------|---------|------|------|
 | Git 工作区与历史 | Git 只读命令 | 识别变更范围、历史意图和用户已有改动 | 不执行破坏性回退 |
 | TAPD | TAPD MCP，`project.json.workspace_id` | 拉取、澄清、评审和更新需求 | 写操作按 Skill 流程确认 |
-| BSCP KV 配置 | BSCP MCP + `bscp-kv-config` | 查询或按授权变更 KV 配置 | 发布及写操作必须遵循闭环验证 |
-| BSCP 文件配置 | BSCP 文件管理 MCP + `bscp-file-config` | 查询配置元数据和下载内容 | 默认只读 |
+| BSCP KV 配置 | `bk-bscp-prod-kv-config` MCP + `bkbscp-kv-config` | 查询或按授权变更 KV 配置 | 发布及写操作必须遵循闭环验证 |
+| BSCP 文件配置 | `bk-bscp-prod-file-config` MCP + `bkbscp-file-config` | 查询配置元数据和下载内容 | 默认只读 |
 | 代码结构图谱 | `graphify`、`docs/dev-map/graph.json` | 代码定位、依赖路径和概念查询 | 代码变化后增量更新 |
 
 ### 3.2 运行时与外部系统

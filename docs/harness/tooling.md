@@ -27,7 +27,7 @@
 | `code-review` | 代码评审 | 按代码评审规范检查变更 |
 | `bk-security-redlines` | 安全评审、红线检查 | 检查输入校验、鉴权和数据加密红线 |
 
-`bscp-kv-config`、`bscp-file-config` 和 OpenSpec 等已安装 Skill 未在当前权威依赖清单登记，因此不纳入本表；如需纳管，应先更新治理仓权威清单，再重新生成。
+`bkbscp-kv-config`、`bkbscp-file-config` 和 OpenSpec 等已安装 Skill 未在当前权威依赖清单登记，因此不纳入本表；如需纳管，应先更新治理仓权威清单，再重新生成。
 
 ### 1.1 MCP
 

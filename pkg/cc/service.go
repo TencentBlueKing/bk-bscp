@@ -193,6 +193,16 @@ type ApiGateway struct {
 	Env         string   `yaml:"env"`
 	Description string   `yaml:"description"`
 	Maintainers []string `yaml:"maintainers"`
+	// Mcp 网关 MCP Server 同步配置
+	Mcp ApiGatewayMcp `yaml:"mcp"`
+}
+
+// ApiGatewayMcp 网关 MCP Server 同步配置
+type ApiGatewayMcp struct {
+	// Enabled 是否同步 MCP Server；同步失败会使网关迁移 Job 失败，不支持 MCP 的旧版网关需保持关闭
+	Enabled bool `yaml:"enabled"`
+	// GrantAppCodes 除 esb.appCode 外，额外授予 MCP 权限与 MCP 所用资源权限的应用
+	GrantAppCodes []string `yaml:"grantAppCodes"`
 }
 
 const (

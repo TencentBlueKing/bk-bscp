@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/criteria/constant"
@@ -34,6 +35,8 @@ var (
 	release                     = "%s/api/v1/apis/%s/resource_versions/release/"
 	applyPermissions            = "%s/api/v1/apis/%s/permissions/apply/"
 	getApigwPublicKey           = "%s/api/v1/apis/%s/public_key/"
+	syncStageMcpServers         = "%s/api/v2/sync/gateways/%s/stages/%s/mcp-servers/"
+	grantPermissions            = "%s/api/v2/sync/gateways/%s/permissions/grant/"
 )
 
 // ApiGw document sync gateway interface
@@ -57,6 +60,10 @@ type ApiGw interface {
 	ApplyPermissions(gwName string, req *ApplyPermissionsReq) (*ApplyPermissionsResp, error)
 	// GetApigwPublicKey 获取网关公钥
 	GetApigwPublicKey(gwName string) (*GetApigwPublicKeyResp, error)
+	// SyncStageMcpServers 同步网关环境下的 MCP Server，不存在则创建，已存在则更新
+	SyncStageMcpServers(gwName, stageName string, req *SyncStageMcpServersReq) (*SyncStageMcpServersResp, error)
+	// GrantPermissions 网关主动为应用授予资源访问权限
+	GrantPermissions(gwName string, req *GrantPermissionsReq) (*GrantPermissionsResp, error)
 }
 
 // NewApiGw 初始化网关
@@ -343,6 +350,61 @@ func (a *apiGw) GetApigwPublicKey(gwName string) (*GetApigwPublicKeyResp, error)
 	return result, nil
 }
 
+// SyncStageMcpServers implements ApiGw.
+func (a *apiGw) SyncStageMcpServers(gwName, stageName string, req *SyncStageMcpServersReq) (
+	*SyncStageMcpServersResp, error) {
+	url := fmt.Sprintf(syncStageMcpServers, a.apiGwOpt.Host, gwName, stageName)
+
+	result := new(SyncStageMcpServersResp)
+	if err := a.doV2("POST", url, req, result); err != nil {
+		return nil, fmt.Errorf("sync stage mcp servers failed: %s", err.Error())
+	}
+	return result, nil
+}
+
+// GrantPermissions implements ApiGw.
+func (a *apiGw) GrantPermissions(gwName string, req *GrantPermissionsReq) (*GrantPermissionsResp, error) {
+	url := fmt.Sprintf(grantPermissions, a.apiGwOpt.Host, gwName)
+
+	result := new(GrantPermissionsResp)
+	if err := a.doV2("POST", url, req, result); err != nil {
+		return nil, fmt.Errorf("grant permissions failed: %s", err.Error())
+	}
+	return result, nil
+}
+
+// doV2 调用网关 v2 接口：成功返回 2xx 和 {"data": ...}，失败返回非 2xx 和 {"error": {...}}
+func (a *apiGw) doV2(method, url string, req, result any) error {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("serialization JSON failed: %s", err.Error())
+	}
+
+	request, err := a.newRequest(method, url, jsonData)
+	if err != nil {
+		return err
+	}
+
+	resp, err := a.client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	if err = json.Unmarshal(body, result); err != nil {
+		return fmt.Errorf("decode response failed: %s, body: %s", err.Error(), string(body))
+	}
+	return nil
+}
+
 func (a *apiGw) newRequest(method, url string, body []byte) (*http.Request, error) {
 
 	var req *http.Request
@@ -575,4 +637,55 @@ type GetLatestResourceVersionResp struct {
 // GetLatestResourceVersionData xxx
 type GetLatestResourceVersionData struct {
 	Version string `json:"version"`
+}
+
+// McpServer 网关环境下的 MCP Server 声明，网关生成的全名为 {网关名}-{环境名}-{name}
+type McpServer struct {
+	Name                        string   `json:"name" yaml:"name"`
+	Title                       string   `json:"title,omitempty" yaml:"title"`
+	Description                 string   `json:"description" yaml:"description"`
+	Labels                      []string `json:"labels,omitempty" yaml:"labels"`
+	CategoryNames               []string `json:"category_names,omitempty" yaml:"category_names"`
+	ResourceNames               []string `json:"resource_names" yaml:"resource_names"`
+	IsPublic                    *bool    `json:"is_public" yaml:"is_public"`
+	Status                      *int     `json:"status" yaml:"status"`
+	ProtocolType                string   `json:"protocol_type" yaml:"protocol_type"`
+	OAuth2PublicClientEnabled   bool     `json:"oauth2_public_client_enabled" yaml:"oauth2_public_client_enabled"`
+	OAuth2PersonalClientEnabled bool     `json:"oauth2_personal_client_enabled" yaml:"oauth2_personal_client_enabled"`
+	RawResponseEnabled          bool     `json:"raw_response_enabled" yaml:"raw_response_enabled"`
+	TargetAppCodes              []string `json:"target_app_codes" yaml:"-"`
+}
+
+// SyncStageMcpServersReq 输入参数
+type SyncStageMcpServersReq struct {
+	// Name 网关环境名
+	Name       string      `json:"name"`
+	McpServers []McpServer `json:"mcp_servers"`
+}
+
+// SyncStageMcpServersResp 输出参数
+type SyncStageMcpServersResp struct {
+	Data []SyncStageMcpServerData `json:"data"`
+}
+
+// SyncStageMcpServerData xxx
+type SyncStageMcpServerData struct {
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Action string `json:"action"`
+}
+
+// grantDimensionResource 按资源授权，被授权应用只能访问指定资源
+const grantDimensionResource = "resource"
+
+// GrantPermissionsReq 输入参数
+type GrantPermissionsReq struct {
+	TargetAppCode  string   `json:"target_app_code"`
+	GrantDimension string   `json:"grant_dimension"`
+	ResourceNames  []string `json:"resource_names,omitempty"`
+}
+
+// GrantPermissionsResp 输出参数
+type GrantPermissionsResp struct {
+	Data any `json:"data"`
 }

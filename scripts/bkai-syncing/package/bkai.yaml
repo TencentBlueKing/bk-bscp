@@ -1,0 +1,8 @@
+apiVersion: bkai.tencent.com/v1
+kind: AgentPackage
+metadata:
+  name: bk-bscp
+  version: "1.0.0"
+resources:
+  - skills/bkbscp-kv-config
+  - skills/bkbscp-file-config
