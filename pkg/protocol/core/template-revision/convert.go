@@ -49,6 +49,7 @@ func (m *TemplateRevisionSpec) TemplateRevisionSpec() *table.TemplateRevisionSpe
 		Permission:   m.Permission.FilePermission(),
 		ContentSpec:  m.ContentSpec.ContentSpec(),
 		Charset:      table.FileCharset(m.Charset),
+		IsDraft:      m.IsDraft,
 	}
 }
 
@@ -69,6 +70,7 @@ func PbTemplateRevisionSpec(spec *table.TemplateRevisionSpec, templateName strin
 		ContentSpec:  pbcontent.PbContentSpec(spec.ContentSpec),
 		Charset:      string(spec.Charset),
 		TemplateName: templateName,
+		IsDraft:      spec.IsDraft,
 	}
 }
 

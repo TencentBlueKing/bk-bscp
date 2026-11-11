@@ -2965,6 +2965,7 @@ message CreateConfigTemplateReq {
   string highlight_style = 13;
   string file_mode = 14;
   uint32 template_space_id = 15;
+  bool is_draft = 16;
 }
 
 message CreateConfigTemplateResp {
@@ -3016,6 +3017,7 @@ message UpdateConfigTemplateReq {
   string charset = 13;
   string highlight_style = 14;
   string file_mode = 15;
+  bool is_draft = 16;
 }
 
 message UpdateConfigTemplateResp {}

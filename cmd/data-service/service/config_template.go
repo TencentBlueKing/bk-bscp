@@ -566,6 +566,7 @@ func (s *Service) createTemplateAndRevision(kit *kit.Kit, tx *gen.QueryTx, templ
 				Md5:       req.GetMd5(),
 			},
 			Charset: table.FileCharset(req.GetCharset()),
+			IsDraft: req.GetIsDraft(),
 		},
 		Attachment: &table.TemplateRevisionAttachment{
 			BizID:           req.GetBizId(),
@@ -1047,11 +1048,27 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 			i18n.T(grpcKit, "get template failed, err: %v", err))
 	}
 
-	// 3. 获取最新模板版本文件
-	revision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
-	if err != nil {
+	// 3. 查询草稿版本：一个配置模板最多只存在一个草稿版本
+	draft, err := s.dao.TemplateRevision().GetDraftByTemplateID(grpcKit, req.GetBizId(), template.ID)
+	hasDraft := err == nil
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		logs.Errorf("get draft template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
 		return nil, errf.Errorf(errf.DBOpFailed, "%s",
-			i18n.T(grpcKit, "get latest template revision failed, err: %v", err))
+			i18n.T(grpcKit, "get draft template revision failed, err: %v", err))
+	}
+
+	// 4. 确定版本保存方式：不存在草稿时可保存正式版本或暂存草稿，已存在草稿时针对当前草稿版本原地更新
+	action := resolveDraftSaveAction(hasDraft, req.GetIsDraft())
+
+	// 5. 确定本次编辑的基准版本：存在草稿版本时基于草稿版本，否则基于最新的正式版本
+	base := draft
+	if !hasDraft {
+		base, err = s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
+		if err != nil {
+			logs.Errorf("get latest template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(grpcKit, "get latest template revision failed, err: %v", err))
+		}
 	}
 
 	if err = validatePath(grpcKit, req.GetFullPath()); err != nil {
@@ -1059,21 +1076,7 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	}
 
 	filePath, fileName := splitFullPath(req.GetFullPath())
-
-	spec := *revision.Spec
-	spec.Path = filePath
-	spec.Name = fileName
-	spec.RevisionName = req.GetRevisionName()
-	spec.RevisionMemo = req.GetRevisionMemo()
-	spec.Charset = table.FileCharset(req.GetCharset())
-	spec.FileMode = table.FileMode(req.GetFileMode())
-	spec.ContentSpec = &table.ContentSpec{Signature: req.GetSign(), ByteSize: req.GetByteSize(), Md5: req.GetMd5()}
-	spec.Permission = &table.FilePermission{User: req.GetUser(), UserGroup: req.GetUserGroup(), Privilege: req.GetPrivilege()}
-	templateRevision := &table.TemplateRevision{
-		Spec:       &spec,
-		Attachment: revision.Attachment,
-		Revision:   &table.CreatedRevision{Creator: grpcKit.User, CreatedAt: now},
-	}
+	spec := newConfigTemplateRevisionSpec(req, base, filePath, fileName, action)
 
 	tx := s.dao.GenQuery().Begin()
 
@@ -1087,18 +1090,12 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 		}
 	}()
 
-	// 生成新的版本文件
-	_, err = s.dao.TemplateRevision().CreateWithTx(grpcKit, tx, templateRevision, true, false)
-	if err != nil {
-		logs.Errorf("create template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			return nil, errf.Errorf(errf.AlreadyExists, "%s",
-				i18n.T(grpcKit, "version number %s already exists. Please change it and try again.",
-					templateRevision.Spec.RevisionName))
-		}
-		return nil, errf.Errorf(errf.DBOpFailed, "%s",
-			i18n.T(grpcKit, "create template revision failed, err: %v", err))
+	// 6. 版本记录落库：草稿版本转正时原地更新草稿版本，保存草稿时新增草稿版本
+	if err = s.saveConfigTemplateRevision(grpcKit, tx, action, base, spec); err != nil {
+		logs.Errorf("save template revision failed, err: %v, rid: %s", err, grpcKit.Rid)
+		return nil, err
 	}
+
 	template.Revision.Reviser = grpcKit.User
 	template.Revision.UpdatedAt = now
 	// 更新模板文件
@@ -1148,6 +1145,117 @@ func (s *Service) UpdateConfigTemplate(ctx context.Context, req *pbds.UpdateConf
 	return &pbds.UpdateConfigTemplateResp{}, nil
 }
 
+// draftSaveAction 描述本次保存动作对版本记录的处理方式
+type draftSaveAction int
+
+const (
+	// draftSaveActionCreateFormal 当前配置模板不存在草稿版本，直接保存新增一条正式版本记录
+	draftSaveActionCreateFormal draftSaveAction = iota
+	// draftSaveActionCreateDraft 当前配置模板不存在草稿版本，暂存草稿新增一条草稿版本记录
+	draftSaveActionCreateDraft
+	// draftSaveActionPromote 当前配置模板已存在草稿版本，保存时原地将草稿版本转为正式版本
+	draftSaveActionPromote
+	// draftSaveActionUpdateDraft 当前配置模板已存在草稿版本，暂存草稿时原地更新当前草稿版本
+	draftSaveActionUpdateDraft
+)
+
+// resolveDraftSaveAction 结合草稿版本是否存在以及本次保存类型，确定版本记录的处理方式。
+// 不存在草稿版本时，新建版本既可以直接保存为正式版本，也可以暂存为草稿版本；
+// 已存在草稿版本时，保存与暂存草稿都针对当前草稿版本原地更新，区别仅在于是否将草稿转为正式版本。
+func resolveDraftSaveAction(hasDraft, saveAsDraft bool) draftSaveAction {
+	if hasDraft {
+		if saveAsDraft {
+			return draftSaveActionUpdateDraft
+		}
+		return draftSaveActionPromote
+	}
+
+	if saveAsDraft {
+		return draftSaveActionCreateDraft
+	}
+
+	return draftSaveActionCreateFormal
+}
+
+// newConfigTemplateRevisionSpec 构建本次保存的模板版本内容。
+// 草稿版本转正时未指定版本号则沿用草稿版本原有版本号，避免产生新的版本号。
+func newConfigTemplateRevisionSpec(req *pbds.UpdateConfigTemplateReq, base *table.TemplateRevision,
+	filePath, fileName string, action draftSaveAction) *table.TemplateRevisionSpec {
+
+	spec := *base.Spec
+	spec.Path = filePath
+	spec.Name = fileName
+	spec.RevisionMemo = req.GetRevisionMemo()
+	spec.Charset = table.FileCharset(req.GetCharset())
+	spec.FileMode = table.FileMode(req.GetFileMode())
+	spec.ContentSpec = &table.ContentSpec{Signature: req.GetSign(), ByteSize: req.GetByteSize(), Md5: req.GetMd5()}
+	spec.Permission = &table.FilePermission{User: req.GetUser(), UserGroup: req.GetUserGroup(), Privilege: req.GetPrivilege()}
+	spec.IsDraft = req.GetIsDraft()
+
+	// 草稿版本原地更新（转正或继续暂存）时沿用草稿版本原有版本号；新增版本记录时未指定版本号则由系统生成
+	if req.GetRevisionName() != "" {
+		spec.RevisionName = req.GetRevisionName()
+	} else if action == draftSaveActionCreateFormal || action == draftSaveActionCreateDraft {
+		spec.RevisionName = tools.GenerateRevisionName()
+	}
+
+	return &spec
+}
+
+// saveConfigTemplateRevision 保存模板版本：草稿版本转正或继续暂存时原地更新草稿版本，不产生新的版本记录；
+// 其余场景新增版本记录，新增前先清理历史草稿，保证一个配置模板最多只有一个草稿版本。
+func (s *Service) saveConfigTemplateRevision(kt *kit.Kit, tx *gen.QueryTx, action draftSaveAction,
+	base *table.TemplateRevision, spec *table.TemplateRevisionSpec) error {
+
+	if err := spec.ValidateCreate(kt, false); err != nil {
+		return errf.Errorf(errf.InvalidParameter, "%s", i18n.T(kt, "%s", err.Error()))
+	}
+
+	if action == draftSaveActionPromote || action == draftSaveActionUpdateDraft {
+		// 原地更新草稿版本（转正或继续暂存），保留原有版本记录、版本号与创建信息
+		revision := &table.TemplateRevision{
+			ID:         base.ID,
+			Spec:       spec,
+			Attachment: base.Attachment,
+			Revision:   base.Revision,
+		}
+		if err := s.dao.TemplateRevision().UpdateWithTx(kt, tx, revision); err != nil {
+			logs.Errorf("update template revision failed, err: %v, rid: %s", err, kt.Rid)
+			if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+				return errf.Errorf(errf.AlreadyExists, "%s",
+					i18n.T(kt, "version number %s already exists. Please change it and try again.", spec.RevisionName))
+			}
+			return errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(kt, "update template revision failed, err: %v", err))
+		}
+		return nil
+	}
+
+	if err := s.dao.TemplateRevision().DeleteDraftForTmplWithTx(kt, tx, base.Attachment.BizID,
+		base.Attachment.TemplateID); err != nil {
+		logs.Errorf("delete template revision draft failed, err: %v, rid: %s", err, kt.Rid)
+		return errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "delete template revision failed, err: %v", err))
+	}
+
+	revision := &table.TemplateRevision{
+		Spec:       spec,
+		Attachment: base.Attachment,
+		Revision:   &table.CreatedRevision{Creator: kt.User, CreatedAt: time.Now().UTC()},
+	}
+	if _, err := s.dao.TemplateRevision().CreateWithTx(kt, tx, revision, true, false); err != nil {
+		logs.Errorf("create template revision failed, err: %v, rid: %s", err, kt.Rid)
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return errf.Errorf(errf.AlreadyExists, "%s",
+				i18n.T(kt, "version number %s already exists. Please change it and try again.", spec.RevisionName))
+		}
+		return errf.Errorf(errf.DBOpFailed, "%s",
+			i18n.T(kt, "create template revision failed, err: %v", err))
+	}
+
+	return nil
+}
+
 // GetConfigTemplate implements pbds.DataServer.
 func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemplateReq) (*pbds.GetConfigTemplateResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
@@ -1166,11 +1274,19 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 			i18n.T(grpcKit, "get template by ID failed, err: %v", err))
 	}
 
-	// 3. 获取最新模板版本文件
-	revision, err := s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
+	// 3. 获取当前编辑版本：存在草稿版本时以草稿版本为准，草稿版本不参与配置下发
+	revision, err := s.dao.TemplateRevision().GetDraftByTemplateID(grpcKit, req.GetBizId(), template.ID)
 	if err != nil {
-		return nil, errf.Errorf(errf.DBOpFailed, "%s",
-			i18n.T(grpcKit, "get latest template revision failed, err: %v", err))
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(grpcKit, "get draft template revision failed, err: %v", err))
+		}
+		// 不存在草稿版本时，以最新的正式版本作为当前版本
+		revision, err = s.dao.TemplateRevision().GetLatestTemplateRevision(grpcKit, req.GetBizId(), template.ID)
+		if err != nil {
+			return nil, errf.Errorf(errf.DBOpFailed, "%s",
+				i18n.T(grpcKit, "get latest template revision failed, err: %v", err))
+		}
 	}
 
 	resp := &pbct.BindTemplate{
@@ -1191,6 +1307,8 @@ func (s *Service) GetConfigTemplate(ctx context.Context, req *pbds.GetConfigTemp
 		FileMode:             string(revision.Spec.FileMode),
 		CcTemplateProcessIds: configTemplate.Attachment.CcTemplateProcessIDs,
 		CcProcessIds:         configTemplate.Attachment.CcProcessIDs,
+		// 草稿标识用于前端区分当前编辑的是草稿版本还是正式版本
+		IsDraft: revision.Spec.IsDraft,
 	}
 
 	return &pbds.GetConfigTemplateResp{

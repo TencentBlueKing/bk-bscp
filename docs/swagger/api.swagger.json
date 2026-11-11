@@ -27134,6 +27134,11 @@
           "type": "integer",
           "format": "int64",
           "description": "模板空间ID"
+        },
+        "isDraft": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否保存为草稿版本，草稿版本不参与配置下发"
         }
       }
     },
@@ -29183,6 +29188,11 @@
         "fileMode": {
           "type": "string",
           "description": "目标平台: win、unix"
+        },
+        "isDraft": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否保存为草稿版本，草稿版本不参与配置下发"
         }
       }
     },
@@ -35082,6 +35092,10 @@
             "format": "int64"
           },
           "description": "关联cc中未通过服务模板创建的进程实例ID"
+        },
+        "isDraft": {
+          "type": "boolean",
+          "description": "当前编辑版本是否为草稿版本，草稿版本不参与配置下发"
         }
       },
       "title": "BindTemplate"
@@ -37580,6 +37594,11 @@
         "content": {
           "type": "string",
           "description": "配置文件内容，仅列表接口 with_content=true 时返回"
+        },
+        "isDraft": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否为草稿版本，草稿版本不参与配置下发"
         }
       },
       "title": "TemplateRevisionSpec source resource reference: pkg/dal/table/template_revision.go"
