@@ -1059,7 +1059,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   }
   // 按未命名版本服务获取绑定的模板版本列表
   rpc ListAppBoundTmplRevisions(ListAppBoundTmplRevisionsReq) returns (ListAppBoundTmplRevisionsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/template_revisions"
       body: "*"
@@ -1072,7 +1072,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   // 按已发布版本服务获取绑定的模板版本列表
   rpc ListReleasedAppBoundTmplRevisions(ListReleasedAppBoundTmplRevisionsReq)
       returns (ListReleasedAppBoundTmplRevisionsResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/releases/{release_id}/"
             "template_revisions"
@@ -1798,7 +1798,7 @@ option (google.api.method_visibility).restriction = "INTERNAL";
   };
   // 批量删除键值配置项
   rpc BatchDeleteKv(BatchDeleteAppResourcesReq) returns (BatchDeleteResp) {
-    option (google.api.method_visibility).restriction = "INTERNAL";
+    option (google.api.method_visibility).restriction = "INTERNAL,BKAPIGW";
     option (google.api.http) = {
       post: "/api/v1/config/biz/{biz_id}/apps/{app_id}/kvs/batch_delete"
       body: "*"
