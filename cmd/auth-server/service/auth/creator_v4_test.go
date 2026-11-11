@@ -68,11 +68,25 @@ func creatorOption(appID, bizID, creator string) *client.GrantResourceCreatorAct
 	}
 
 	if bizID != "" {
-		opt.Ancestors = []client.GrantResourceCreatorActionAncestor{{
-			System: sys.SystemIDCMDB,
-			Type:   sys.Business,
-			ID:     bizID,
-		}}
+		opt.Ancestors = []client.GrantResourceCreatorActionAncestor{
+			{
+				System: sys.SystemIDCMDB,
+				Type:   sys.Business,
+				ID:     bizID,
+			},
+			// 服务挂在项目与环境下，创建者授权要按真实拓扑带上这两级，
+			// 才能把角色里的 project_view / environment_view 授予出去。
+			{
+				System: sys.SystemIDBSCP,
+				Type:   sys.Project,
+				ID:     "40001",
+			},
+			{
+				System: sys.SystemIDBSCP,
+				Type:   sys.Environment,
+				ID:     "50001",
+			},
+		}
 	}
 
 	return opt
@@ -82,8 +96,9 @@ func newV4Auth(gw v4Gateway) *Auth {
 	return &Auth{v4Cli: gw}
 }
 
-// 跨维度角色必须拆成两条授权：一次调用只授予 related_resource_type_id 指定的那一个维度。
-// 只授 app 维度会导致 find_business_resource 不生效，业务访问前置校验会拦住一切操作。
+// 跨维度角色必须按维度拆成多条授权：一次调用只授予 related_resource_type_id 指定的那一个维度。
+// 只授 app 维度会导致 find_business_resource 不生效，业务访问前置校验会拦住一切操作；
+// 少授项目、环境两个维度则项目查看、环境查看不生效，配置项与 KV 的写操作会被拒绝。
 func TestGrantCreatorActionV4SplitsByScope(t *testing.T) {
 	gw := new(fakeV4Gateway)
 	a := newV4Auth(gw)
@@ -91,19 +106,19 @@ func TestGrantCreatorActionV4SplitsByScope(t *testing.T) {
 	err := a.grantResourceCreatorActionV4(testKit(), creatorOption("30001", "2", "alice"))
 	require.NoError(t, err)
 
-	// 两条授权在同一个请求里发出
+	// 四条授权在同一个请求里发出
 	require.Equal(t, 1, gw.calls)
-	require.Len(t, gw.items, 2)
+	require.Len(t, gw.items, 4)
 	require.Equal(t, "alice", gw.operator)
 
-	byScope := make(map[string]clientv4.Authorization, 2)
+	byScope := make(map[string]clientv4.Authorization, 4)
 	for _, item := range gw.items {
 		byScope[item.RelatedResourceTypeID] = item
+		require.Equal(t, model.RoleAppOperator, item.RoleID)
 	}
 
 	appScoped, ok := byScope[model.ResourceTypeApp]
 	require.True(t, ok, "app scoped authorization is missing")
-	require.Equal(t, model.RoleAppOperator, appScoped.RoleID)
 	require.Equal(t, "alice", appScoped.Subject.ID)
 	require.Equal(t, clientv4.SubjectTypeUser, appScoped.Subject.Type)
 	require.Equal(t, []clientv4.ResourceRef{
@@ -111,12 +126,41 @@ func TestGrantCreatorActionV4SplitsByScope(t *testing.T) {
 
 	bizScoped, ok := byScope[model.ResourceTypeBiz]
 	require.True(t, ok, "biz scoped authorization is missing")
-	require.Equal(t, model.RoleAppOperator, bizScoped.RoleID)
 	require.Equal(t, []clientv4.ResourceRef{
 		{Type: model.ResourceTypeBiz, ID: "2"}}, bizScoped.Resources)
+
+	// app_operator 内含 project_view，按服务所属项目授予。
+	projectScoped, ok := byScope[model.ResourceTypeProject]
+	require.True(t, ok, "project scoped authorization is missing")
+	require.Equal(t, []clientv4.ResourceRef{
+		{Type: model.ResourceTypeProject, ID: "40001"}}, projectScoped.Resources)
+
+	// app_operator 内含 environment_view，按服务所属环境授予。
+	envScoped, ok := byScope[model.ResourceTypeEnvironment]
+	require.True(t, ok, "environment scoped authorization is missing")
+	require.Equal(t, []clientv4.ResourceRef{
+		{Type: model.ResourceTypeEnvironment, ID: "50001"}}, envScoped.Resources)
 }
 
-// V4 要求 expired_at 必填且不超过 365 天，两条授权的到期时间应一致。
+// 调用方未声明服务的项目/环境归属时只授服务与业务两个维度：
+// 宁可少授（由运维按实际项目/环境单独授予），也不能拿请求里的猜测值去授权。
+func TestGrantCreatorActionV4SkipsMissingAncestors(t *testing.T) {
+	gw := new(fakeV4Gateway)
+	a := newV4Auth(gw)
+
+	opt := creatorOption("30001", "2", "alice")
+	opt.Ancestors = opt.Ancestors[:1]
+
+	require.NoError(t, a.grantResourceCreatorActionV4(testKit(), opt))
+	require.Len(t, gw.items, 2)
+
+	for _, item := range gw.items {
+		require.NotEqual(t, model.ResourceTypeProject, item.RelatedResourceTypeID)
+		require.NotEqual(t, model.ResourceTypeEnvironment, item.RelatedResourceTypeID)
+	}
+}
+
+// V4 要求 expired_at 必填且不超过 365 天，各条授权的到期时间应一致。
 func TestGrantCreatorActionV4SetsExpiry(t *testing.T) {
 	gw := new(fakeV4Gateway)
 	a := newV4Auth(gw)
@@ -124,8 +168,10 @@ func TestGrantCreatorActionV4SetsExpiry(t *testing.T) {
 	before := time.Now()
 	require.NoError(t, a.grantResourceCreatorActionV4(testKit(), creatorOption("30001", "2", "alice")))
 
-	require.Len(t, gw.items, 2)
-	require.Equal(t, gw.items[0].ExpiredAt, gw.items[1].ExpiredAt)
+	require.Len(t, gw.items, 4)
+	for _, item := range gw.items[1:] {
+		require.Equal(t, gw.items[0].ExpiredAt, item.ExpiredAt)
+	}
 
 	expiry := time.Unix(gw.items[0].ExpiredAt, 0)
 	require.True(t, expiry.After(before), "expiry should be in the future")
@@ -154,7 +200,7 @@ func TestGrantCreatorActionV4ValidatesInput(t *testing.T) {
 	err = a.grantResourceCreatorActionV4(testKit(), creatorOption("30001", "2", ""))
 	require.ErrorContains(t, err, "creator is not set")
 
-	// 目前只有服务需要创建者授权，与 V3 注册的范围一致
+	// 目前只有服务、项目、环境需要创建者授权，与 V3 注册的范围一致
 	opt := creatorOption("30001", "2", "alice")
 	opt.Type = sys.Business
 	err = a.grantResourceCreatorActionV4(testKit(), opt)
@@ -198,6 +244,48 @@ func TestBizIDFromAncestors(t *testing.T) {
 // 未启用 V4 时 useV4 必须为假，确保 V3 行为不受影响。
 func TestUseV4Gating(t *testing.T) {
 	require.False(t, new(Auth).useV4())
+}
+
+// 项目创建者授权使用 project_creator 角色，按项目与业务两个维度拆分，
+// 项目维度授予 project_view/edit/delete 与 environment_create。
+func TestGrantCreatorActionV4Project(t *testing.T) {
+	gw := new(fakeV4Gateway)
+	a := newV4Auth(gw)
+
+	opt := &client.GrantResourceCreatorActionOption{
+		System:  sys.SystemIDBSCP,
+		Type:    sys.Project,
+		ID:      "40001",
+		Name:    "demo-project",
+		Creator: "alice",
+		Ancestors: []client.GrantResourceCreatorActionAncestor{{
+			System: sys.SystemIDCMDB,
+			Type:   sys.Business,
+			ID:     "2",
+		}},
+	}
+
+	require.NoError(t, a.grantResourceCreatorActionV4(testKit(), opt))
+	require.Equal(t, 1, gw.calls)
+	require.Len(t, gw.items, 2)
+	require.Equal(t, "alice", gw.operator)
+
+	byScope := make(map[string]clientv4.Authorization, 2)
+	for _, item := range gw.items {
+		byScope[item.RelatedResourceTypeID] = item
+	}
+
+	projectScoped, ok := byScope[model.ResourceTypeProject]
+	require.True(t, ok, "project scoped authorization is missing")
+	require.Equal(t, model.RoleProjectCreator, projectScoped.RoleID)
+	require.Equal(t, []clientv4.ResourceRef{{Type: model.ResourceTypeProject, ID: "40001"}},
+		projectScoped.Resources)
+
+	bizScoped, ok := byScope[model.ResourceTypeBiz]
+	require.True(t, ok, "biz scoped authorization is missing")
+	require.Equal(t, model.RoleProjectCreator, bizScoped.RoleID)
+	require.Equal(t, []clientv4.ResourceRef{{Type: model.ResourceTypeBiz, ID: "2"}},
+		bizScoped.Resources)
 }
 
 // 申请链接的祖先链必须与鉴权路径同源：旧拓扑下服务只声明业务一层，

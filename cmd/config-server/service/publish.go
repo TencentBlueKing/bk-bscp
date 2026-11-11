@@ -33,10 +33,8 @@ func (s *Service) Publish(ctx context.Context, req *pbcs.PublishReq) (
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.Publish)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -76,10 +74,8 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.Publish)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -230,10 +226,8 @@ func (s *Service) Approve(ctx context.Context, req *pbcs.ApproveReq) (*pbcs.Appr
 	// 审批通过和驳回无需权限
 	// 撤销和上线使用上线版本权限
 	if req.PublishStatus == string(table.RevokedPublish) || req.PublishStatus == string(table.AlreadyPublish) {
-		res := []*meta.ResourceAttribute{
-			{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-			{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
-		}
+		res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+			grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.Publish)
 		err := s.authorizer.Authorize(grpcKit, res...)
 		if err != nil {
 			return nil, err
@@ -270,11 +264,9 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbcs.Gener
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.GenerateRelease, ResourceID: req.AppId}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.GenerateRelease,
+		meta.Publish)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err

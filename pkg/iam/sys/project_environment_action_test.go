@@ -285,6 +285,35 @@ func TestApplicationActionGroupIncludesEnvironmentAppCreate(t *testing.T) {
 	t.Fatalf("action group %q is not registered", "Application")
 }
 
+// 项目创建者自动授权需要在资源创建者配置里注册项目：
+// 拿到项目查看/编辑/删除，以及在项目下创建环境，与环境创建者的范围保持一致。
+func TestProjectResourceCreatorActions(t *testing.T) {
+	creatorActions := GenerateResourceCreatorActions()
+
+	for _, config := range creatorActions.Config {
+		if config.ResourceID != Project {
+			continue
+		}
+
+		ids := make(map[client.ActionID]bool, len(config.Actions))
+		for _, action := range config.Actions {
+			ids[action.ID] = true
+		}
+
+		for _, want := range []client.ActionID{
+			ProjectView, ProjectEdit, ProjectDelete, EnvironmentCreate,
+		} {
+			if !ids[want] {
+				t.Errorf("project creator should be granted %q", want)
+			}
+		}
+
+		return
+	}
+
+	t.Errorf("resource creator actions of %q are not registered", Project)
+}
+
 // 环境创建者自动授权需要在资源创建者配置里注册环境。
 func TestEnvironmentResourceCreatorActions(t *testing.T) {
 	creatorActions := GenerateResourceCreatorActions()

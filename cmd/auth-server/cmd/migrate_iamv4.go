@@ -131,13 +131,23 @@ func runIAMV4DeleteAll() error {
 		}
 	}
 
-	if err := syncer.Apply(kt, plan, modelsync.ApplyOption{
+	if errS := syncer.Apply(kt, plan, modelsync.ApplyOption{
 		AllowDelete: true,
 		Logf: func(format string, args ...interface{}) {
 			fmt.Printf("  "+format+"\n", args...)
 		},
-	}); err != nil {
-		return err
+	}); errS != nil {
+		return errS
+	}
+
+	// 回读校验：权限中心可能对删除请求返回成功但保留元素（例如仍被引用），
+	// 只有重新求差异才能确认真的清空，避免打印「删除完成」却留下按钮和资源。
+	remaining, err := syncer.PlanDeleteAll(kt)
+	if err != nil {
+		return errors.Wrap(err, "回读校验清理结果")
+	}
+	if remaining.HasDeletions() {
+		return errors.Errorf("线上仍有元素未删除，请检查上面失败的条目后重试：\n%s", remaining)
 	}
 
 	fmt.Printf("删除完成：角色 %d 个、操作 %d 个、资源类型 %d 个\n",

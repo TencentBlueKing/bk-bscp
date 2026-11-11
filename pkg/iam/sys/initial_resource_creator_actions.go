@@ -47,6 +47,30 @@ func GenerateResourceCreatorActions() client.ResourceCreatorActions {
 				SubResourceTypes: nil,
 			},
 			{
+				// 项目创建者自动获得该项目的管理权限：项目查看/编辑/删除，以及在项目下创建环境；
+				// 项目下的环境仍需在创建时单独授予环境负责人权限，服务仍需单独授权。
+				ResourceID: Project,
+				Actions: []client.CreatorRelatedAction{
+					{
+						ID:         ProjectView,
+						IsRequired: false,
+					},
+					{
+						ID:         ProjectEdit,
+						IsRequired: false,
+					},
+					{
+						ID:         ProjectDelete,
+						IsRequired: false,
+					},
+					{
+						ID:         EnvironmentCreate,
+						IsRequired: false,
+					},
+				},
+				SubResourceTypes: nil,
+			},
+			{
 				// 环境创建者自动获得该环境的运维权限；环境下的服务仍需单独授权。
 				ResourceID: Environment,
 				Actions: []client.CreatorRelatedAction{

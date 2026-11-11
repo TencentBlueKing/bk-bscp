@@ -72,6 +72,10 @@ func Actions() []client.Action {
 // 以放行业务访问前置校验，其余操作按 app 授权。
 // 项目、环境维度角色只在 biz 上保留业务访问，其余操作按项目或环境实例授权，
 // 这样"只授某个项目/环境"才成立。
+// 配置项、KV、版本、上线这些服务内资源的接口要求"业务访问 + 项目查看 + 环境查看 + 服务动作"
+// 四项同时通过，因此服务运维、环境运维都带上 project_view 与 environment_view：
+// project_view 按被授权服务/环境所属的项目授予，environment_view 按所属环境授予，
+// 只覆盖那一个项目与环境，不会扩散到同业务下的其它项目与环境。
 func Roles() []client.Role {
 	return []client.Role{
 		{
@@ -100,11 +104,12 @@ func Roles() []client.Role {
 				environmentScoped(ActionAppCreate)...),
 		},
 		{
-			ID:          RoleCredentialManager,
-			Name:        "服务密钥管理员",
-			Description: "管理业务下的服务密钥",
-			Actions: bizScoped(ActionFindBusinessResource, ActionAppCredentialView,
-				ActionAppCredentialManage),
+			ID:   RoleCredentialManager,
+			Name: "服务密钥管理员",
+			// 密钥接口在业务维度之外叠加了项目查看，避免仅凭业务访问即可管理其它项目的密钥。
+			Description: "管理业务下的服务密钥，并查看密钥所属的项目",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource, ActionAppCredentialView,
+				ActionAppCredentialManage), projectScoped(ActionProjectView)),
 		},
 		{
 			ID:          RoleProcConfigManager,
@@ -115,31 +120,40 @@ func Roles() []client.Role {
 				ActionConfigTemplateDelete, ActionConfigGenerate, ActionConfigRelease),
 		},
 		{
-			ID:          RoleAuditViewer,
-			Name:        "操作记录查看者",
-			Description: "查看业务下的操作记录",
-			Actions:     bizScoped(ActionFindBusinessResource, ActionAuditView),
+			ID:   RoleAuditViewer,
+			Name: "操作记录查看者",
+			// 同密钥：操作记录接口叠加了项目查看，角色需自带 project_view，否则查看者会被拒绝。
+			Description: "查看业务下的操作记录，并查看记录所属的项目",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource, ActionAuditView),
+				projectScoped(ActionProjectView)),
 		},
 		{
 			ID:          RoleAppOperator,
 			Name:        "服务运维",
-			Description: "管理指定服务的配置与版本",
-			Actions: append(bizScoped(ActionFindBusinessResource),
+			Description: "管理指定服务的配置、版本与上线，并查看该服务所属的项目与环境",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView), environmentScoped(ActionEnvironmentView),
 				appScoped(ActionAppView, ActionAppEdit, ActionAppDelete,
-					ActionReleaseGenerate, ActionReleasePublish)...),
+					ActionReleaseGenerate, ActionReleasePublish)),
 		},
 		{
-			ID:          RoleAppPublisher,
-			Name:        "服务发布者",
-			Description: "生成并上线指定服务的版本，不含配置编辑",
-			Actions: append(bizScoped(ActionFindBusinessResource),
-				appScoped(ActionAppView, ActionReleaseGenerate, ActionReleasePublish)...),
+			ID:   RoleAppPublisher,
+			Name: "服务发布者",
+			// 上线接口要求 业务访问 + 项目查看 + 环境查看 + release_publish 四项同时通过，
+			// 缺 project_view/environment_view 时角色持有者能进业务、能看服务，却发不了版本。
+			Description: "生成并上线指定服务的版本，并查看该服务所属的项目与环境",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView), environmentScoped(ActionEnvironmentView),
+				appScoped(ActionAppView, ActionReleaseGenerate, ActionReleasePublish)),
 		},
 		{
-			ID:          RoleAppViewer,
-			Name:        "服务查看者",
-			Description: "查看指定服务",
-			Actions:     append(bizScoped(ActionFindBusinessResource), appScoped(ActionAppView)...),
+			ID:   RoleAppViewer,
+			Name: "服务查看者",
+			// 配置项、KV、版本列表同样要求四项同时通过，查看者必须自带项目与环境查看。
+			Description: "查看指定服务，并查看该服务所属的项目与环境",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView), environmentScoped(ActionEnvironmentView),
+				appScoped(ActionAppView)),
 		},
 		{
 			ID:   RoleProjectOperator,
@@ -167,17 +181,32 @@ func Roles() []client.Role {
 			Name: "环境运维",
 			// 同项目运维：服务写操作只在服务维度授予，环境维度只继承 app_view，
 			// 避免"授了环境运维就能改该环境下所有服务"。
-			Description: "管理指定环境；服务可查看，写操作需在服务维度单独授权",
-			Actions: append(bizScoped(ActionFindBusinessResource),
+			Description: "管理指定环境，并查看该环境所属的项目；服务可查看，写操作需在服务维度单独授权",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView),
 				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit,
-					ActionEnvironmentDelete, ActionAppView)...),
+					ActionEnvironmentDelete, ActionAppView)),
 		},
 		{
-			ID:          RoleEnvironmentViewer,
-			Name:        "环境查看者",
-			Description: "查看指定环境及其全部服务",
+			ID:   RoleEnvironmentViewer,
+			Name: "环境查看者",
+			// 服务内资源接口要求项目查看，环境维度的授权不会自动覆盖 project_view。
+			Description: "查看指定环境及其全部服务，并查看该环境所属的项目",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView),
+				environmentScoped(ActionEnvironmentView, ActionAppView)),
+		},
+		{
+			ID: RoleProjectCreator,
+			// 只用于创建项目后的自动授权，与 V3 的 ResourceCreatorActions 对齐：
+			// 授予该项目的查看/编辑/删除与在项目下创建环境。若复用 project_operator，创建者会额外获得
+			// 项目维度的环境查看/编辑/删除与服务查看，等于能看到该项目下的全部环境与服务，比 V3 授权范围更大。
+			Name: "项目负责人（创建后自动授予）",
+			Description: "创建项目后自动授予创建人；包含该项目的查看、编辑、删除与在项目下创建环境，" +
+				"项目下的环境、服务需单独授权",
 			Actions: append(bizScoped(ActionFindBusinessResource),
-				environmentScoped(ActionEnvironmentView, ActionAppView)...),
+				projectScoped(ActionProjectView, ActionProjectEdit, ActionProjectDelete,
+					ActionEnvironmentCreate)...),
 		},
 		{
 			ID: RoleEnvironmentCreator,
@@ -187,10 +216,11 @@ func Roles() []client.Role {
 			// 只用于创建环境后的自动授权，与 V3 的 ResourceCreatorActions 对齐：
 			// 只授予该环境的查看/编辑/删除。若复用 environment_operator，创建者会额外获得
 			// 环境维度的 app_view，等于能看到该环境下的全部服务，比 V3 授权范围更大。
-			Description: "创建环境后自动授予创建人；包含该环境的查看、编辑、删除，不含创建环境，" +
-				"环境下的服务需单独授权",
-			Actions: append(bizScoped(ActionFindBusinessResource),
-				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete)...),
+			Description: "创建环境后自动授予创建人；包含该环境的查看、编辑、删除与所属项目的查看，" +
+				"不含创建环境，环境下的服务需单独授权",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView),
+				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete)),
 		},
 	}
 }
@@ -213,6 +243,22 @@ func environmentScoped(actionIDs ...string) []client.RoleAction {
 // appScoped 把一组操作全部声明为按服务维度授权。
 func appScoped(actionIDs ...string) []client.RoleAction {
 	return scoped(ResourceTypeApp, actionIDs)
+}
+
+// mergeActions 把多个授权维度的操作合并成一个角色的操作列表。
+// 权限中心按操作 ID 判重，同一操作只能出现在一个维度上，调用方需自己保证不重复声明。
+func mergeActions(groups ...[]client.RoleAction) []client.RoleAction {
+	total := 0
+	for _, group := range groups {
+		total += len(group)
+	}
+
+	merged := make([]client.RoleAction, 0, total)
+	for _, group := range groups {
+		merged = append(merged, group...)
+	}
+
+	return merged
 }
 
 func scoped(resourceTypeID string, actionIDs []string) []client.RoleAction {

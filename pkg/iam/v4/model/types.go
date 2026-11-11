@@ -117,6 +117,9 @@ const (
 	RoleEnvironmentOperator = "environment_operator"
 	// RoleEnvironmentViewer 环境查看者，查看指定环境
 	RoleEnvironmentViewer = "environment_viewer"
+	// RoleProjectCreator 项目负责人，项目创建后自动授予创建人：只含该项目的查看/编辑/删除与在项目下创建环境，
+	// 项目下的环境、服务需要单独授权，与 V3 的 ResourceCreatorActions 保持一致
+	RoleProjectCreator = "project_creator"
 	// RoleEnvironmentCreator 环境负责人，环境创建后自动授予创建人：只含该环境的查看/编辑/删除，不含创建环境，
 	// 环境下的服务需要单独授权，与 V3 的 ResourceCreatorActions 保持一致
 	RoleEnvironmentCreator = "environment_creator"

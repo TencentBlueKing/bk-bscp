@@ -41,6 +41,7 @@ func (s *Service) CreateGroup(ctx context.Context, req *pbcs.CreateGroupReq) (*p
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -85,6 +86,7 @@ func (s *Service) DeleteGroup(ctx context.Context, req *pbcs.DeleteGroupReq) (*p
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -114,6 +116,7 @@ func (s *Service) BatchDeleteGroups(ctx context.Context, req *pbcs.BatchDeleteBi
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -179,6 +182,7 @@ func (s *Service) UpdateGroup(ctx context.Context, req *pbcs.UpdateGroupReq) (*p
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -223,6 +227,7 @@ func (s *Service) ListAllGroups(ctx context.Context, req *pbcs.ListAllGroupsReq)
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -326,6 +331,7 @@ func (s *Service) ListAppGroups(ctx context.Context, req *pbcs.ListAppGroupsReq)
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -370,6 +376,7 @@ func (s *Service) ListGroupReleasedApps(ctx context.Context, req *pbcs.ListGroup
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -412,6 +419,7 @@ func (s *Service) GetGroupByName(ctx context.Context, req *pbcs.GetGroupByNameRe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(kt, res...); err != nil {
 		return nil, err
@@ -438,6 +446,7 @@ func (s *Service) ListGroupSelector(ctx context.Context, req *pbcs.ListGroupSele
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, kit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(kit, res...); err != nil {
 		return nil, err
@@ -463,6 +472,7 @@ func (s *Service) GetGroup(ctx context.Context, req *pbcs.GetGroupReq) (*pbcs.Ge
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(kt, res...); err != nil {
 		return nil, err

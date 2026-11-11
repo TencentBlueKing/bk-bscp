@@ -40,7 +40,7 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 
 服务创建成功后把 `app_operator` 角色授予创建者，有效期 365 天，`X-Bkiam-Operator` 头填创建者本人。
 
-一次创建会发送两条授权记录，不能合并：一次 `add_authorization` 只授予 `related_resource_type_id` 指定的单一授权维度，若只授 `app` 维度，角色内按 `biz` 维度授权的 `find_business_resource` 不会生效；BSCP 每个业务接口都有业务访问前置校验，该操作缺失时创建者对自己新建的服务也会被全部拒绝。
+一次创建会按授权维度发送多条授权记录，不能合并：一次 `add_authorization` 只授予 `related_resource_type_id` 指定的单一授权维度，若只授 `app` 维度，角色内按 `biz` 维度授权的 `find_business_resource` 不会生效；BSCP 每个业务接口都有业务访问前置校验，该操作缺失时创建者对自己新建的服务也会被全部拒绝。服务创建后授的是 `app_operator`，该角色还含 `project_view`（项目维度）与 `environment_view`（环境维度）——配置项、KV、版本、上线要求业务访问、项目查看、环境查看与服务动作四项同时通过——因此创建者还会按服务所属的项目、环境各授一次；调用方未声明这两级归属时跳过，不做猜测授权。
 
 与之配对的 `revoke_authorization`（撤销授权）和 `list_authorization_subject`（查询已授权用户）目前没有调用，暂不需要申请；这意味着创建者授权只能靠 365 天过期自然失效，没有主动回收路径。
 

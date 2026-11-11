@@ -15,7 +15,6 @@ package service
 import (
 	"context"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -26,10 +25,8 @@ func (s *Service) ListClientEvents(ctx context.Context, req *pbcs.ListClientEven
 	*pbcs.ListClientEventsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {

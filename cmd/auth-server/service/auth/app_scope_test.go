@@ -38,6 +38,10 @@ type fakeAppDS struct {
 	environmentCalls int
 	environmentErr   error
 
+	projectInfos map[uint32]*pbds.InstanceInfo
+	projectCalls int
+	projectErr   error
+
 	// defaults 是业务 ID 到默认项目/环境的映射
 	defaults     map[uint32]*pbds.GetDefaultProjectEnvResp
 	defaultCalls int
@@ -57,10 +61,39 @@ func (f *fakeAppDS) GetDefaultProjectEnv(_ context.Context, in *pbds.GetDefaultP
 func (f *fakeAppDS) FetchInstanceInfo(_ context.Context, in *pbds.FetchInstanceInfoReq,
 	_ ...grpc.CallOption) (*pbds.FetchInstanceInfoResp, error) {
 
-	if in.GetResourceType() == string(meta.App) {
+	switch in.GetResourceType() {
+	case string(meta.App):
 		return f.fetchAppInfo(in)
+	case string(meta.Project):
+		return f.fetchProjectInfo(in)
+	default:
+		return f.fetchEnvironmentInfo(in)
+	}
+}
+
+// fetchProjectInfo 按项目真实归属返回业务路径；项目不存在时不出现在返回结果里。
+func (f *fakeAppDS) fetchProjectInfo(in *pbds.FetchInstanceInfoReq) (*pbds.FetchInstanceInfoResp, error) {
+	f.projectCalls++
+	if f.projectErr != nil {
+		return nil, f.projectErr
 	}
 
+	resp := &pbds.FetchInstanceInfoResp{}
+	for _, id := range in.GetIds() {
+		projectID, err := strconv.ParseUint(id, 10, 32)
+		if err != nil {
+			continue
+		}
+		if info, ok := f.projectInfos[uint32(projectID)]; ok {
+			resp.Details = append(resp.Details, info)
+		}
+	}
+
+	return resp, nil
+}
+
+// fetchEnvironmentInfo 按环境真实归属返回业务/项目路径。
+func (f *fakeAppDS) fetchEnvironmentInfo(in *pbds.FetchInstanceInfoReq) (*pbds.FetchInstanceInfoResp, error) {
 	f.environmentCalls++
 	if f.environmentErr != nil {
 		return nil, f.environmentErr
@@ -570,4 +603,111 @@ func TestDefaultScopeOf_CachesResolvedScope(t *testing.T) {
 	}
 
 	require.Equal(t, 1, ds.defaultCalls, "resolved scope should be cached")
+}
+
+// 项目维度与业务维度一样必须回查：权限中心不反查拓扑，路径若取请求里的 biz_id，
+// 拥有业务 A 权限的调用方可以拿业务 B 的项目 ID 拼出业务 A 的路径。
+func TestFillResourceScopeOverridesRequestedParentForProject(t *testing.T) {
+	ds := &fakeAppDS{
+		projectInfos: map[uint32]*pbds.InstanceInfo{
+			40002: {Id: "40002", Path: []string{"/biz,100002/"}},
+		},
+	}
+	a := newAppScopeAuth(ds)
+
+	res := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.Project, Action: meta.View, ResourceID: 40002},
+		BizID:     100001,
+		ProjectID: 40002,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Equal(t, 1, ds.projectCalls, "已有项目实例必须按项目 ID 回查")
+	require.Equal(t, uint32(100002), res.BizID, "业务必须取自项目自身路径")
+	require.Equal(t, uint32(40002), res.ResourceID)
+}
+
+// 回查不到项目时丢掉请求声明的业务，鉴权路径缺失退化为无权限，
+// 而不是按请求里的业务拼出可以命中他人授权的路径。
+func TestFillResourceScopeDropsRequestedBizWhenProjectUnknown(t *testing.T) {
+	ds := &fakeAppDS{defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+		100001: {ProjectId: 40000, EnvId: 50000},
+	}}
+	a := newAppScopeAuth(ds)
+
+	res := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.Project, Action: meta.View, ResourceID: 40099},
+		BizID:     100001,
+		ProjectID: 40099,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Zero(t, res.BizID)
+	require.Zero(t, ds.defaultCalls, "已知实例解析不出父级时不能兜底到默认项目")
+}
+
+// 项目查看与环境查看必须跟服务的真实归属一致：
+// 否则拥有项目 40001 查看权限的调用方可以拿项目 40002 下的服务 ID，
+// 用 40001 的 project_view 放行对 40002 服务的配置操作。
+func TestFillResourceScopeAlignsViewsToAppScope(t *testing.T) {
+	ds := &fakeAppDS{
+		apps: map[uint32]*pbapp.App{
+			30001: {Id: 30001, BizId: 100001, ProjectId: 40002, EnvId: 50002},
+		},
+		projectInfos: map[uint32]*pbds.InstanceInfo{
+			40001: {Id: "40001", Path: []string{"/biz,100001/"}},
+			40002: {Id: "40002", Path: []string{"/biz,100001/"}},
+		},
+		environmentInfos: map[uint32]*pbds.InstanceInfo{
+			50001: {Id: "50001", Path: []string{"/biz,100001/project,40001/"}},
+			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
+		},
+	}
+	a := newAppScopeAuth(ds)
+
+	appRes := &meta.ResourceAttribute{
+		Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: 30001},
+		BizID: 100001,
+	}
+	projectRes := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.Project, Action: meta.View, ResourceID: 40001},
+		BizID:     100001,
+		ProjectID: 40001,
+	}
+	envRes := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.Environment, Action: meta.View, ResourceID: 50001},
+		BizID:     100001,
+		ProjectID: 40001,
+	}
+
+	require.NoError(t, a.fillResourceScope(testKit(),
+		[]*meta.ResourceAttribute{appRes, projectRes, envRes}))
+
+	require.Equal(t, uint32(40002), appRes.ProjectID, "服务归属必须回查到真实项目")
+	require.Equal(t, uint32(50002), appRes.EnvironmentID, "服务归属必须回查到真实环境")
+	require.Equal(t, uint32(40002), projectRes.ResourceID, "项目查看必须落在服务所属项目")
+	require.Equal(t, uint32(50002), envRes.ResourceID, "环境查看必须落在服务所属环境")
+	require.Equal(t, uint32(40002), envRes.ProjectID)
+	require.Equal(t, uint32(100001), envRes.BizID)
+}
+
+// 批次内没有服务资源时（项目、环境自身的接口），视图资源保持回查结果，不被改写。
+func TestFillResourceScopeKeepsProjectScopeWithoutApp(t *testing.T) {
+	ds := &fakeAppDS{
+		projectInfos: map[uint32]*pbds.InstanceInfo{
+			40001: {Id: "40001", Path: []string{"/biz,100001/"}},
+		},
+	}
+	a := newAppScopeAuth(ds)
+
+	res := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.Project, Action: meta.View, ResourceID: 40001},
+		BizID:     100001,
+		ProjectID: 40001,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Equal(t, uint32(40001), res.ResourceID)
+	require.Equal(t, uint32(100001), res.BizID)
+	require.Equal(t, 1, ds.projectCalls)
 }

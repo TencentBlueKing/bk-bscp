@@ -37,10 +37,8 @@ func (s *Service) CreateConfigItem(ctx context.Context, req *pbcs.CreateConfigIt
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -98,10 +96,8 @@ func (s *Service) BatchUpsertConfigItems(ctx context.Context, req *pbcs.BatchUps
 	grpcKit := kit.FromGrpcContext(ctx)
 	resp := new(pbcs.BatchUpsertConfigItemsResp)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -170,10 +166,8 @@ func (s *Service) UpdateConfigItem(ctx context.Context, req *pbcs.UpdateConfigIt
 	grpcKit := kit.FromGrpcContext(ctx)
 	resp := new(pbcs.UpdateConfigItemResp)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -274,10 +268,8 @@ func (s *Service) DeleteConfigItem(ctx context.Context, req *pbcs.DeleteConfigIt
 	grpcKit := kit.FromGrpcContext(ctx)
 	resp := new(pbcs.DeleteConfigItemResp)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -304,10 +296,8 @@ func (s *Service) BatchDeleteConfigItems(ctx context.Context, req *pbcs.BatchDel
 	*pbcs.BatchDeleteResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -371,10 +361,8 @@ func (s *Service) GetConfigItem(ctx context.Context, req *pbcs.GetConfigItemReq)
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -433,10 +421,8 @@ func (s *Service) GetReleasedConfigItem(ctx context.Context, req *pbcs.GetReleas
 	*pbcs.GetReleasedConfigItemResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -467,10 +453,8 @@ func (s *Service) ListConfigItems(ctx context.Context, req *pbcs.ListConfigItems
 	*pbcs.ListConfigItemsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -513,10 +497,8 @@ func (s *Service) ListReleasedConfigItems(ctx context.Context, req *pbcs.ListRel
 		return nil, fmt.Errorf("invalid release id %d, it must bigger than 0", req.ReleaseId)
 	}
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -552,6 +534,8 @@ func (s *Service) ListConfigItemCount(ctx context.Context, req *pbcs.ListConfigI
 	grpcKit := kit.FromGrpcContext(ctx)
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		environmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -578,10 +562,8 @@ func (s *Service) ListConfigItemCount(ctx context.Context, req *pbcs.ListConfigI
 func (s *Service) ListConfigItemByTuple(ctx context.Context, req *pbcs.ListConfigItemByTupleReq) (
 	*pbcs.ListConfigItemByTupleResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -613,10 +595,8 @@ func (s *Service) UnDeleteConfigItem(ctx context.Context, req *pbcs.UnDeleteConf
 	*pbcs.UnDeleteConfigItemResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -642,10 +622,8 @@ func (s *Service) UnDeleteConfigItem(ctx context.Context, req *pbcs.UnDeleteConf
 func (s *Service) UndoConfigItem(ctx context.Context, req *pbcs.UndoConfigItemReq) (*pbcs.UndoConfigItemResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -669,8 +647,13 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbcs.Comp
 	*pbcs.CompareConfigItemConflictsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
+	projectID := grpcKit.ResolvedProjectID(req.GetProjectId())
+	envID := grpcKit.ResolvedEnvID(req.GetEnvId())
+
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		projectViewResource(req.BizId, projectID),
+		environmentViewResource(req.BizId, envID),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.OtherAppId}, BizID: req.BizId},
 	}
@@ -679,13 +662,29 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbcs.Comp
 		return nil, err
 	}
 
+	// 请求只携带了当前环境，被对比的服务若属于其它环境，它的环境查看权限不在上面这批资源里：
+	// 仅凭服务查看权限放行，会让用户读到其它环境的配置内容，因此按服务回查其所属环境并补校验。
+	if req.GetOtherAppId() != 0 && req.GetOtherAppId() != req.GetAppId() {
+		otherEnvID, err := s.appEnvID(grpcKit, req.GetOtherAppId())
+		if err != nil {
+			return nil, err
+		}
+
+		if otherEnvID != 0 && otherEnvID != envID {
+			if err := s.authorizer.Authorize(grpcKit,
+				environmentViewResource(req.GetBizId(), otherEnvID)); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	result, err := s.client.DS.CompareConfigItemConflicts(grpcKit.RpcCtx(), &pbds.CompareConfigItemConflictsReq{
 		BizId:      req.GetBizId(),
 		AppId:      req.GetAppId(),
 		ReleaseId:  req.GetReleaseId(),
 		OtherAppId: req.GetOtherAppId(),
-		ProjectId:  grpcKit.ResolvedProjectID(req.GetProjectId()),
-		EnvId:      grpcKit.ResolvedEnvID(req.GetEnvId()),
+		ProjectId:  projectID,
+		EnvId:      envID,
 	})
 	if err != nil {
 		return nil, err
@@ -735,16 +734,31 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbcs.Comp
 	}, nil
 }
 
+// appEnvID 回查服务所属的环境 ID。
+// 跨服务的场景（如配置项对比）请求里只有当前环境，另一个服务的环境需要按服务实例回查，
+// 才能把它的环境维度权限一并纳入校验。
+func (s *Service) appEnvID(kt *kit.Kit, appID uint32) (uint32, error) {
+	if appID == 0 {
+		return 0, nil
+	}
+
+	app, err := s.client.DS.GetAppByID(kt.RpcCtx(), &pbds.GetAppByIDReq{AppId: appID})
+	if err != nil {
+		logs.Errorf("get app by id %d failed, err: %v, rid: %s", appID, err, kt.Rid)
+		return 0, err
+	}
+
+	return app.GetEnvId(), nil
+}
+
 // GetTemplateAndNonTemplateCICount 获取模板和非模板配置项数量
 func (s *Service) GetTemplateAndNonTemplateCICount(ctx context.Context, req *pbcs.GetTemplateAndNonTemplateCICountReq) (
 	*pbcs.GetTemplateAndNonTemplateCICountResp, error) {
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.GetProjectId()),
+		grpcKit.ResolvedEnvID(req.GetEnvId()), req.AppId)
 
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -773,10 +787,8 @@ func (s *Service) RemoveAppBoundTmplSet(ctx context.Context, req *pbcs.RemoveApp
 
 	kit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, kit.ResolvedProjectID(req.ProjectId),
+		kit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(kit, res...); err != nil {
 		return nil, err
 	}
@@ -800,10 +812,8 @@ func (s *Service) BatchUnDeleteConfigItem(ctx context.Context, req *pbcs.BatchUn
 	*pbcs.BatchUnDeleteConfigItemResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, kit.ResolvedProjectID(req.ProjectId),
+		kit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kit, res...)
 	if err != nil {
 		return nil, err

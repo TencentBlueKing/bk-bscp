@@ -20,8 +20,11 @@ import (
 
 	iamauth "github.com/TencentBlueKing/bk-bscp/internal/iam/auth"
 	"github.com/TencentBlueKing/bk-bscp/internal/rest/view/webannotation"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
@@ -46,6 +49,25 @@ func (s *Service) CreateProject(ctx context.Context, req *pbcs.CreateProjectReq)
 
 	if err != nil {
 		return nil, err
+	}
+
+	// 项目创建者自动获得该项目的管理权限：项目查看/编辑/删除与在项目下创建环境，
+	// 避免出现"创建成功但无法管理"的情况。授权失败只记录日志，不阻塞创建流程。
+	if err := s.authorizer.GrantResourceCreatorAction(grpcKit, &client.GrantResourceCreatorActionOption{
+		System:  sys.SystemIDBSCP,
+		Type:    sys.Project,
+		ID:      strconv.Itoa(int(resp.GetId())),
+		Name:    req.GetName(),
+		Creator: grpcKit.User,
+		Ancestors: []client.GrantResourceCreatorActionAncestor{
+			{
+				System: sys.SystemIDCMDB,
+				Type:   sys.Business,
+				ID:     strconv.Itoa(int(req.GetBizId())),
+			},
+		},
+	}); err != nil {
+		logs.Errorf("grant project creator action failed, err: %v, rid: %s", err, grpcKit.Rid)
 	}
 
 	return &pbcs.CreateProjectResp{

@@ -17,7 +17,6 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
@@ -29,10 +28,8 @@ func (s *Service) GetReleasedKv(ctx context.Context, req *pbcs.GetReleasedKvReq)
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -62,10 +59,8 @@ func (s *Service) ListReleasedKvs(ctx context.Context, req *pbcs.ListReleasedKvs
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}

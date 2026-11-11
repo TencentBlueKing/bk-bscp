@@ -147,7 +147,15 @@ func (a *Auth) fillResourceScope(kt *kit.Kit, resources []*meta.ResourceAttribut
 		return nil
 	}
 
-	return a.fillProjectScope(kt, resources)
+	if err := a.fillProjectScope(kt, resources); err != nil {
+		return err
+	}
+
+	// 服务归属已在 fillAppScope 回查，项目/环境查看必须跟着服务的真实归属走，
+	// 否则调用方可以用自己有权限的项目 ID 放行对其它项目服务的操作。
+	alignServiceScopedViews(kt, resources)
+
+	return nil
 }
 
 // needsEnvironmentScope 判断资源是否需要回查环境的真实父级（业务与项目）。
@@ -382,11 +390,33 @@ func parseIAMPathIDs(path string) map[string]uint32 {
 	return ids
 }
 
-// fillProjectScope 让项目维度鉴权资源的实例 ID 与项目 ID 保持一致。
+// needsProjectScope 判断项目维度资源是否需要回查真实业务归属。
+//
+// 创建与列表不针对具体项目实例；ResourceID 为 0 时没有实例可回查，由默认项目补齐。
+func (a *Auth) needsProjectScope(res *meta.ResourceAttribute) bool {
+	if res == nil || res.Type != meta.Project || !a.projectEnvAuth {
+		return false
+	}
+	if res.Action == meta.Create || res.Action == meta.Find {
+		return false
+	}
+
+	return res.ResourceID != 0
+}
+
+// fillProjectScope 补齐项目维度鉴权资源的实例与业务归属。
 //
 // 项目按实例授权，resource_id 与 project_id 指向同一个项目，任一缺失时互补；
-// 两者都为空时按默认项目补齐。创建与列表不针对具体项目实例，不在此处理。
+// 已有实例时业务祖先一律以回查到的真实路径为准，请求里带的 biz_id 只当作线索：
+// 权限中心不反查拓扑，鉴权路径完全由这里给出的祖先决定，沿用请求里的 biz_id
+// 会让拥有业务 A 权限的调用方拿业务 B 的项目实例拼出业务 A 的路径。
+// 没有实例时（如对外接口不传项目）按业务的默认项目补齐，两者都为空则退化为无权限。
 func (a *Auth) fillProjectScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
+	projectScopes, err := a.lookupProjectScopes(kt, resources)
+	if err != nil {
+		return err
+	}
+
 	for _, res := range resources {
 		if res == nil || res.Type != meta.Project {
 			continue
@@ -403,6 +433,8 @@ func (a *Auth) fillProjectScope(kt *kit.Kit, resources []*meta.ResourceAttribute
 			res.ResourceID = res.ProjectID
 		}
 		if res.ResourceID != 0 {
+			applyProjectParent(kt, res, projectScopes)
+
 			continue
 		}
 
@@ -423,6 +455,156 @@ func (a *Auth) fillProjectScope(kt *kit.Kit, resources []*meta.ResourceAttribute
 	}
 
 	return nil
+}
+
+// lookupProjectScopes 批量回查项目实例的真实业务归属，避免逐项回查。
+func (a *Auth) lookupProjectScopes(kt *kit.Kit, resources []*meta.ResourceAttribute) (map[uint32]uint32, error) {
+	projectIDs := make([]uint32, 0)
+	seen := make(map[uint32]struct{})
+	for _, res := range resources {
+		if !a.needsProjectScope(res) {
+			continue
+		}
+		if _, ok := seen[res.ResourceID]; ok {
+			continue
+		}
+
+		seen[res.ResourceID] = struct{}{}
+		projectIDs = append(projectIDs, res.ResourceID)
+	}
+
+	scopes := make(map[uint32]uint32, len(projectIDs))
+	if len(projectIDs) == 0 {
+		return scopes, nil
+	}
+
+	ids := make([]string, 0, len(projectIDs))
+	for _, id := range projectIDs {
+		ids = append(ids, strconv.FormatUint(uint64(id), 10))
+	}
+
+	resp, err := a.ds.FetchInstanceInfo(kt.RpcCtx(), &pbds.FetchInstanceInfoReq{
+		ResourceType: string(meta.Project),
+		Ids:          ids,
+	})
+	if err != nil {
+		logs.Errorf("fetch project scope for iam authorization failed, ids: %v, err: %v, rid: %s",
+			ids, err, kt.Rid)
+
+		return nil, err
+	}
+
+	for _, detail := range resp.GetDetails() {
+		projectID, err := strconv.ParseUint(detail.GetId(), 10, 32)
+		if err != nil {
+			continue
+		}
+
+		for _, path := range detail.GetPath() {
+			bizID, ok := parseProjectIAMPath(path)
+			if !ok {
+				continue
+			}
+
+			scopes[uint32(projectID)] = bizID
+			break
+		}
+	}
+
+	return scopes, nil
+}
+
+// applyProjectParent 用回查到的真实业务覆盖请求声明的业务。
+// 回查不到归属时清空业务：路径拼不出来，鉴权退化为无权限，而不是拿请求里的值冒充祖先。
+func applyProjectParent(kt *kit.Kit, res *meta.ResourceAttribute, projectScopes map[uint32]uint32) {
+	bizID, ok := projectScopes[res.ResourceID]
+	res.ProjectID = res.ResourceID
+
+	if !ok {
+		if res.BizID != 0 {
+			logs.Warnf("project %d has no resolvable parent, drop biz %d declared by the request, "+
+				"authorization will be denied, rid: %s", res.ResourceID, res.BizID, kt.Rid)
+		}
+		res.BizID = 0
+
+		return
+	}
+
+	if res.BizID != 0 && res.BizID != bizID {
+		logs.Warnf("project %d belongs to biz %d, but resource declares %d, "+
+			"use the project's own parent, rid: %s", res.ResourceID, bizID, res.BizID, kt.Rid)
+	}
+
+	res.BizID = bizID
+}
+
+// parseProjectIAMPath 从项目资源的 IAM path 读取真实业务祖先：/biz,{bizID}/project,{projectID}/。
+func parseProjectIAMPath(path string) (uint32, bool) {
+	ids := parseIAMPathIDs(path)
+	bizID := ids[string(meta.Biz)]
+
+	return bizID, bizID != 0
+}
+
+// alignServiceScopedViews 让同一批次里的项目查看、环境查看以服务的真实归属为准。
+//
+// 服务内资源的接口要求四项同时通过，但项目、环境两项的实例由调用方传入。
+// 沿用调用方的 ID 时，拥有项目 A 查看权限的调用方配上项目 B 的服务 ID，
+// 就能用 A 的 project_view 放行对 B 的配置操作。服务归属已经在 fillAppScope 回查，
+// 这里按服务的真实项目/环境改写这两项资源，与「父级一律以回查为准」保持一致。
+// 同一批次出现归属不同的多个服务时取第一个服务的归属并告警：服务内资源的鉴权主体
+// 仍是服务本身，项目/环境维度只做附加收敛，不因批次混合而放开。
+func alignServiceScopedViews(kt *kit.Kit, resources []*meta.ResourceAttribute) {
+	var scope appScope
+	resolved := false
+
+	for _, res := range resources {
+		if res == nil || res.Type != meta.App || res.ProjectID == 0 || res.EnvironmentID == 0 {
+			continue
+		}
+
+		if !resolved {
+			scope = appScope{bizID: res.BizID, projectID: res.ProjectID, envID: res.EnvironmentID}
+			resolved = true
+
+			continue
+		}
+
+		if res.ProjectID != scope.projectID || res.EnvironmentID != scope.envID {
+			logs.Warnf("apps in one authorization batch belong to different projects/environments "+
+				"(%d/%d and %d/%d), use the first one, rid: %s",
+				scope.projectID, scope.envID, res.ProjectID, res.EnvironmentID, kt.Rid)
+		}
+	}
+
+	if !resolved {
+		return
+	}
+
+	for _, res := range resources {
+		if res == nil || res.Action != meta.View {
+			continue
+		}
+
+		switch res.Type {
+		case meta.Project:
+			replaceViewScope(kt, res, scope, scope.projectID)
+		case meta.Environment:
+			replaceViewScope(kt, res, scope, scope.envID)
+		}
+	}
+}
+
+// replaceViewScope 用服务的真实归属覆盖项目/环境查看资源，并记录调用方传入的差异。
+func replaceViewScope(kt *kit.Kit, res *meta.ResourceAttribute, scope appScope, resourceID uint32) {
+	if res.ResourceID != resourceID {
+		logs.Warnf("%s view resource declares %d, but the app belongs to project %d/environment %d, "+
+			"use the app's own scope, rid: %s", res.Type, res.ResourceID, scope.projectID, scope.envID, kt.Rid)
+	}
+
+	res.ResourceID = resourceID
+	res.ProjectID = scope.projectID
+	res.BizID = scope.bizID
 }
 
 // needsAppScope 判断该操作是否按服务实例鉴权。
