@@ -733,14 +733,17 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		return errf.New(errf.InvalidParameter, "creator action option is nil")
 	}
 
-	// 目前服务和环境需要创建者授权，与 V3 注册的 ResourceCreatorAction 范围一致：
-	// 服务创建者拿到该服务的运维权限，环境创建者只拿到该环境的查看/编辑/删除。
-	// 环境不能复用 environment_operator，那个角色还含环境维度的 app_view，
-	// 会让创建者额外看到该环境下的全部服务，比 V3 的授权范围更大。
+	// 目前服务、项目和环境需要创建者授权，与 V3 注册的 ResourceCreatorAction 范围一致：
+	// 服务创建者拿到该服务的运维权限，项目创建者拿到该项目的查看/编辑/删除与在项目下创建环境，
+	// 环境创建者只拿到该环境的查看/编辑/删除。
+	// 项目不能复用 project_operator、环境不能复用 environment_operator，那些角色还含项目/环境维度
+	// 继承的子资源查看权限，会让创建者额外看到该项目/环境下不属于自己的全部资源，比 V3 授权范围更大。
 	var roleID, resourceTypeID string
 	switch opts.Type {
 	case sys.Application:
 		roleID, resourceTypeID = model.RoleAppOperator, model.ResourceTypeApp
+	case sys.Project:
+		roleID, resourceTypeID = model.RoleProjectCreator, model.ResourceTypeProject
 	case sys.Environment:
 		roleID, resourceTypeID = model.RoleEnvironmentCreator, model.ResourceTypeEnvironment
 	default:
@@ -760,7 +763,7 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 	subject := clientv4.NewUserSubject(opts.Creator)
 	expiredAt := time.Now().Add(creatorGrantDuration).Unix()
 
-	// 必须拆成两条：一次 add_authorization 仅授予 related_resource_type_id 指定的单个
+	// 必须拆成多条：一次 add_authorization 仅授予 related_resource_type_id 指定的单个
 	// 授权维度。若只授资源维度，角色内 biz 维度的 find_business_resource 不会生效；
 	// BSCP 每个业务接口都有业务访问前置校验，该操作缺失时创建者对新资源的操作都会被拒绝。
 	items := []clientv4.Authorization{
@@ -784,6 +787,35 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		},
 	}
 
+	// app_operator 同时含项目查看与环境查看：服务内资源（配置项、KV、版本、上线）的接口
+	// 要求业务访问 + 项目查看 + 环境查看 + 服务动作四项同时通过，而角色内不同维度的操作
+	// 只能按对应维度各授一次。缺这两条时创建者对自己新建的服务改不了配置项与 KV。
+	if opts.Type == sys.Application {
+		for _, ancestor := range []struct {
+			resourceType string
+			ancestorType client.TypeID
+		}{
+			{model.ResourceTypeProject, sys.Project},
+			{model.ResourceTypeEnvironment, sys.Environment},
+		} {
+			id := ancestorID(opts.Ancestors, ancestor.ancestorType)
+			if id == "" {
+				// 调用方未声明归属时不额外授权，交由运维按实际项目/环境单独授予。
+				continue
+			}
+
+			items = append(items, clientv4.Authorization{
+				Subject:               subject,
+				RoleID:                roleID,
+				RelatedResourceTypeID: ancestor.resourceType,
+				Resources: []clientv4.ResourceRef{
+					{Type: ancestor.resourceType, ID: id},
+				},
+				ExpiredAt: expiredAt,
+			})
+		}
+	}
+
 	// 操作人取创建者：该授权由创建资源的行为直接触发，并非管理员代为授权。
 	if err := a.v4Cli.AddAuthorizations(kt, opts.Creator, items); err != nil {
 		logs.Errorf("iam v4 grant creator action failed, creator: %s, type: %s, id: %s, "+
@@ -800,8 +832,13 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 // bizIDFromAncestors 从祖先列表里取业务 ID。
 // V4 的资源类型不带 system 维度，因此只按类型匹配，忽略 Ancestor.System。
 func bizIDFromAncestors(ancestors []client.GrantResourceCreatorActionAncestor) string {
+	return ancestorID(ancestors, sys.Business)
+}
+
+// ancestorID 从祖先列表里按资源类型取 ID，取不到时返回空串。
+func ancestorID(ancestors []client.GrantResourceCreatorActionAncestor, ancestorType client.TypeID) string {
 	for _, ancestor := range ancestors {
-		if ancestor.Type == sys.Business {
+		if ancestor.Type == ancestorType {
 			return ancestor.ID
 		}
 	}

@@ -34,7 +34,6 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/errf"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/i18n"
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
@@ -48,10 +47,8 @@ func (s *Service) CreateKv(ctx context.Context, req *pbcs.CreateKvReq) (*pbcs.Cr
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -94,10 +91,8 @@ func (s *Service) UpdateKv(ctx context.Context, req *pbcs.UpdateKvReq) (*pbcs.Up
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -169,10 +164,8 @@ func (s *Service) kvSecretTypeForUpdate(kit *kit.Kit, bizID, appID uint32, key, 
 func (s *Service) ListKvs(ctx context.Context, req *pbcs.ListKvsReq) (*pbcs.ListKvsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -231,10 +224,8 @@ func (s *Service) DeleteKv(ctx context.Context, req *pbcs.DeleteKvReq) (*pbcs.De
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -262,10 +253,8 @@ func (s *Service) BatchDeleteKv(ctx context.Context, req *pbcs.BatchDeleteAppRes
 	*pbcs.BatchDeleteResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -345,10 +334,8 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -398,10 +385,8 @@ func (s *Service) BatchUpsertKvs(ctx context.Context, req *pbcs.BatchUpsertKvsRe
 func (s *Service) UnDeleteKv(ctx context.Context, req *pbcs.UnDeleteKvReq) (*pbcs.UnDeleteKvResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -423,10 +408,8 @@ func (s *Service) UnDeleteKv(ctx context.Context, req *pbcs.UnDeleteKvReq) (*pbc
 func (s *Service) UndoKv(ctx context.Context, req *pbcs.UndoKvReq) (*pbcs.UndoKvResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -449,10 +432,8 @@ func (s *Service) CompareKvConflicts(ctx context.Context, req *pbcs.CompareKvCon
 	*pbcs.CompareKvConflictsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -543,10 +524,8 @@ func (s *Service) CompareKvConflicts(ctx context.Context, req *pbcs.CompareKvCon
 func (s *Service) ImportKvs(ctx context.Context, req *pbcs.ImportKvsReq) (*pbcs.ImportKvsResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -892,10 +871,8 @@ func (s *Service) BatchUnDeleteKv(ctx context.Context, req *pbcs.BatchUnDeleteKv
 	*pbcs.BatchUnDeleteKvResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, kit.ResolvedProjectID(req.ProjectId),
+		kit.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kit, res...)
 	if err != nil {
 		return nil, err
@@ -973,10 +950,8 @@ func (s *Service) FindNearExpiryCertKvs(ctx context.Context, req *pbcs.FindNearE
 	*pbcs.FindNearExpiryCertKvsResp, error) {
 	kit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kit.ResolvedProjectID(req.ProjectId),
+		kit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(kit, res...); err != nil {
 		return nil, err
 	}

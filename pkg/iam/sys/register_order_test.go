@@ -31,6 +31,7 @@ const (
 	resourceTypesPath  = "/api/v1/model/systems/" + SystemIDBSCP + "/resource-types"
 	actionsPath        = "/api/v1/model/systems/" + SystemIDBSCP + "/actions"
 	selectionsPath     = "/api/v1/model/systems/" + SystemIDBSCP + "/instance-selections"
+	creatorActionsPath = "/api/v1/model/systems/" + SystemIDBSCP + "/configs/resource_creator_actions"
 	querySystemPathTpl = "/api/v1/model/systems/" + SystemIDBSCP + "/query"
 )
 
@@ -41,6 +42,7 @@ type fakeIAM struct {
 	createdTypes   []string
 	createdActions []string
 	createdSelec   []string
+	creatorActions []string
 	existing       client.SystemResp
 }
 
@@ -57,6 +59,8 @@ func (f *fakeIAM) record(r *http.Request, body []byte) {
 		f.createdActions = append(f.createdActions, string(body))
 	case r.Method == http.MethodPost && r.URL.Path == selectionsPath:
 		f.createdSelec = append(f.createdSelec, string(body))
+	case r.URL.Path == creatorActionsPath:
+		f.creatorActions = append(f.creatorActions, string(body))
 	}
 }
 
@@ -208,4 +212,67 @@ func TestRegisterCreatesEnvironmentModel(t *testing.T) {
 	// 环境操作声明在环境/项目维度，不能再落回 biz。
 	require.Contains(t, createdActions, `"environment"`)
 	require.Contains(t, createdActions, `"project"`)
+}
+
+// registeredWithoutProjectCreator 返回一个「线上模型完整、但创建者授权只配了服务和环境」的系统信息，
+// 对应升级前已经在权限中心注册过模型的存量环境。
+func registeredWithoutProjectCreator() client.RegisteredSystemInfo {
+	return client.RegisteredSystemInfo{
+		BaseInfo:           client.System{ID: SystemIDBSCP, Name: SystemNameBSCP},
+		ResourceTypes:      GenerateStaticResourceTypes(),
+		Actions:            GenerateStaticActions(),
+		InstanceSelections: GenerateStaticInstanceSelections(),
+		ResourceCreatorActions: client.ResourceCreatorActions{
+			Config: []client.ResourceCreatorAction{
+				{
+					ResourceID: Application,
+					Actions:    []client.CreatorRelatedAction{{ID: AppView}},
+				},
+				{
+					ResourceID: Environment,
+					Actions:    []client.CreatorRelatedAction{{ID: EnvironmentView}},
+				},
+			},
+		},
+	}
+}
+
+// 权限中心的 creator_authorization_instance 只对已注册 resource_creator_actions 的资源类型放行，
+// 未注册时授权会被直接拒绝（1902403 creator_authorization_instance ... don't support the [project]）。
+// 因此存量环境执行 migrate init-iam 时，必须用 PUT 把项目补进创建者授权配置，否则项目创建者永远拿不到权限。
+func TestRegisterUpdatesCreatorActionsWithProject(t *testing.T) {
+	s, fake := newFakeSysWith(t, registeredWithoutProjectCreator())
+
+	require.NoError(t, s.Register(context.Background(), "http://bscp.example.com"))
+
+	require.NotEqual(t, -1, fake.indexOf(http.MethodPut, creatorActionsPath),
+		"线上已有创建者授权配置时必须走更新，而不是再次创建")
+
+	body := fake.joined(fake.creatorActions)
+	for _, want := range []string{
+		`"id":"project"`,
+		`"id":"project_view"`,
+		`"id":"project_edit"`,
+		`"id":"project_delete"`,
+		`"id":"environment_create"`,
+	} {
+		require.Contains(t, body, want, "创建者授权配置缺少 %s", want)
+	}
+
+	// 存量配置里的服务与环境不能被丢掉，否则升级会让已有的创建者授权失效。
+	require.Contains(t, body, `"id":"app"`)
+	require.Contains(t, body, `"id":"environment"`)
+}
+
+// 首次注册（线上没有创建者授权配置）时用 POST 创建，同样要带上项目。
+func TestRegisterCreatesCreatorActionsWithProject(t *testing.T) {
+	registered := registeredWithoutProjectCreator()
+	registered.ResourceCreatorActions = client.ResourceCreatorActions{}
+
+	s, fake := newFakeSysWith(t, registered)
+
+	require.NoError(t, s.Register(context.Background(), "http://bscp.example.com"))
+
+	require.NotEqual(t, -1, fake.indexOf(http.MethodPost, creatorActionsPath))
+	require.Contains(t, fake.joined(fake.creatorActions), `"id":"project"`)
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/internal/leaforder"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/model"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
@@ -191,13 +192,29 @@ func (s *Syncer) PlanDeleteAll(kt *kit.Kit) (*Plan, error) {
 	}
 	plan.DeleteActions = uniqueIDs(actionIDs)
 
+	// 资源类型按祖先链从深到浅删除：权限中心不允许删除仍被其他资源类型当作祖先引用的类型，
+	// 按 ID 字母序删除会先删根类型并失败，叶子随后也删不掉。
+	// 这里必须保序去重，不能再用 uniqueIDs——它内部会重排成字母序，把叶子优先的顺序打乱。
 	typeIDs := make([]string, 0, len(types))
-	for _, t := range types {
+	seenTypeIDs := make(map[string]struct{}, len(types))
+	for _, t := range sortResourceTypesForDeletion(types) {
+		if _, ok := seenTypeIDs[t.ID]; ok {
+			continue
+		}
+		seenTypeIDs[t.ID] = struct{}{}
 		typeIDs = append(typeIDs, t.ID)
 	}
-	plan.DeleteResourceTypes = uniqueIDs(typeIDs)
+	plan.DeleteResourceTypes = typeIDs
 
 	return plan, nil
+}
+
+// sortResourceTypesForDeletion 按祖先链深度从深到浅排序，同深度按 ID 排序。
+// 跨系统祖先不在本系统列表内，按深度 0 处理；存在循环引用时同样按 0 处理，避免死循环。
+func sortResourceTypesForDeletion(types []client.ResourceType) []client.ResourceType {
+	return leaforder.Sort(types,
+		func(resourceType client.ResourceType) string { return resourceType.ID },
+		func(resourceType client.ResourceType) []string { return resourceType.Ancestors })
 }
 
 // uniqueIDs 去重并排序。权限中心可能对同一 ID 返回多条记录（重复注册残留），
@@ -696,25 +713,38 @@ func (s *Syncer) applyDeletions(kt *kit.Kit, plan *Plan, opt *ApplyOption) error
 		return nil
 	}
 
+	// 单个元素删除失败不再中断：权限中心对元素的校验是逐条的（例如资源类型仍被子类型
+	// 引用、操作仍被角色引用），遇到第一个失败就返回会让其余元素全部残留，
+	// 表现为「清空命令报错，线上还剩一批按钮和资源」。失败记录下来继续删其余元素，
+	// 最后汇总返回，调用方再回读校验残留。
+	failures := make([]string, 0)
+
 	for _, id := range plan.DeleteRoles {
 		if err := s.gw.DeleteRole(kt, id); err != nil {
-			return errors.Wrapf(err, "delete role %s", id)
+			failures = append(failures, fmt.Sprintf("删除角色 %s 失败: %v", id, err))
+			continue
 		}
 		opt.logf("已删除角色 %s", id)
 	}
 
 	for _, id := range plan.DeleteActions {
 		if err := s.gw.DeleteAction(kt, id); err != nil {
-			return errors.Wrapf(err, "delete action %s", id)
+			failures = append(failures, fmt.Sprintf("删除操作 %s 失败: %v", id, err))
+			continue
 		}
 		opt.logf("已删除操作 %s", id)
 	}
 
 	for _, id := range plan.DeleteResourceTypes {
 		if err := s.gw.DeleteResourceType(kt, id); err != nil {
-			return errors.Wrapf(err, "delete resource type %s", id)
+			failures = append(failures, fmt.Sprintf("删除资源类型 %s 失败: %v", id, err))
+			continue
 		}
 		opt.logf("已删除资源类型 %s", id)
+	}
+
+	if len(failures) > 0 {
+		return errors.Errorf("%d 个元素删除失败：\n  %s", len(failures), strings.Join(failures, "\n  "))
 	}
 
 	return nil

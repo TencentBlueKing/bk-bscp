@@ -78,6 +78,13 @@ iam:
 未通过再按目标环境的真实所属业务校验 `app_create`，任一通过即放行；无权限申请链接给出 `environment_app_create`。
 目标环境回查不到归属时不做回退。旧拓扑下只按业务校验 `app_create`。
 | 服务查看 / 编辑 / 删除 / 生成版本 / 上线版本 | `app_view` / `app_edit` / `app_delete` / `release_generate` / `release_publish` | 服务 |
+| 服务密钥查看 / 管理 | `app_credential_view` / `app_credential_manage` + `project_view` | 业务 + 项目 |
+| 操作记录查看 | `audit_view` + `project_view` | 业务 + 项目 |
+
+密钥与操作记录的动作本身仍按业务授权（保持存量策略可用），项目维度以并列的 `project_view`
+校验补齐：两者都依赖具体项目才能访问，因此服务密钥与操作记录的每个入口都同时要求
+「业务访问 + 项目查看 + 模块动作」，只具备业务权限或模块动作权限不能读取无权查看项目下的数据。
+项目查看权限经拓扑路径继承，授予业务的 `project_view` 覆盖该业务下全部项目。
 
 鉴权路径（`_bk_iam_path_`）表示资源的祖先链，IAM 不反查拓扑，路径写到哪一级就只认哪一级的授权。
 路径层级由 `topology` 决定，与 `enabled` 无关：
@@ -92,8 +99,12 @@ iam:
 `enabled: false` 只影响项目/环境这两类资源本身：它们不进入权限中心，不做实例校验。
 
 路径里的祖先一律以回查到的真实归属为准，与 `enabled` 无关：服务按服务实例回查业务/项目/环境，
-服务创建按目标环境回查业务/项目。只跳过校验、不回查会让 `project_id` 直接采信请求值，
+服务创建按目标环境回查业务/项目，项目按项目实例回查业务。只跳过校验、不回查会让 `project_id` 直接采信请求值，
 拥有项目 P1 权限的调用方配上 P2 下的环境就能拼出 P1 的路径。
+
+服务内资源的「项目查看 / 环境查看」还要对齐服务自身的归属：调用方传入的 `project_id` / `environment_id`
+只当作线索，同批次存在服务资源时由 auth-server 改写成该服务的真实项目与环境。
+否则拥有项目 P1 查看权限的调用方配上项目 P2 的服务 ID，就能用 P1 的 `project_view` 放行对 P2 服务的配置操作。
 
 服务的路径不能裁剪。资源类型的父链是注册在权限中心里的（服务挂环境、环境挂项目、项目挂业务），
 权限中心不接受比父链更短的路径；把服务路径缩成 `/biz,{bizID}/` 会让所有服务级授权都匹配不到，
@@ -108,7 +119,12 @@ iam:
 | 服务查看/编辑/删除/发布 | 按服务实例校验，路径由拓扑决定 | 同左 |
 | 服务列表 / 业务访问 | 业务维度校验，不变 | 业务维度校验，不变 |
 | 项目/环境列表权限注解 | 全部返回有权限 | 按实例返回 |
+| 服务密钥、操作记录 | 业务访问 + 模块动作，与项目/环境维度引入前一致 | 追加项目查看校验，缺项目查看权限即拒绝 |
 | 无权限申请链接 | 与拓扑一致的祖先链 | 与拓扑一致的祖先链 |
+
+服务内资源的四项校验要求角色自带对应维度：`app_viewer`、`app_publisher`、`environment_viewer`、
+`environment_creator` 含 `project_view` 与 `environment_view`，`credential_manager`、`audit_viewer` 含
+`project_view`。新增角色若需触达这些接口必须同步补齐，`pkg/iam/v4/model` 的用例会校验这条约束。
 
 `enabled: true` 且探测/配置为 `legacy` 时 auth-server 启动失败，提示先执行 `migrate init-iam` / `init-iam-v4`：
 此时项目、环境资源类型并不存在，继续启动只会让相关操作全部被拒绝。
@@ -184,6 +200,7 @@ V4 的 `update_action` 不支持修改 `resource_type_id`，`app_create` 改为�
 | `cmd/auth-server/service/auth/adaptor.go`、`gen_id.go` | V3 资源映射：关闭态只跳过项目/环境资源，路径层级由拓扑决定 |
 | `cmd/auth-server/service/auth/app_scope.go` | 归属回查：服务按实例回查，服务创建按目标环境回查（新拓扑下与开关无关），关闭态跳过项目/环境资源本身 |
 | `pkg/iam/v4/adaptor/adaptor.go`、`pkg/iam/v4/auth/auth.go` | V4 映射与鉴权器的开关、拓扑 |
+| `cmd/config-server/service/credential.go`、`credential_scope.go`、`audit.go` | 密钥与操作记录入口统一叠加 `projectViewResource` 校验 |
 
 ## 七、验证
 

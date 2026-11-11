@@ -15,7 +15,6 @@ package service
 import (
 	"context"
 
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbcs "github.com/TencentBlueKing/bk-bscp/pkg/protocol/config-server"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
@@ -26,10 +25,8 @@ func (s *Service) CreateClientQuery(ctx context.Context, req *pbcs.CreateClientQ
 	*pbcs.CreateClientQueryResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
@@ -60,10 +57,8 @@ func (s *Service) ListClientQuerys(ctx context.Context, req *pbcs.ListClientQuer
 	*pbcs.ListClientQuerysResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -96,10 +91,8 @@ func (s *Service) UpdateClientQuery(ctx context.Context, req *pbcs.UpdateClientQ
 	*pbcs.UpdateClientQueryResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -127,10 +120,8 @@ func (s *Service) DeleteClientQuery(ctx context.Context, req *pbcs.DeleteClientQ
 	*pbcs.DeleteClientQueryResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -155,10 +146,8 @@ func (s *Service) CheckClientQueryName(ctx context.Context, req *pbcs.CheckClien
 	*pbcs.CheckClientQueryNameResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err

@@ -45,6 +45,9 @@ type fakeGateway struct {
 
 	// ignoreUpdates 模拟权限中心忽略祖先链的更新（只接受改名）
 	ignoreUpdates bool
+
+	// failDeleteRole 让指定角色的删除请求失败，用于验证删除失败不中断其余元素
+	failDeleteRole string
 }
 
 func newFakeGateway() *fakeGateway {
@@ -271,6 +274,11 @@ func (f *fakeGateway) UpdateRole(_ *kit.Kit, id string, req *client.UpdateRoleRe
 
 func (f *fakeGateway) DeleteRole(_ *kit.Kit, id string) error {
 	f.calls = append(f.calls, "delete_role:"+id)
+	if id == f.failDeleteRole {
+		return &client.Error{Layer: client.ErrorLayerApp, HTTPStatus: http.StatusBadRequest,
+			Code: "INVALID_ARGUMENT", Message: "role `" + id + "` has authorizations"}
+	}
+
 	kept := f.roles[:0]
 	for _, r := range f.roles {
 		if r.ID != id {
@@ -864,6 +872,57 @@ func TestPlanDeleteAllRejectsUnregisteredSystem(t *testing.T) {
 
 	_, err := s.PlanDeleteAll(testKit())
 	require.ErrorContains(t, err, "无需清理")
+}
+
+// 资源类型必须从叶子删到根：权限中心不允许删除仍被其他类型当作祖先引用的类型，
+// 按 ID 字母序先删根类型会失败，导致祖先类型残留。
+func TestPlanDeleteAllOrdersResourceTypesLeafFirst(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	s := mustSyncer(t, gw)
+
+	plan, err := s.PlanDeleteAll(testKit())
+	require.NoError(t, err)
+
+	index := make(map[string]int, len(plan.DeleteResourceTypes))
+	for i, id := range plan.DeleteResourceTypes {
+		index[id] = i
+	}
+
+	checked := 0
+	for _, rt := range gw.types {
+		child, ok := index[rt.ID]
+		if !ok {
+			continue
+		}
+		for _, ancestor := range rt.Ancestors {
+			parent, ok := index[ancestor]
+			if !ok {
+				continue
+			}
+			require.Less(t, child, parent, "资源类型 %s 必须先于祖先 %s 删除", rt.ID, ancestor)
+			checked++
+		}
+	}
+	require.NotZero(t, checked, "模型里应有带祖先链的资源类型")
+}
+
+// 单个元素删除失败不能中断整体清理，否则线上会残留一批删不掉的按钮与资源。
+func TestApplyDeleteAllContinuesAfterFailedElement(t *testing.T) {
+	gw := newFakeGateway().withFullModel()
+	roles := model.Roles()
+	gw.failDeleteRole = roles[0].ID
+	s := mustSyncer(t, gw)
+	kt := testKit()
+
+	plan, err := s.PlanDeleteAll(kt)
+	require.NoError(t, err)
+
+	err = s.Apply(kt, plan, ApplyOption{AllowDelete: true})
+	require.ErrorContains(t, err, "删除失败")
+	require.ErrorContains(t, err, roles[0].ID, "错误里要指出失败的元素")
+
+	require.Len(t, gw.roles, 1, "失败之外的角色仍应删除")
+	require.Empty(t, gw.types, "资源类型不应因角色删除失败而全部残留")
 }
 
 // 同一 ID 在线上可能重复出现，删除前要去重，否则删除请求会因重复项失败。

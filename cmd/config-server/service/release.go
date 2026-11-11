@@ -29,10 +29,8 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbcs.CreateReleaseReq)
 	// the url path doesn't include appID, set the appID to use later
 	grpcKit.AppID = req.AppId
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.GenerateRelease, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.GenerateRelease)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -67,10 +65,8 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbcs.CreateReleaseReq)
 func (s *Service) ListReleases(ctx context.Context, req *pbcs.ListReleasesReq) (*pbcs.ListReleasesResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		grpcKit.ResolvedEnvID(req.EnvId), req.AppId)
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
 	}
@@ -103,10 +99,8 @@ func (s *Service) ListReleases(ctx context.Context, req *pbcs.ListReleasesReq) (
 func (s *Service) GetReleaseByName(ctx context.Context, req *pbcs.GetReleaseByNameReq) (*pbrelease.Release, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -130,10 +124,8 @@ func (s *Service) GetReleaseByName(ctx context.Context, req *pbcs.GetReleaseByNa
 func (s *Service) GetRelease(ctx context.Context, req *pbcs.GetReleaseReq) (*pbrelease.Release, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -158,10 +150,8 @@ func (s *Service) DeprecateRelease(ctx context.Context, req *pbcs.DeprecateRelea
 	*pbcs.DeprecateReleaseResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -187,10 +177,8 @@ func (s *Service) UnDeprecateRelease(ctx context.Context, req *pbcs.UnDeprecateR
 	*pbcs.UnDeprecateReleaseResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -215,10 +203,8 @@ func (s *Service) UnDeprecateRelease(ctx context.Context, req *pbcs.UnDeprecateR
 func (s *Service) DeleteRelease(ctx context.Context, req *pbcs.DeleteReleaseReq) (*pbcs.DeleteReleaseResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -247,10 +233,8 @@ func (s *Service) CheckReleaseName(ctx context.Context, req *pbcs.CheckReleaseNa
 
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Find, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -273,10 +257,8 @@ func (s *Service) ListAllReleasedConfigItems(ctx context.Context, req *pbcs.List
 	*pbcs.ListAllReleasedConfigItemsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Find, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.ProjectId),
+		kt.ResolvedEnvID(req.EnvId), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
