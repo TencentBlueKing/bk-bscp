@@ -18,8 +18,15 @@ GENERATED_SUFFIX_PATTERN = re.compile(r"^(.+?)(\d+)$")
 ENV_SCOPE_PATTERN = re.compile(r"/projects/\{\w+\}/envs/\{\w+\}")
 PROJECT_SCOPE_PATTERN = re.compile(r"/projects/\{\w+\}")
 INNER_TOKEN = "Inner"
-PROJECT_ENV_TOKEN = "ProjectEnv"
+ENV_TOKEN = "Env"
 PROJECT_TOKEN = "Project"
+
+# 蓝鲸网关要求 “MCP Server 名称 + 工具名称” 不超过 64 字符。MCP Server 名称形如
+# bk-bscp-prod-file-manage（24 字符），工具名取自 operationId，因此 operationId 不能超过 40 字符。
+# /inner/ 接口仅供内部系统以应用身份调用，不注册为 MCP 工具，不受此限制。
+MAX_OPERATION_ID_LENGTH = 40
+# 改名后仍超长时，按顺序缩写 rpc 部分，直到满足长度要求。
+RPC_ABBREVIATIONS = (("Revisions", "Revs"),)
 
 DEFAULT_EXTENSIONS = {
     "isPublic": True,
@@ -63,21 +70,28 @@ def iter_operations(paths):
 
 
 def build_binding_operation_id(base_id, path):
-    """按路径特征生成 additional_bindings 的 operationId，如 Config_Inner_ProjectEnv_Publish。"""
+    """按路径特征生成 additional_bindings 的 operationId，如 Config_Inner_Env_Publish。"""
     service, _, rpc = base_id.partition("_")
-    tokens = [service]
-    if "/inner/" in path:
-        tokens.append(INNER_TOKEN)
+    is_inner = "/inner/" in path
+    scopes = [INNER_TOKEN] if is_inner else []
     if ENV_SCOPE_PATTERN.search(path):
-        tokens.append(PROJECT_ENV_TOKEN)
+        scopes.append(ENV_TOKEN)
     elif PROJECT_SCOPE_PATTERN.search(path):
-        tokens.append(PROJECT_TOKEN)
-    tokens.append(rpc)
-    return "_".join(tokens)
+        scopes.append(PROJECT_TOKEN)
+
+    operation_id = "_".join([service, *scopes, rpc])
+    if is_inner:
+        return operation_id
+    for word, abbreviation in RPC_ABBREVIATIONS:
+        if len(operation_id) <= MAX_OPERATION_ID_LENGTH:
+            break
+        rpc = rpc.replace(word, abbreviation)
+        operation_id = "_".join([service, *scopes, rpc])
+    return operation_id
 
 
 def normalize_operation_ids(paths):
-    """把带序号的 operationId 改为稳定名字，返回改名数量与冲突列表。"""
+    """把带序号的 operationId 改为稳定名字，返回改名数量与校验错误（重复、超长）。"""
     operation_ids = {config.get("operationId") for _, _, config in iter_operations(paths)}
     renamed = 0
     for path, _, config in iter_operations(paths):
@@ -92,6 +106,9 @@ def normalize_operation_ids(paths):
         owners.setdefault(config.get("operationId"), []).append(f"{method.upper()} {path}")
     errors = [f"operationId 重复: {op_id} <- {', '.join(routes)}"
               for op_id, routes in owners.items() if len(routes) > 1]
+    errors += [f"operationId 超过 {MAX_OPERATION_ID_LENGTH} 字符: {op_id}（{len(op_id)}）<- {', '.join(routes)}"
+               for op_id, routes in owners.items()
+               if op_id and len(op_id) > MAX_OPERATION_ID_LENGTH and any("/inner/" not in r for r in routes)]
     return renamed, errors
 
 
@@ -150,10 +167,11 @@ def inject_bk_gateway_config(file_path):
 
     renamed_count, errors = normalize_operation_ids(paths)
     if errors:
-        print(f"校验失败, {file_path} 中存在 {len(errors)} 个重复的 operationId, 已跳过写入:")
+        print(f"校验失败, {file_path} 中存在 {len(errors)} 个不合规的 operationId, 已跳过写入:")
         for error in errors:
             print(f"  - {error}")
-        print("同一 rpc 的多个绑定需在 inner、项目、项目+环境维度上可区分，请调整 proto 中的绑定路径。")
+        print("同一 rpc 的多个绑定需在 inner、项目、环境维度上可区分，请调整 proto 中的绑定路径；"
+              "超长时请缩短 rpc 名或在 RPC_ABBREVIATIONS 中补充缩写。")
         return False
 
     try:
