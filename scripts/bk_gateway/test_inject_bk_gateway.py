@@ -39,11 +39,45 @@ class NormalizeOperationIdsTest(unittest.TestCase):
         self.assertEqual(sorted(operation_ids(paths).values()), sorted([
             "Config_ListKvs",
             "Config_Inner_ListKvs",
-            "Config_ProjectEnv_ListKvs",
-            "Config_Inner_ProjectEnv_ListKvs",
+            "Config_Env_ListKvs",
+            "Config_Inner_Env_ListKvs",
             "Config_Project_ListKvs",
             "Config_Inner_Project_ListKvs",
         ]))
+
+    def test_abbreviate_rpc_when_too_long(self):
+        env_prefix = "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}"
+        paths = build_paths([
+            ("post", "/api/v1/config/biz/{bizId}/apps/{appId}/template_revisions",
+             "Config_ListAppBoundTmplRevisions"),
+            ("post", env_prefix + "/apps/{appId}/template_revisions", "Config_ListAppBoundTmplRevisions2"),
+            ("post", "/api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/template_revisions",
+             "Config_ListReleasedAppBoundTmplRevisions"),
+            ("post", env_prefix + "/apps/{appId}/releases/{releaseId}/template_revisions",
+             "Config_ListReleasedAppBoundTmplRevisions2"),
+        ])
+
+        _, errors = normalize_operation_ids(paths)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(sorted(operation_ids(paths).values()), sorted([
+            "Config_ListAppBoundTmplRevisions",
+            "Config_Env_ListAppBoundTmplRevisions",
+            "Config_ListReleasedAppBoundTmplRevisions",
+            "Config_Env_ListReleasedAppBoundTmplRevs",
+        ]))
+
+    def test_report_too_long_operation_id_except_inner(self):
+        paths = build_paths([
+            ("get", "/api/v1/config/biz/{bizId}/apps/{appId}/very_long", "Config_GetSomethingExtremelyLongForGateway"),
+            ("get", "/api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/"
+                    "{releaseId}/template_revisions", "Config_Inner_Env_ListReleasedAppBoundTmplRevisions"),
+        ])
+
+        _, errors = normalize_operation_ids(paths)
+
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Config_GetSomethingExtremelyLongForGateway", errors[0])
 
     def test_keep_primary_and_unrelated_names(self):
         paths = build_paths([

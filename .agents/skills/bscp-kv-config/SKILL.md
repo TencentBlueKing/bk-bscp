@@ -1,15 +1,18 @@
 ---
 name: bscp-kv-config
 slug: bscp-kv-config
-version: 1.0.0
+version: 1.1.0
 description: |
   bscp（蓝鲸基础配置平台）KV 配置操作指引。为挂载了 bk-bscp-prod-server-mcp 的模型补充
-  MCP 工具 schema 表达不了的领域知识：领域模型、端到端调用编排、参数获取、字段级业务
-  约束、报错处置与场景化示例，帮助模型正确完成"改 KV → 生成版本 → 发布 → 验证"闭环。
+  MCP 工具 schema 表达不了的领域知识：领域模型、项目/环境与两套工具的选择、端到端调用编排、
+  参数获取、字段级业务约束、报错处置与场景化示例，帮助模型正确完成
+  "定位项目环境 → 改 KV → 生成版本 → 发布 → 验证"闭环。
   Use this skill whenever the user asks to 操作 bscp 配置, 改 bscp KV, 新增/更新/删除 KV,
   发布 bscp 版本, 灰度发布, kv 配置查询/更新/发布, 看看某个服务的配置, 帮我发版,
+  改某个项目/环境下的 KV,
   or invokes any bk-bscp-prod-server-mcp Config_* tool
-  (CreateKv/UpdateKv/DeleteKv/BatchUpsertKvs/CreateRelease/Publish 等).
+  (CreateKv/UpdateKv/DeleteKv/BatchUpsertKvs/CreateRelease/Publish 及对应的 Config_Env_* 工具,
+  ListProjects/ListEnvironments 等).
 metadata:
   requires:
     mcps: ["bk-bscp-prod-server-mcp"]
@@ -23,7 +26,8 @@ metadata:
 **不重复** MCP 工具已有的单字段描述——填参时字段含义以 MCP 工具 schema 为准。文中的业务
 约束来自 bscp 服务端的实际校验规则，会随 bscp 版本演进；若与调用返回的报错不一致，以服务端返回为准。
 
-适用范围：`bk-bscp-prod-server-mcp` 当前的 13 个工具，聚焦 `config_type=kv` 服务的 KV 配置闭环。
+适用范围：`bk-bscp-prod-server-mcp` 的两套 KV 工具（不带项目环境的原有工具、带项目环境的
+`Config_Env_*` 工具）及项目 / 环境查询工具，聚焦 `config_type=kv` 服务的 KV 配置闭环。
 不覆盖模板、分组管理、客户端等 KV 闭环以外的接口。
 
 ## 前置条件
@@ -33,7 +37,9 @@ metadata:
 
 1. 检查当前会话是否已挂载 `bk-bscp-prod-server-mcp`，能看到 `Config_ListAppsBySpaceRest`/`Config_CreateKv` 等工具。
 2. **若工具不存在**：不要臆造工具名或伪造调用结果，直接告知用户"未检测到 bscp MCP，需要先接入"，并给出下述接入指引，然后停下等待用户完成配置。
-3. 工具可用后再按后续章节执行。
+3. **若只有原有工具、没有 `Config_Env_*` 与项目 / 环境查询工具**：说明 MCP 尚未追加带项目环境的工具，
+   只能操作默认项目的默认环境。用户要操作其他项目或环境时如实告知，不要拿原有工具硬调。
+4. 工具可用后再按后续章节执行。
 
 ### 接入指引（当工具缺失时告知用户）
 
@@ -45,6 +51,41 @@ metadata:
 
 具体的接入地址与凭证请向 bscp 平台或蓝鲸 API 网关管理员获取；配置完成后重新加载 MCP，确认 `Config_*` 工具出现即可。
 
+## 项目与环境：两套工具怎么选
+
+bscp 在业务（biz）和服务（app）之间新增了项目（project）和环境（env）两级，每个服务归属于某个项目下的某个环境。
+每个业务都有一个默认项目（`spec.is_default=true`，名称通常为"默认项目"），默认项目下有默认环境（名称 `Default`）。
+MCP 因此同时提供两套功能相同的 KV 工具：
+
+| 工具集 | 示例 | 作用范围 |
+|--------|------|---------|
+| 原有工具（不带项目环境） | `Config_ListKvs`、`Config_Publish` | 只作用于默认项目的默认环境 |
+| 带项目环境的工具 | `Config_Env_ListKvs`、`Config_Env_Publish` | 路径中必填 `projectId`、`envId`，可操作任意项目环境下的服务 |
+
+两套工具一一对应：`Config_Xxx` 对应 `Config_Env_Xxx`，除 `projectId`/`envId` 外参数与业务约束完全相同。
+共 13 对：ListAppsBySpaceRest、GetAppByName、ListKvs、CreateKv、UpdateKv、DeleteKv、BatchUpsertKvs、
+BatchDeleteKv、ListReleases、CreateRelease、Publish、ListReleasedKvs、GetReleasedKv。
+本文后续章节和示例以原有工具名书写，操作非默认环境时换成对应的 `Config_Env_*` 并补上 `projectId`/`envId`。
+
+选择规则：
+
+1. **用户指定了项目或环境**（名称、标识或 ID 均可）：先解析出 `projectId`、`envId`（见下），后续全程使用 `Config_Env_*`。
+2. **用户没提项目环境**：先用原有工具在默认环境里定位服务；按服务名找不到时，**不要直接判定"服务不存在"**，
+   而是问用户该服务在哪个项目、哪个环境（可用 `Config_ListProjects` 列出项目供选择），再改用 `Config_Env_*`。
+3. **同一条闭环内不混用两套工具**：定位服务用了哪套，后续改 KV、生成版本、发布、验证都用同一套，并沿用同一组 `projectId`/`envId`。
+4. **不要依赖原有工具上的 `projectId`/`envId` 参数**：服务内的接口按默认环境校验服务归属，
+   非默认环境的服务会被拒绝（报 `app does not belong to the specified project or environment`）。
+
+### 解析 projectId / envId
+
+- **项目**：已知项目标识（key）用 `Config_GetProjectByKey {bizId, projectKey}`；只知道名称或需要用户挑选时，
+  用 `Config_ListProjects {bizId, all:true}`，按 `spec.name` 匹配。取返回的 `id` 作为 `projectId`。
+- **环境**：已知环境名用 `Config_GetEnvironmentByName {bizId, projectId, envName}`；需要用户挑选时，
+  用 `Config_ListEnvironments {bizId, projectId, all:true}`，返回按环境类型分组为
+  `prod_environments`/`staging_environments`/`test_environments`/`dev_environments`。取 `id` 作为 `envId`。
+- 匹配到多个或一个都没有时，把候选列给用户确认，不要自行猜测。
+- 部分 `Config_Env_*` 工具的 body 里也有 `projectId`/`envId` 字段：不填，或填与路径相同的值，不要填不一致的值。
+
 ## 交互引导（面向不熟悉闭环的用户）
 
 用户往往只会抛一个模糊意图（如"kv 配置查询 / 更新 / 发布"）而不知道要给哪些参数、要走什么闭环。
@@ -54,9 +95,12 @@ metadata:
 ### 通用引导步骤（任何意图先做）
 
 1. **确认业务 ID（bizId）**：用户没给就先问"请提供业务 ID（bizId）"。
-2. **确认服务名 → 解析 appId**：拿到服务名后调 `Config_GetAppByName`（或先 `Config_ListAppsBySpaceRest` 让用户从列表里挑）
+2. **确认项目环境**：用户提到了项目或环境，就解析出 `projectId`/`envId` 并改用 `Config_Env_*`；
+   没提就按默认环境走原有工具，不必主动追问（见「项目与环境」）。
+3. **确认服务名 → 解析 appId**：拿到服务名后调 `Config_GetAppByName`（或先 `Config_ListAppsBySpaceRest` 让用户从列表里挑）
    得到 `appId`，并**校验 `config_type=kv`**；若不是 kv 型，直接告知"该服务不是 KV 型服务"并停止。
-3. 参数齐了再进入对应意图的动作；能从上下文推断的（如上一步已拿到的 appId）不要重复问。
+   默认环境里找不到该服务时，按「项目与环境」的规则 2 询问项目环境。
+4. 参数齐了再进入对应意图的动作；能从上下文推断的（如上一步已拿到的 appId、projectId、envId）不要重复问。
 
 ### 三类意图的最小引导
 
@@ -71,6 +115,7 @@ metadata:
 对 **发布（`Config_Publish`）**、**覆盖式批量导入（`Config_BatchUpsertKvs` 且 `replaceAll=true`）**、
 **删除（`Config_DeleteKv`/`Config_BatchDeleteKv`）** 这类会影响客户端生效内容或清空数据的操作，
 执行前先**展示将影响的内容**（如将发布的版本、将被覆盖/删除的 key 列表）并等用户确认后再调用；用户未确认不执行。
+确认信息里要写明**项目和环境名称**（默认环境也要写明），目标是生产类环境时特别提示，避免改到错误的环境。
 
 ## ⚠️ 核心规则
 
@@ -79,25 +124,30 @@ metadata:
 3. **删除按 id/ids，不是按 key**：`DeleteKv`/`BatchDeleteKv` 需先 `ListKvs` 拿到 id。
 4. **`Config_Publish` 只发布已存在的 releaseId**，不会从草稿自动生成版本。
 5. **灰度字段在 `Config_Publish` 上**（`grayPublishMode`/`groups`/`labels`），需要先有 releaseId。
-6. **列表接口必须显式给分页**：`Config_ListKvs`/`ListReleasedKvs`/`ListReleases`/`ListAppsBySpaceRest` 要么传 `all:true` 全量取，要么显式传 `limit`（1–1000，配合 `start` 翻页）。**不传 `limit` 会被服务端当成 0**，报 `page.limit value should >= 1` 而查询失败——这是这些接口"要重试才成功"的常见原因。查询本意是"拿全部"时优先直接 `all:true`。
+6. **列表接口必须显式给分页**：`Config_ListKvs`/`ListReleasedKvs`/`ListReleases`/`ListAppsBySpaceRest`（及对应 `Config_Env_*`）、`ListProjects`/`ListEnvironments` 要么传 `all:true` 全量取，要么显式传 `limit`（1–1000，配合 `start` 翻页）。**不传 `limit` 会被服务端当成 0**，报 `page.limit value should >= 1` 而查询失败——这是这些接口"要重试才成功"的常见原因。查询本意是"拿全部"时优先直接 `all:true`。
+7. **原有工具只作用于默认项目的默认环境**；操作其他项目环境下的服务必须用 `Config_Env_*`，且同一闭环不混用两套工具。
 
 ## 领域模型速览（F-001）
 
 ```
-biz（业务） → app（服务，带 config_type / data_type） → kv（草稿态配置项） → release（不可变版本快照）
+biz（业务） → project（项目） → env（环境） → app（服务，带 config_type / data_type） → kv（草稿态配置项） → release（不可变版本快照）
 ```
 
+- 每个业务有一个默认项目，默认项目下有默认环境 `Default`；原有工具只作用于这个环境。
 - app 有 `config_type`（kv / file）和 `data_type`（app 级 KV 类型，可为 `any`）。
 - KV 的每次增删改只改草稿区，不影响已发布内容；release 是一次生成后不可变的快照。
 
 ## 端到端调用编排（F-002）
 
-标准闭环链路：
+标准闭环链路（工具名以原有工具书写，非默认环境换成对应的 `Config_Env_*`）：
 
+0. **确定项目环境**（用户指定了项目或环境时）→ 拿 `projectId`/`envId`
+   - `Config_GetProjectByKey` / `Config_ListProjects` → `projectId`
+   - `Config_GetEnvironmentByName` / `Config_ListEnvironments` → `envId`
 1. **定位服务** → 拿 `appId`
    - 已知业务：`Config_ListAppsBySpaceRest`（按 bizId 列 app）
    - 已知服务名：`Config_GetAppByName`
-   - 从返回结果的 `config_type` 字段辨别 kv 型 app（该工具当前不支持 config_type 过滤）
+   - 从返回结果的 `config_type` 字段辨别 kv 型 app（MCP schema 里有 `configType` 字段时也可直接传 `kv` 过滤）
 2. **改配置（草稿态）**
    - 单条：`Config_CreateKv` / `Config_UpdateKv` / `Config_DeleteKv`
    - 批量：`Config_BatchUpsertKvs`（`replaceAll=true` 会先清空草稿区再写入）/ `Config_BatchDeleteKv`（按 ids）
@@ -144,7 +194,10 @@ biz（业务） → app（服务，带 config_type / data_type） → kv（草�
 ## 参数获取（F-003）
 
 - `bizId`：来自蓝鲸平台上下文（CMDB 业务 / 空间）或请求头 `X-Bkapi-Biz-Id`；MCP **不提供列 biz 的工具**，需由用户/上下文给出。
-- `appId`：通过 `Config_ListAppsBySpaceRest`（按 bizId 列 app）或 `Config_GetAppByName`（已知服务名）获取。
+- `projectId`：`Config_GetProjectByKey`（已知项目标识）或 `Config_ListProjects`（按名称匹配 / 让用户挑）返回的 `id`。
+- `envId`：`Config_GetEnvironmentByName`（已知环境名）或 `Config_ListEnvironments`（让用户挑）返回的 `id`。
+- `appId`：通过 `Config_ListAppsBySpaceRest`（按 bizId 列 app）或 `Config_GetAppByName`（已知服务名）获取；
+  非默认环境用 `Config_Env_ListAppsBySpaceRest` / `Config_Env_GetAppByName`。
 - **辨别 kv 型 app**：从上述工具返回结果里读 `config_type` 字段，取 `config_type=kv` 的 app。
 - `id`（KV 主键）：删除 KV 前用 `Config_ListKvs` 查询获取。
 - `releaseId`：由 `Config_CreateRelease` 返回，或从 `Config_ListReleases` 中选取未废弃的版本。
@@ -187,6 +240,7 @@ biz（业务） → app（服务，带 config_type / data_type） → kv（草�
 | `page.limit value should >= 1` | 列表接口未传 `limit` 且 `all≠true`（limit 默认为 0） | 传 `all:true` 全量，或显式 `limit`(1–1000) |
 | `invalid page.limit max value: 1000` | `limit` 超过单页上限 | `limit` ≤ 1000，需要更多时用 `start` 翻页或改 `all:true` |
 | `release ... already exists` | 版本名与同 app 已有版本重名 | 换一个不重名的 name（递增类在最大序号上 +1） |
+| `app does not belong to the specified project or environment` | 服务不在所传项目环境下；或用原有工具操作了非默认环境的服务 | 向用户确认服务所在的项目环境，重新解析 `projectId`/`envId`，改用 `Config_Env_*` |
 
 ## 场景化示例（F-006）
 
@@ -236,6 +290,20 @@ Config_Publish {bizId, appId, releaseId} body: {all:true}
 Config_CreateRelease {bizId, appId} body: {name:"v-gray-1"} → releaseId
 Config_Publish {bizId, appId, releaseId} body: {all:false, grayPublishMode:"publish_by_groups", groups:[<groupId>, ...]}
 // 或按 labels：grayPublishMode:"publish_by_labels", labels:[{...}], 可选 groupName
+```
+
+### 6) 在指定项目环境下更新 KV 并发布
+
+用户说"把 game 项目 test 环境里 svc-a 的 timeout 改成 30"：
+
+```
+Config_GetProjectByKey {bizId, projectKey:"game"} → projectId     // 只知道名称时改用 Config_ListProjects {bizId, all:true} 按 spec.name 匹配
+Config_GetEnvironmentByName {bizId, projectId, envName:"test"} → envId
+Config_Env_GetAppByName {bizId, projectId, envId, appName:"svc-a"} → 校验 config_type=kv，取 appId
+Config_Env_UpdateKv {bizId, projectId, envId, appId, key:"timeout"} body: {value:"30"}
+Config_Env_ListReleases {bizId, projectId, envId, appId, all:true}   // 捕获历史命名规则，建议版本名并询问用户
+Config_Env_CreateRelease {bizId, projectId, envId, appId} body: {name:"<用户确认的版本名>"} → releaseId
+Config_Env_Publish {bizId, projectId, envId, appId, releaseId} body: {all:true}   // 确认信息写明"game 项目 / test 环境"
 ```
 
 ## 说明

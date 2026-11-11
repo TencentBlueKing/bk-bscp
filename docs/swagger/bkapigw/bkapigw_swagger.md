@@ -35,6 +35,32 @@
 | DELETE | /api/v1/config/biz/{bizId}/hooks/{hookId} | [Config_DeleteHook](#config-delete-hook) | 删除脚本 |
 | DELETE | /api/v1/config/biz/{bizId}/apps/{appId}/kvs/{id} | [Config_DeleteKv](#config-delete-kv) | 删除键值配置项 |
 | DELETE | /api/v1/config/biz/{bizId}/projects/{projectId} | [Config_DeleteProject](#config-delete-project) | 删除项目 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approval_callback | [Config_Env_ApprovalCallback](#config-env-approval-callback) | itsm v4 回调接口 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approve | [Config_Env_Approve](#config-env-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete | [Config_Env_BatchDeleteKv](#config-env-batch-delete-kv) | 批量删除键值配置项 |
+| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items | [Config_Env_BatchUpsertConfigItems](#config-env-batch-upsert-config-items) | 批量创建或更新文件配置项 |
+| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_Env_BatchUpsertKvs](#config-env-batch-upsert-kvs) | 批量创建或更新键值配置项 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_Env_CreateKv](#config-env-create-kv) | 创建键值配置项 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases | [Config_Env_CreateRelease](#config-env-create-release) | 生成版本 |
+| DELETE | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id} | [Config_Env_DeleteKv](#config-env-delete-kv) | 删除键值配置项 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish | [Config_Env_GenerateReleaseAndPublish](#config-env-generate-release-and-publish) | 生成版本并发布 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps | [Config_Env_GetAppByName](#config-env-get-app-by-name) | 按服务名称获取 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id} | [Config_Env_GetConfigItem](#config-env-get-config-item) | 获取文件配置项 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} | [Config_Env_GetReleaseByName](#config-env-get-release-by-name) | 按服务版本名 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks | [Config_Env_GetReleaseHook](#config-env-get-release-hook) |  |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items/{id} | [Config_Env_GetReleasedConfigItem](#config-env-get-released-config-item) | 获取已发布文件配置项 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs/{key} | [Config_Env_GetReleasedKv](#config-env-get-released-kv) | 获取已生成版本键值配置项 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions | [Config_Env_ListAppBoundTmplRevisions](#config-env-list-app-bound-tmpl-revisions) | 按未命名版本服务获取绑定的模板版本列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list | [Config_Env_ListAppsBySpaceRest](#config-env-list-apps-by-space-rest) | 按 space 查询 app 信息 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/list | [Config_Env_ListConfigItems](#config-env-list-config-items) | 获取文件配置项列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list | [Config_Env_ListKvs](#config-env-list-kvs) | 获取键值配置项列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions | [Config_Env_ListReleasedAppBoundTmplRevs](#config-env-list-released-app-bound-tmpl-revs) | 按已发布版本服务获取绑定的模板版本列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items | [Config_Env_ListReleasedConfigItems](#config-env-list-released-config-items) | 获取已发布文件配置项列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs | [Config_Env_ListReleasedKvs](#config-env-list-released-kvs) | 获取已生成版本键值配置项列表 |
+| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases | [Config_Env_ListReleases](#config-env-list-releases) | 获取服务版本列表 |
+| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish | [Config_Env_Publish](#config-env-publish) | 发布指定版本 |
+| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_hooks | [Config_Env_UpdateConfigHook](#config-env-update-config-hook) | 引用前后置脚本 |
+| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{key} | [Config_Env_UpdateKv](#config-env-update-kv) | 更新键值配置项 |
 | POST | /api/v1/config/biz_id/{bizId}/config_instances/generate | [Config_GenerateConfig](#config-generate-config) | 配置生成 |
 | POST | /api/v1/config/biz/{bizId}/apps/{appId}/publish | [Config_GenerateReleaseAndPublish](#config-generate-release-and-publish) | 生成版本并发布 |
 | GET | /api/v1/config/biz/{bizId}/apps/query/name/{appName} | [Config_GetAppByName](#config-get-app-by-name) | 按服务名称获取 |
@@ -59,6 +85,11 @@
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_instances/check | [Config_Inner_CheckConfig](#config-inner-check-config) | 配置检查 |
 | GET | /api/v1/inner/config/biz_id/{bizId}/sync/sync_status | [Config_Inner_CmdbGseStatus](#config-inner-cmdb-gse-status) | 获取同步的状态 |
 | POST | /api/v1/inner/config/create/release/release/app_id/{appId}/biz_id/{bizId} | [Config_Inner_CreateRelease](#config-inner-create-release) | 生成版本 |
+| PUT | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_Inner_Env_BatchUpsertKvs](#config-inner-env-batch-upsert-kvs) | 批量创建或更新键值配置项 |
+| POST | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish | [Config_Inner_Env_GenerateReleaseAndPublish](#config-inner-env-generate-release-and-publish) | 生成版本并发布 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps | [Config_Inner_Env_GetAppByName](#config-inner-env-get-app-by-name) | 按服务名称获取 |
+| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} | [Config_Inner_Env_GetReleaseByName](#config-inner-env-get-release-by-name) | 按服务版本名 |
+| POST | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish | [Config_Inner_Env_Publish](#config-inner-env-publish) | 发布指定版本 |
 | POST | /api/v1/inner/config/biz_id/{bizId}/config_instances/generate | [Config_Inner_GenerateConfig](#config-inner-generate-config) | 配置生成 |
 | POST | /api/v1/inner/config/biz/{bizId}/apps/{appId}/publish | [Config_Inner_GenerateReleaseAndPublish](#config-inner-generate-release-and-publish) | 生成版本并发布 |
 | GET | /api/v1/inner/config/biz/{bizId}/apps/query/name/{appName} | [Config_Inner_GetAppByName](#config-inner-get-app-by-name) | 按服务名称获取 |
@@ -82,11 +113,6 @@
 进程数量与实例数量一致时无缩容，无需清除） |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/operate | [Config_Inner_OperateProcess](#config-inner-operate-process) | 进程操作（start、stop、register、unregister、restart、reload、kill） |
 | POST | /api/v1/inner/config/biz_id/{bizId}/process/update_register | [Config_Inner_OperateUpdateRegisterProcess](#config-inner-operate-update-register-process) | 更新托管信息操作（update_register） |
-| PUT | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_Inner_ProjectEnv_BatchUpsertKvs](#config-inner-project-env-batch-upsert-kvs) | 批量创建或更新键值配置项 |
-| POST | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish | [Config_Inner_ProjectEnv_GenerateReleaseAndPublish](#config-inner-project-env-generate-release-and-publish) | 生成版本并发布 |
-| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps | [Config_Inner_ProjectEnv_GetAppByName](#config-inner-project-env-get-app-by-name) | 按服务名称获取 |
-| GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} | [Config_Inner_ProjectEnv_GetReleaseByName](#config-inner-project-env-get-release-by-name) | 按服务版本名 |
-| POST | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish | [Config_Inner_ProjectEnv_Publish](#config-inner-project-env-publish) | 发布指定版本 |
 | GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/query/by_name | [Config_Inner_Project_GetEnvironmentByName](#config-inner-project-get-environment-by-name) | 根据环境名称获取环境 |
 | GET | /api/v1/inner/config/biz/{bizId}/projects/{projectId}/groups/query/name/{groupName} | [Config_Inner_Project_GetGroupByName](#config-inner-project-get-group-by-name) | 按名称获取分组 |
 | POST | /api/v1/inner/config/update/strategy/publish/publish/release_id/{releaseId}/app_id/{appId}/biz_id/{bizId} | [Config_Inner_Publish](#config-inner-publish) | 发布指定版本 |
@@ -119,32 +145,6 @@
 | GET | /api/v1/config/biz_id/{bizId}/config_template/{configTemplateId}/preview_bind_process_instance | [Config_PreviewBindProcessInstance](#config-preview-bind-process-instance) | 预览绑定配置模板与进程实例 |
 | GET | /api/v1/config/biz_id/{bizId}/process_instance/{serviceInstanceId} | [Config_ProcessInstance](#config-process-instance) | 根据服务实例查询实例进程列表 |
 | POST | /api/v1/config/biz_id/{bizId}/process_template/{serviceTemplateId} | [Config_ProcessTemplate](#config-process-template) | 根据服务模板查询模板进程列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approval_callback | [Config_ProjectEnv_ApprovalCallback](#config-project-env-approval-callback) | itsm v4 回调接口 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approve | [Config_ProjectEnv_Approve](#config-project-env-approve) | 审批同步，其中v2版本中itsm也是复用这个接口进行回调 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete | [Config_ProjectEnv_BatchDeleteKv](#config-project-env-batch-delete-kv) | 批量删除键值配置项 |
-| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items | [Config_ProjectEnv_BatchUpsertConfigItems](#config-project-env-batch-upsert-config-items) | 批量创建或更新文件配置项 |
-| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_ProjectEnv_BatchUpsertKvs](#config-project-env-batch-upsert-kvs) | 批量创建或更新键值配置项 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs | [Config_ProjectEnv_CreateKv](#config-project-env-create-kv) | 创建键值配置项 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases | [Config_ProjectEnv_CreateRelease](#config-project-env-create-release) | 生成版本 |
-| DELETE | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id} | [Config_ProjectEnv_DeleteKv](#config-project-env-delete-kv) | 删除键值配置项 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish | [Config_ProjectEnv_GenerateReleaseAndPublish](#config-project-env-generate-release-and-publish) | 生成版本并发布 |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps | [Config_ProjectEnv_GetAppByName](#config-project-env-get-app-by-name) | 按服务名称获取 |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id} | [Config_ProjectEnv_GetConfigItem](#config-project-env-get-config-item) | 获取文件配置项 |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} | [Config_ProjectEnv_GetReleaseByName](#config-project-env-get-release-by-name) | 按服务版本名 |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks | [Config_ProjectEnv_GetReleaseHook](#config-project-env-get-release-hook) |  |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items/{id} | [Config_ProjectEnv_GetReleasedConfigItem](#config-project-env-get-released-config-item) | 获取已发布文件配置项 |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs/{key} | [Config_ProjectEnv_GetReleasedKv](#config-project-env-get-released-kv) | 获取已生成版本键值配置项 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions | [Config_ProjectEnv_ListAppBoundTmplRevisions](#config-project-env-list-app-bound-tmpl-revisions) | 按未命名版本服务获取绑定的模板版本列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list | [Config_ProjectEnv_ListAppsBySpaceRest](#config-project-env-list-apps-by-space-rest) | 按 space 查询 app 信息 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/list | [Config_ProjectEnv_ListConfigItems](#config-project-env-list-config-items) | 获取文件配置项列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list | [Config_ProjectEnv_ListKvs](#config-project-env-list-kvs) | 获取键值配置项列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions | [Config_ProjectEnv_ListReleasedAppBoundTmplRevisions](#config-project-env-list-released-app-bound-tmpl-revisions) | 按已发布版本服务获取绑定的模板版本列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items | [Config_ProjectEnv_ListReleasedConfigItems](#config-project-env-list-released-config-items) | 获取已发布文件配置项列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs | [Config_ProjectEnv_ListReleasedKvs](#config-project-env-list-released-kvs) | 获取已生成版本键值配置项列表 |
-| GET | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases | [Config_ProjectEnv_ListReleases](#config-project-env-list-releases) | 获取服务版本列表 |
-| POST | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish | [Config_ProjectEnv_Publish](#config-project-env-publish) | 发布指定版本 |
-| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_hooks | [Config_ProjectEnv_UpdateConfigHook](#config-project-env-update-config-hook) | 引用前后置脚本 |
-| PUT | /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{key} | [Config_ProjectEnv_UpdateKv](#config-project-env-update-kv) | 更新键值配置项 |
 | GET | /api/v1/config/biz/{bizId}/projects/{projectId}/credential/{credentialName}/check | [Config_Project_CheckCredentialName](#config-project-check-credential-name) | 检测客户端密钥名称 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/credentials | [Config_Project_CreateCredentials](#config-project-create-credentials) | 创建客户端密钥 |
 | POST | /api/v1/config/biz/{bizId}/projects/{projectId}/hooks | [Config_Project_CreateHook](#config-project-create-hook) | 创建脚本 |
@@ -1202,6 +1202,1256 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-env-approval-callback"></span> itsm v4 回调接口 (*Config_Env_ApprovalCallback*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approval_callback
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| callbackToken | string |  |  |
+| ticket | [PbreleaseTicket](#pbrelease-ticket) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approval_callback HTTP/1.1
+Content-Type: application/json
+
+{
+  "callbackToken": "",
+  "ticket": {
+    "approveResult": false,
+    "callbackResult": {},
+    "createdAt": "",
+    "currentProcessors": [
+      {}
+    ],
+    "currentSteps": [
+      {
+        "activityKey": "",
+        "name": "",
+        "ticketId": ""
+      }
+    ],
+    "endAt": "",
+    "formData": {
+      "ticketTitle": ""
+    },
+    "frontendUrl": "",
+    "id": "",
+    "portalId": "",
+    "serviceId": "",
+    "sn": "",
+    "status": "",
+    "statusDisplay": "",
+    "systemId": "",
+    "title": "",
+    "updatedAt": "",
+    "workflowId": ""
+  }
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-approve"></span> 审批同步，其中v2版本中itsm也是复用这个接口进行回调 (*Config_Env_Approve*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approve
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ |  |
+| bizId | int64 (formatted integer) | ✓ |  |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ |  |
+| envId | int64 (formatted integer) |  | 环境ID |
+| projectId | int64 (formatted integer) |  | 项目ID |
+| publishStatus | string |  |  |
+| reason | string |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approve HTTP/1.1
+Content-Type: application/json
+
+{
+  "envId": 0,
+  "projectId": 0,
+  "publishStatus": "",
+  "reason": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-batch-delete-kv"></span> 批量删除键值配置项 (*Config_Env_BatchDeleteKv*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| exclusionOperation | boolean |  | 是否排除操作：是=true，否=false |
+| ids | []int64 (formatted integer) |  | 键值配置项ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete HTTP/1.1
+Content-Type: application/json
+
+{
+  "exclusionOperation": false,
+  "ids": [
+    {}
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-batch-upsert-config-items"></span> 批量创建或更新文件配置项 (*Config_Env_BatchUpsertConfigItems*)
+
+```
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| bindings | \[\][PbcsBatchUpsertConfigItemsReqTemplateBinding](#pbcs-batch-upsert-config-items-req-template-binding) |  |  |
+| envId | int64 (formatted integer) |  | 环境ID |
+| items | \[\][PbcsBatchUpsertConfigItemsReqConfigItem](#pbcs-batch-upsert-config-items-req-config-item) |  |  |
+| projectId | int64 (formatted integer) |  | 项目ID |
+| replaceAll | boolean |  | 是否替换全部：如果为true会覆盖已有的文件，不存在的则删除 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items HTTP/1.1
+Content-Type: application/json
+
+{
+  "bindings": [
+    {
+      "templateBinding": {
+        "templateRevisions": [
+          {
+            "isLatest": false,
+            "templateId": 0,
+            "templateRevisionId": 0
+          }
+        ],
+        "templateSetId": 0
+      },
+      "templateSpaceId": 0
+    }
+  ],
+  "envId": 0,
+  "items": [
+    {
+      "byteSize": "",
+      "charset": "",
+      "fileMode": "",
+      "fileType": "",
+      "md5": "",
+      "memo": "",
+      "name": "",
+      "path": "",
+      "privilege": "",
+      "sign": "",
+      "user": "",
+      "userGroup": ""
+    }
+  ],
+  "projectId": 0,
+  "replaceAll": false,
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-batch-upsert-kvs"></span> 批量创建或更新键值配置项 (*Config_Env_BatchUpsertKvs*)
+
+```
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
+| replaceAll | boolean |  | 是否清空：是=true，否=false |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "kvs": [
+    {
+      "certificateExpirationDate": "",
+      "key": "",
+      "kvType": "",
+      "memo": "",
+      "secretHidden": false,
+      "secretType": "",
+      "value": ""
+    }
+  ],
+  "replaceAll": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-create-kv"></span> 创建键值配置项 (*Config_Env_CreateKv*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| certificateExpirationDate | string |  | 证书过期时间 |
+| key | string | ✓ | 配置项名 |
+| kvType | string | ✓ | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
+| memo | string |  | 描述 |
+| secretHidden | boolean |  | 是否隐藏值：是=true，否=false |
+| secretType | string |  | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |
+| value | string | ✓ | 配置项值 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "certificateExpirationDate": "",
+  "key": "",
+  "kvType": "",
+  "memo": "",
+  "secretHidden": false,
+  "secretType": "",
+  "value": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-create-release"></span> 生成版本 (*Config_Env_CreateRelease*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| envId | int64 (formatted integer) |  | 环境ID |
+| memo | string |  | 版本描述 |
+| name | string |  | 版本名称 |
+| projectId | int64 (formatted integer) |  | 项目ID |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases HTTP/1.1
+Content-Type: application/json
+
+{
+  "envId": 0,
+  "memo": "",
+  "name": "",
+  "projectId": 0,
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-delete-kv"></span> 删除键值配置项 (*Config_Env_DeleteKv*)
+
+```
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| id | int64 (formatted integer) | ✓ | 键值配置项ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-generate-release-and-publish"></span> 生成版本并发布 (*Config_Env_GenerateReleaseAndPublish*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| releaseMemo | string |  | 版本描述 |
+| releaseName | string |  | 服务版本名 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "releaseMemo": "",
+  "releaseName": "",
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-get-app-by-name"></span> 按服务名称获取 (*Config_Env_GetAppByName*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| appName | string |  | 服务名称 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-get-config-item"></span> 获取文件配置项 (*Config_Env_GetConfigItem*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| id | int64 (formatted integer) | ✓ | 文件配置项ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-get-release-by-name"></span> 按服务版本名 (*Config_Env_GetReleaseByName*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseName | string | ✓ | 服务版本名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-get-release-hook"></span> config env get release hook (*Config_Env_GetReleaseHook*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-get-released-config-item"></span> 获取已发布文件配置项 (*Config_Env_GetReleasedConfigItem*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items/{id}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| id | int64 (formatted integer) | ✓ | 文件配置项ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items/{id} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-get-released-kv"></span> 获取已生成版本键值配置项 (*Config_Env_GetReleasedKv*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs/{key}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| key | string | ✓ | 键值配置项的键 |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs/{key} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-app-bound-tmpl-revisions"></span> 按未命名版本服务获取绑定的模板版本列表 (*Config_Env_ListAppBoundTmplRevisions*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| search | [interface{}](#interface) |  | 搜索 |
+| status | []string |  | 模板状态：(ADD、REVISE、DELETE、UNCHANGE) |
+| withStatus | boolean |  | 为模板配置项设置文件状态：是=true，否=false |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions HTTP/1.1
+Content-Type: application/json
+
+{
+  "search": {},
+  "status": [
+    {}
+  ],
+  "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-apps-by-space-rest"></span> 按 space 查询 app 信息 (*Config_Env_ListAppsBySpaceRest*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 是否获取所有 |
+| configType | string |  | 服务类型：文件型=file, 键值型=kv |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| search | [interface{}](#interface) |  | 搜索条件 |
+| start | int64 (formatted integer) |  | 当前页码 |
+| topIds | string |  | 需要置顶ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "configType": "",
+  "limit": 0,
+  "search": {},
+  "start": 0,
+  "topIds": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-config-items"></span> 获取文件配置项列表 (*Config_Env_ListConfigItems*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 是否获取所有 |
+| envId | int64 (formatted integer) |  | 环境ID |
+| ids | []int64 (formatted integer) |  |  |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| projectId | int64 (formatted integer) |  | 项目ID |
+| search | [interface{}](#interface) |  | 搜索 |
+| start | int64 (formatted integer) |  | 当前页码 |
+| status | []string |  | 文件配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
+| withStatus | boolean |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "envId": 0,
+  "ids": [
+    {}
+  ],
+  "limit": 0,
+  "projectId": 0,
+  "search": {},
+  "start": 0,
+  "status": [
+    {}
+  ],
+  "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-kvs"></span> 获取键值配置项列表 (*Config_Env_ListKvs*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 是否获取所有 |
+| key | []string |  | 查询特定的配置项名 |
+| kvType | []string |  | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| order | string |  | 排序类型：desc |
+| search | [interface{}](#interface) |  | 搜索的值 |
+| sort | string |  | 排序的值，例如：key |
+| start | int64 (formatted integer) |  | 当前页码 |
+| status | []string |  | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
+| topIds | []int64 (formatted integer) |  | 需要置顶ID |
+| withStatus | boolean |  | 暂时未用到 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "key": [
+    {}
+  ],
+  "kvType": [
+    {}
+  ],
+  "limit": 0,
+  "order": "",
+  "search": {},
+  "sort": "",
+  "start": 0,
+  "status": [
+    {}
+  ],
+  "topIds": [
+    {}
+  ],
+  "withStatus": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-released-app-bound-tmpl-revs"></span> 按已发布版本服务获取绑定的模板版本列表 (*Config_Env_ListReleasedAppBoundTmplRevs*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| search | [interface{}](#interface) |  | 搜索 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions HTTP/1.1
+Content-Type: application/json
+
+{
+  "search": {}
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-released-config-items"></span> 获取已发布文件配置项列表 (*Config_Env_ListReleasedConfigItems*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| all | boolean |  | 是否获取所有 |
+| envId | int64 (formatted integer) |  | 环境ID |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| projectId | int64 (formatted integer) |  | 项目ID |
+| search | [interface{}](#interface) |  | 搜索 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "envId": 0,
+  "limit": 0,
+  "projectId": 0,
+  "search": {},
+  "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-released-kvs"></span> 获取已生成版本键值配置项列表 (*Config_Env_ListReleasedKvs*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| all | boolean |  | 是否获取所有 |
+| key | []string |  |  |
+| kvType | []string |  |  |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| order | string |  |  |
+| search | [interface{}](#interface) |  |  |
+| sort | string |  |  |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "key": [
+    {}
+  ],
+  "kvType": [
+    {}
+  ],
+  "limit": 0,
+  "order": "",
+  "search": {},
+  "sort": "",
+  "start": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-list-releases"></span> 获取服务版本列表 (*Config_Env_ListReleases*)
+
+```
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 是否获取所有 |
+| deprecated | boolean |  | 是否弃用：是=true，否=false |
+| limit | int64 (formatted integer) |  | 每页条数 |
+| searchKey | string |  | 搜索的值 |
+| start | int64 (formatted integer) |  | 当前页码 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-publish"></span> 发布指定版本 (*Config_Env_Publish*)
+
+```
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| default | boolean |  |  |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| memo | string |  | 上线说明 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "default": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "memo": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-update-config-hook"></span> 引用前后置脚本 (*Config_Env_UpdateConfigHook*)
+
+```
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_hooks
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| postHookId | int64 (formatted integer) |  | 后置脚本：脚本ID |
+| preHookId | int64 (formatted integer) |  | 前置脚本：脚本ID |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_hooks HTTP/1.1
+Content-Type: application/json
+
+{
+  "postHookId": 0,
+  "preHookId": 0
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-env-update-kv"></span> 更新键值配置项 (*Config_Env_UpdateKv*)
+
+```
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{key}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| key | string | ✓ | 配置项名 |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| memo | string |  | 描述 |
+| secretHidden | boolean |  | 是否隐藏值：是=true，否=false |
+| secretType | string |  | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |
+| value | string | ✓ | 配置项值 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{key} HTTP/1.1
+Content-Type: application/json
+
+{
+  "memo": "",
+  "secretHidden": false,
+  "secretType": "",
+  "value": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-generate-config"></span> 配置生成 (*Config_GenerateConfig*)
 
 ```
@@ -2217,6 +3467,245 @@ Content-Type: application/json
 {}
 ```
 
+### <span id="config-inner-env-batch-upsert-kvs"></span> 批量创建或更新键值配置项 (*Config_Inner_Env_BatchUpsertKvs*)
+
+```
+PUT /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
+| replaceAll | boolean |  | 是否清空：是=true，否=false |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+PUT /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
+Content-Type: application/json
+
+{
+  "kvs": [
+    {
+      "certificateExpirationDate": "",
+      "key": "",
+      "kvType": "",
+      "memo": "",
+      "secretHidden": false,
+      "secretType": "",
+      "value": ""
+    }
+  ],
+  "replaceAll": false
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-inner-env-generate-release-and-publish"></span> 生成版本并发布 (*Config_Inner_Env_GenerateReleaseAndPublish*)
+
+```
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| releaseMemo | string |  | 版本描述 |
+| releaseName | string |  | 服务版本名 |
+| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "releaseMemo": "",
+  "releaseName": "",
+  "variables": [
+    {
+      "defaultVal": "",
+      "memo": "",
+      "name": "",
+      "type": ""
+    }
+  ]
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-inner-env-get-app-by-name"></span> 按服务名称获取 (*Config_Inner_Env_GetAppByName*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| appName | string |  | 服务名称 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-inner-env-get-release-by-name"></span> 按服务版本名 (*Config_Inner_Env_GetReleaseByName*)
+
+```
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName}
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseName | string | ✓ | 服务版本名 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
+Content-Type: application/json
+
+
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
+### <span id="config-inner-env-publish"></span> 发布指定版本 (*Config_Inner_Env_Publish*)
+
+```
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish
+```
+
+#### 输入参数
+
+| 参数名称 | 类型 | 是否必填 | 描述 |
+|------|--------|------|---------|
+| appId | int64 (formatted integer) | ✓ | 服务ID |
+| bizId | int64 (formatted integer) | ✓ | 业务ID |
+| envId | int64 (formatted integer) | ✓ | 环境ID |
+| projectId | int64 (formatted integer) | ✓ | 项目ID |
+| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
+| all | boolean |  | 全部实例上线：是=true，否=false |
+| default | boolean |  |  |
+| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
+| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
+| groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
+| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
+| memo | string |  | 上线说明 |
+
+#### 输出参数
+
+| 参数名称 | 类型 | 描述 |
+|------|--------|---------|
+
+#### 输入示例
+
+```bash
+POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish HTTP/1.1
+Content-Type: application/json
+
+{
+  "all": false,
+  "default": false,
+  "grayPublishMode": "",
+  "groupName": "",
+  "groups": [
+    {}
+  ],
+  "labels": [
+    {}
+  ],
+  "memo": ""
+}
+```
+
+#### 输出示例
+
+```json
+{}
+```
+
 ### <span id="config-inner-generate-config"></span> 配置生成 (*Config_Inner_GenerateConfig*)
 
 ```
@@ -3215,245 +4704,6 @@ Content-Type: application/json
 {
   "enableProcessRestart": false,
   "processId": 0
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-inner-project-env-batch-upsert-kvs"></span> 批量创建或更新键值配置项 (*Config_Inner_ProjectEnv_BatchUpsertKvs*)
-
-```
-PUT /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
-| replaceAll | boolean |  | 是否清空：是=true，否=false |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-PUT /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
-Content-Type: application/json
-
-{
-  "kvs": [
-    {
-      "certificateExpirationDate": "",
-      "key": "",
-      "kvType": "",
-      "memo": "",
-      "secretHidden": false,
-      "secretType": "",
-      "value": ""
-    }
-  ],
-  "replaceAll": false
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-inner-project-env-generate-release-and-publish"></span> 生成版本并发布 (*Config_Inner_ProjectEnv_GenerateReleaseAndPublish*)
-
-```
-POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| all | boolean |  | 全部实例上线：是=true，否=false |
-| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
-| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
-| groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
-| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| releaseMemo | string |  | 版本描述 |
-| releaseName | string |  | 服务版本名 |
-| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "grayPublishMode": "",
-  "groupName": "",
-  "groups": [
-    {}
-  ],
-  "labels": [
-    {}
-  ],
-  "releaseMemo": "",
-  "releaseName": "",
-  "variables": [
-    {
-      "defaultVal": "",
-      "memo": "",
-      "name": "",
-      "type": ""
-    }
-  ]
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-inner-project-env-get-app-by-name"></span> 按服务名称获取 (*Config_Inner_ProjectEnv_GetAppByName*)
-
-```
-GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| appName | string |  | 服务名称 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-inner-project-env-get-release-by-name"></span> 按服务版本名 (*Config_Inner_ProjectEnv_GetReleaseByName*)
-
-```
-GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseName | string | ✓ | 服务版本名 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-inner-project-env-publish"></span> 发布指定版本 (*Config_Inner_ProjectEnv_Publish*)
-
-```
-POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-| all | boolean |  | 全部实例上线：是=true，否=false |
-| default | boolean |  |  |
-| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
-| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
-| groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
-| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| memo | string |  | 上线说明 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/inner/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "default": false,
-  "grayPublishMode": "",
-  "groupName": "",
-  "groups": [
-    {}
-  ],
-  "labels": [
-    {}
-  ],
-  "memo": ""
 }
 ```
 
@@ -4785,1256 +6035,6 @@ Content-Type: application/json
   "processTemplateIds": [
     {}
   ]
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-approval-callback"></span> itsm v4 回调接口 (*Config_ProjectEnv_ApprovalCallback*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approval_callback
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-| callbackToken | string |  |  |
-| ticket | [PbreleaseTicket](#pbrelease-ticket) |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approval_callback HTTP/1.1
-Content-Type: application/json
-
-{
-  "callbackToken": "",
-  "ticket": {
-    "approveResult": false,
-    "callbackResult": {},
-    "createdAt": "",
-    "currentProcessors": [
-      {}
-    ],
-    "currentSteps": [
-      {
-        "activityKey": "",
-        "name": "",
-        "ticketId": ""
-      }
-    ],
-    "endAt": "",
-    "formData": {
-      "ticketTitle": ""
-    },
-    "frontendUrl": "",
-    "id": "",
-    "portalId": "",
-    "serviceId": "",
-    "sn": "",
-    "status": "",
-    "statusDisplay": "",
-    "systemId": "",
-    "title": "",
-    "updatedAt": "",
-    "workflowId": ""
-  }
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-approve"></span> 审批同步，其中v2版本中itsm也是复用这个接口进行回调 (*Config_ProjectEnv_Approve*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approve
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ |  |
-| bizId | int64 (formatted integer) | ✓ |  |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ |  |
-| envId | int64 (formatted integer) |  | 环境ID |
-| projectId | int64 (formatted integer) |  | 项目ID |
-| publishStatus | string |  |  |
-| reason | string |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/approve HTTP/1.1
-Content-Type: application/json
-
-{
-  "envId": 0,
-  "projectId": 0,
-  "publishStatus": "",
-  "reason": ""
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-batch-delete-kv"></span> 批量删除键值配置项 (*Config_ProjectEnv_BatchDeleteKv*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| exclusionOperation | boolean |  | 是否排除操作：是=true，否=false |
-| ids | []int64 (formatted integer) |  | 键值配置项ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete HTTP/1.1
-Content-Type: application/json
-
-{
-  "exclusionOperation": false,
-  "ids": [
-    {}
-  ]
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-batch-upsert-config-items"></span> 批量创建或更新文件配置项 (*Config_ProjectEnv_BatchUpsertConfigItems*)
-
-```
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| bindings | \[\][PbcsBatchUpsertConfigItemsReqTemplateBinding](#pbcs-batch-upsert-config-items-req-template-binding) |  |  |
-| envId | int64 (formatted integer) |  | 环境ID |
-| items | \[\][PbcsBatchUpsertConfigItemsReqConfigItem](#pbcs-batch-upsert-config-items-req-config-item) |  |  |
-| projectId | int64 (formatted integer) |  | 项目ID |
-| replaceAll | boolean |  | 是否替换全部：如果为true会覆盖已有的文件，不存在的则删除 |
-| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items HTTP/1.1
-Content-Type: application/json
-
-{
-  "bindings": [
-    {
-      "templateBinding": {
-        "templateRevisions": [
-          {
-            "isLatest": false,
-            "templateId": 0,
-            "templateRevisionId": 0
-          }
-        ],
-        "templateSetId": 0
-      },
-      "templateSpaceId": 0
-    }
-  ],
-  "envId": 0,
-  "items": [
-    {
-      "byteSize": "",
-      "charset": "",
-      "fileMode": "",
-      "fileType": "",
-      "md5": "",
-      "memo": "",
-      "name": "",
-      "path": "",
-      "privilege": "",
-      "sign": "",
-      "user": "",
-      "userGroup": ""
-    }
-  ],
-  "projectId": 0,
-  "replaceAll": false,
-  "variables": [
-    {
-      "defaultVal": "",
-      "memo": "",
-      "name": "",
-      "type": ""
-    }
-  ]
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-batch-upsert-kvs"></span> 批量创建或更新键值配置项 (*Config_ProjectEnv_BatchUpsertKvs*)
-
-```
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| kvs | \[\][PbcsBatchUpsertKvsReqKv](#pbcs-batch-upsert-kvs-req-kv) |  |  |
-| replaceAll | boolean |  | 是否清空：是=true，否=false |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
-Content-Type: application/json
-
-{
-  "kvs": [
-    {
-      "certificateExpirationDate": "",
-      "key": "",
-      "kvType": "",
-      "memo": "",
-      "secretHidden": false,
-      "secretType": "",
-      "value": ""
-    }
-  ],
-  "replaceAll": false
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-create-kv"></span> 创建键值配置项 (*Config_ProjectEnv_CreateKv*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| certificateExpirationDate | string |  | 证书过期时间 |
-| key | string | ✓ | 配置项名 |
-| kvType | string | ✓ | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
-| memo | string |  | 描述 |
-| secretHidden | boolean |  | 是否隐藏值：是=true，否=false |
-| secretType | string |  | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |
-| value | string | ✓ | 配置项值 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs HTTP/1.1
-Content-Type: application/json
-
-{
-  "certificateExpirationDate": "",
-  "key": "",
-  "kvType": "",
-  "memo": "",
-  "secretHidden": false,
-  "secretType": "",
-  "value": ""
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-create-release"></span> 生成版本 (*Config_ProjectEnv_CreateRelease*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| envId | int64 (formatted integer) |  | 环境ID |
-| memo | string |  | 版本描述 |
-| name | string |  | 版本名称 |
-| projectId | int64 (formatted integer) |  | 项目ID |
-| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases HTTP/1.1
-Content-Type: application/json
-
-{
-  "envId": 0,
-  "memo": "",
-  "name": "",
-  "projectId": 0,
-  "variables": [
-    {
-      "defaultVal": "",
-      "memo": "",
-      "name": "",
-      "type": ""
-    }
-  ]
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-delete-kv"></span> 删除键值配置项 (*Config_ProjectEnv_DeleteKv*)
-
-```
-DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| id | int64 (formatted integer) | ✓ | 键值配置项ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-DELETE /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{id} HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-generate-release-and-publish"></span> 生成版本并发布 (*Config_ProjectEnv_GenerateReleaseAndPublish*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| all | boolean |  | 全部实例上线：是=true，否=false |
-| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
-| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
-| groups | []string |  | 分组上线：分组ID，如果有值那么all必须是false |
-| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| releaseMemo | string |  | 版本描述 |
-| releaseName | string |  | 服务版本名 |
-| variables | \[\][PbtvTemplateVariableSpec](#pbtv-template-variable-spec) |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/publish HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "grayPublishMode": "",
-  "groupName": "",
-  "groups": [
-    {}
-  ],
-  "labels": [
-    {}
-  ],
-  "releaseMemo": "",
-  "releaseName": "",
-  "variables": [
-    {
-      "defaultVal": "",
-      "memo": "",
-      "name": "",
-      "type": ""
-    }
-  ]
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-get-app-by-name"></span> 按服务名称获取 (*Config_ProjectEnv_GetAppByName*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| appName | string |  | 服务名称 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-get-config-item"></span> 获取文件配置项 (*Config_ProjectEnv_GetConfigItem*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| id | int64 (formatted integer) | ✓ | 文件配置项ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/{id} HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-get-release-by-name"></span> 按服务版本名 (*Config_ProjectEnv_GetReleaseByName*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseName | string | ✓ | 服务版本名 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/query/name/{releaseName} HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-get-release-hook"></span> config project env get release hook (*Config_ProjectEnv_GetReleaseHook*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/hooks HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-get-released-config-item"></span> 获取已发布文件配置项 (*Config_ProjectEnv_GetReleasedConfigItem*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items/{id}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| id | int64 (formatted integer) | ✓ | 文件配置项ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items/{id} HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-get-released-kv"></span> 获取已生成版本键值配置项 (*Config_ProjectEnv_GetReleasedKv*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs/{key}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| key | string | ✓ | 键值配置项的键 |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs/{key} HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-app-bound-tmpl-revisions"></span> 按未命名版本服务获取绑定的模板版本列表 (*Config_ProjectEnv_ListAppBoundTmplRevisions*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| search | [interface{}](#interface) |  | 搜索 |
-| status | []string |  | 模板状态：(ADD、REVISE、DELETE、UNCHANGE) |
-| withStatus | boolean |  | 为模板配置项设置文件状态：是=true，否=false |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions HTTP/1.1
-Content-Type: application/json
-
-{
-  "search": {},
-  "status": [
-    {}
-  ],
-  "withStatus": false
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-apps-by-space-rest"></span> 按 space 查询 app 信息 (*Config_ProjectEnv_ListAppsBySpaceRest*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| all | boolean |  | 是否获取所有 |
-| configType | string |  | 服务类型：文件型=file, 键值型=kv |
-| limit | int64 (formatted integer) |  | 每页条数 |
-| search | [interface{}](#interface) |  | 搜索条件 |
-| start | int64 (formatted integer) |  | 当前页码 |
-| topIds | string |  | 需要置顶ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/list HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "configType": "",
-  "limit": 0,
-  "search": {},
-  "start": 0,
-  "topIds": ""
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-config-items"></span> 获取文件配置项列表 (*Config_ProjectEnv_ListConfigItems*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/list
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| all | boolean |  | 是否获取所有 |
-| envId | int64 (formatted integer) |  | 环境ID |
-| ids | []int64 (formatted integer) |  |  |
-| limit | int64 (formatted integer) |  | 每页条数 |
-| projectId | int64 (formatted integer) |  | 项目ID |
-| search | [interface{}](#interface) |  | 搜索 |
-| start | int64 (formatted integer) |  | 当前页码 |
-| status | []string |  | 文件配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
-| withStatus | boolean |  |  |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_items/list HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "envId": 0,
-  "ids": [
-    {}
-  ],
-  "limit": 0,
-  "projectId": 0,
-  "search": {},
-  "start": 0,
-  "status": [
-    {}
-  ],
-  "withStatus": false
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-kvs"></span> 获取键值配置项列表 (*Config_ProjectEnv_ListKvs*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| all | boolean |  | 是否获取所有 |
-| key | []string |  | 查询特定的配置项名 |
-| kvType | []string |  | 键值类型：(any、string、number、text、json、yaml、xml、secret) |
-| limit | int64 (formatted integer) |  | 每页条数 |
-| order | string |  | 排序类型：desc |
-| search | [interface{}](#interface) |  | 搜索的值 |
-| sort | string |  | 排序的值，例如：key |
-| start | int64 (formatted integer) |  | 当前页码 |
-| status | []string |  | 键值配置项状态：(ADD、DELETE、REVISE、UNCHANGE) |
-| topIds | []int64 (formatted integer) |  | 需要置顶ID |
-| withStatus | boolean |  | 暂时未用到 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/list HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "key": [
-    {}
-  ],
-  "kvType": [
-    {}
-  ],
-  "limit": 0,
-  "order": "",
-  "search": {},
-  "sort": "",
-  "start": 0,
-  "status": [
-    {}
-  ],
-  "topIds": [
-    {}
-  ],
-  "withStatus": false
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-released-app-bound-tmpl-revisions"></span> 按已发布版本服务获取绑定的模板版本列表 (*Config_ProjectEnv_ListReleasedAppBoundTmplRevisions*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-| search | [interface{}](#interface) |  | 搜索 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions HTTP/1.1
-Content-Type: application/json
-
-{
-  "search": {}
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-released-config-items"></span> 获取已发布文件配置项列表 (*Config_ProjectEnv_ListReleasedConfigItems*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-| all | boolean |  | 是否获取所有 |
-| envId | int64 (formatted integer) |  | 环境ID |
-| limit | int64 (formatted integer) |  | 每页条数 |
-| projectId | int64 (formatted integer) |  | 项目ID |
-| search | [interface{}](#interface) |  | 搜索 |
-| start | int64 (formatted integer) |  | 当前页码 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/config_items HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "envId": 0,
-  "limit": 0,
-  "projectId": 0,
-  "search": {},
-  "start": 0
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-released-kvs"></span> 获取已生成版本键值配置项列表 (*Config_ProjectEnv_ListReleasedKvs*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-| all | boolean |  | 是否获取所有 |
-| key | []string |  |  |
-| kvType | []string |  |  |
-| limit | int64 (formatted integer) |  | 每页条数 |
-| order | string |  |  |
-| search | [interface{}](#interface) |  |  |
-| sort | string |  |  |
-| start | int64 (formatted integer) |  | 当前页码 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/kvs HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "key": [
-    {}
-  ],
-  "kvType": [
-    {}
-  ],
-  "limit": 0,
-  "order": "",
-  "search": {},
-  "sort": "",
-  "start": 0
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-list-releases"></span> 获取服务版本列表 (*Config_ProjectEnv_ListReleases*)
-
-```
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| all | boolean |  | 是否获取所有 |
-| deprecated | boolean |  | 是否弃用：是=true，否=false |
-| limit | int64 (formatted integer) |  | 每页条数 |
-| searchKey | string |  | 搜索的值 |
-| start | int64 (formatted integer) |  | 当前页码 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-GET /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases HTTP/1.1
-Content-Type: application/json
-
-
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-publish"></span> 发布指定版本 (*Config_ProjectEnv_Publish*)
-
-```
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| releaseId | int64 (formatted integer) | ✓ | 服务版本ID |
-| all | boolean |  | 全部实例上线：是=true，否=false |
-| default | boolean |  |  |
-| grayPublishMode | string |  | 灰度发布模式，仅在 all 为 false 时有效，枚举值：publish_by_labels,publish_by_groups |
-| groupName | string |  | 在 gray_publish_mode 为 publish_by_labels 时生效，用于根据 labels 生成一个分组时对其命名，如果有服务有可用的（绑定了服务）同 labels 的分组存在，则复用旧的分组，不会新创建分组 |
-| groups | []int64 (formatted integer) |  | 分组上线：分组ID，如果有值那么all必须是false |
-| labels | \[\][interface{}](#interface) |  | 要发布的标签列表，仅在 gray_publish_mode 为 publish_by_labels 时生效 |
-| memo | string |  | 上线说明 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-POST /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/publish HTTP/1.1
-Content-Type: application/json
-
-{
-  "all": false,
-  "default": false,
-  "grayPublishMode": "",
-  "groupName": "",
-  "groups": [
-    {}
-  ],
-  "labels": [
-    {}
-  ],
-  "memo": ""
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-update-config-hook"></span> 引用前后置脚本 (*Config_ProjectEnv_UpdateConfigHook*)
-
-```
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_hooks
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| postHookId | int64 (formatted integer) |  | 后置脚本：脚本ID |
-| preHookId | int64 (formatted integer) |  | 前置脚本：脚本ID |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/config_hooks HTTP/1.1
-Content-Type: application/json
-
-{
-  "postHookId": 0,
-  "preHookId": 0
-}
-```
-
-#### 输出示例
-
-```json
-{}
-```
-
-### <span id="config-project-env-update-kv"></span> 更新键值配置项 (*Config_ProjectEnv_UpdateKv*)
-
-```
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{key}
-```
-
-#### 输入参数
-
-| 参数名称 | 类型 | 是否必填 | 描述 |
-|------|--------|------|---------|
-| appId | int64 (formatted integer) | ✓ | 服务ID |
-| bizId | int64 (formatted integer) | ✓ | 业务ID |
-| envId | int64 (formatted integer) | ✓ | 环境ID |
-| key | string | ✓ | 配置项名 |
-| projectId | int64 (formatted integer) | ✓ | 项目ID |
-| memo | string |  | 描述 |
-| secretHidden | boolean |  | 是否隐藏值：是=true，否=false |
-| secretType | string |  | 密钥类型：(password、、certificate、secret_key、token、custom)，如果kv_type=secret必填项 |
-| value | string | ✓ | 配置项值 |
-
-#### 输出参数
-
-| 参数名称 | 类型 | 描述 |
-|------|--------|---------|
-
-#### 输入示例
-
-```bash
-PUT /api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/{key} HTTP/1.1
-Content-Type: application/json
-
-{
-  "memo": "",
-  "secretHidden": false,
-  "secretType": "",
-  "value": ""
 }
 ```
 
