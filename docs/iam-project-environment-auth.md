@@ -17,6 +17,10 @@ BSCP 的 IAM 授权模型为四层拓扑：
 
 开关只影响"是否单独校验项目/环境资源"，**不改变服务的授权要求，也不改变任何资源的鉴权路径**。服务的动作（`app_view` 等）在 IAM 模型中只能授权到服务实例，关闭开关不会让只有业务访问权限的用户获得服务权限。
 
+创建者策略的写入同样与开关无关：`hierarchical` 拓扑下创建项目或环境即写入创建者授权，只是暂时不参与校验；
+开关打开后这些存量创建者立刻有权操作自己的资源。必须跳过的只有 `legacy` 拓扑——权限中心没有项目/环境
+资源类型与对应创建者角色，写入必然失败。
+
 ## 二、配置
 
 ```yaml
@@ -119,12 +123,21 @@ iam:
 | 服务查看/编辑/删除/发布 | 按服务实例校验，路径由拓扑决定 | 同左 |
 | 服务列表 / 业务访问 | 业务维度校验，不变 | 业务维度校验，不变 |
 | 项目/环境列表权限注解 | 全部返回有权限 | 按实例返回 |
+| 项目/环境创建者授权 | 与 `enabled` 无关：`hierarchical` 按实例授予创建者，`legacy` 跳过 | 同左 |
 | 服务密钥、操作记录 | 业务访问 + 模块动作，与项目/环境维度引入前一致 | 追加项目查看校验，缺项目查看权限即拒绝 |
 | 无权限申请链接 | 与拓扑一致的祖先链 | 与拓扑一致的祖先链 |
 
 服务内资源的四项校验要求角色自带对应维度：`app_viewer`、`app_publisher`、`environment_viewer`、
 `environment_creator` 含 `project_view` 与 `environment_view`，`credential_manager`、`audit_viewer` 含
 `project_view`。新增角色若需触达这些接口必须同步补齐，`pkg/iam/v4/model` 的用例会校验这条约束。
+
+创建项目时会自动生成一条默认环境。项目与环境在 IAM 中是相互独立的资源实例，项目维度的授权不会传递到
+环境实例，因此 config-server 在项目创建成功后会按环境实例再补授一次创建者权限（V3 走
+`resource_creator_action`，V4 走 `add_authorization`），创建者由此获得默认环境的查看/编辑/删除。
+这次补授与开关无关：只要拓扑是 `hierarchical` 就照常写入。开关关闭期间创建的项目和环境同样要写入创建者策略，
+否则开关一打开，这批创建者对自己的项目与默认环境全部没有权限。`legacy` 拓扑下权限中心没有对应的资源类型
+与 `project_creator` / `environment_creator` 角色，auth-server 直接跳过，避免无效授权请求刷错误日志。
+授权失败只记录日志，不影响项目创建。
 
 `enabled: true` 且探测/配置为 `legacy` 时 auth-server 启动失败，提示先执行 `migrate init-iam` / `init-iam-v4`：
 此时项目、环境资源类型并不存在，继续启动只会让相关操作全部被拒绝。
@@ -201,6 +214,7 @@ V4 的 `update_action` 不支持修改 `resource_type_id`，`app_create` 改为�
 | `cmd/auth-server/service/auth/app_scope.go` | 归属回查：服务按实例回查，服务创建按目标环境回查（新拓扑下与开关无关），关闭态跳过项目/环境资源本身 |
 | `pkg/iam/v4/adaptor/adaptor.go`、`pkg/iam/v4/auth/auth.go` | V4 映射与鉴权器的开关、拓扑 |
 | `cmd/config-server/service/credential.go`、`credential_scope.go`、`audit.go` | 密钥与操作记录入口统一叠加 `projectViewResource` 校验 |
+| `cmd/config-server/service/project.go` | 项目创建后为自动生成的默认环境补授创建者权限 |
 
 ## 七、验证
 

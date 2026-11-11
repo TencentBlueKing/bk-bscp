@@ -70,9 +70,66 @@ func (s *Service) CreateProject(ctx context.Context, req *pbcs.CreateProjectReq)
 		logs.Errorf("grant project creator action failed, err: %v, rid: %s", err, grpcKit.Rid)
 	}
 
+	// 项目与环境在 IAM 中是相互独立的资源实例，项目维度的授权不会传递给环境。
+	// 默认环境由创建项目时自动生成、没有走 CreateEnvironment，因此需要在这里
+	// 单独按环境实例补授创建者权限，避免出现"能管理项目却打不开默认环境"。
+	s.grantDefaultEnvCreatorAction(grpcKit, req.GetBizId(), resp.GetId())
+
 	return &pbcs.CreateProjectResp{
 		Id: resp.GetId(),
 	}, nil
+}
+
+// grantDefaultEnvCreatorAction 为项目下自动创建的默认环境补授创建者权限。
+//
+// 环境与项目分别授权：项目创建者只拿到项目实例上的查看/编辑/删除与新建环境，
+// 环境实例上的查看/编辑/删除需要在环境创建时授予。默认环境不是通过环境创建接口
+// 产生的，若不在这里补授，创建者在开启项目/环境维度校验后就无法操作该环境。
+// 回查或授权失败只记录日志，不阻塞项目创建，避免 IAM 抖动导致项目创建整体失败。
+func (s *Service) grantDefaultEnvCreatorAction(kt *kit.Kit, bizID, projectID uint32) {
+	if projectID == 0 {
+		return
+	}
+
+	env, err := s.client.DS.GetDefaultEnvironment(kt.RpcCtx(), &pbds.GetDefaultEnvironmentReq{
+		BizId:     bizID,
+		ProjectId: projectID,
+	})
+	if err != nil {
+		logs.Errorf("query default environment failed, project id: %d, err: %v, rid: %s",
+			projectID, err, kt.Rid)
+		return
+	}
+
+	// 默认环境由 data-service 在同一事务里创建，正常不会查不到；
+	// 查不到时没有可授权的实例，跳过即可。
+	if env.GetId() == 0 {
+		logs.Warnf("default environment not found, project id: %d, rid: %s", projectID, kt.Rid)
+		return
+	}
+
+	if err := s.authorizer.GrantResourceCreatorAction(kt, &client.GrantResourceCreatorActionOption{
+		System:  sys.SystemIDBSCP,
+		Type:    sys.Environment,
+		ID:      strconv.Itoa(int(env.GetId())),
+		Name:    env.GetSpec().GetName(),
+		Creator: kt.User,
+		Ancestors: []client.GrantResourceCreatorActionAncestor{
+			{
+				System: sys.SystemIDCMDB,
+				Type:   sys.Business,
+				ID:     strconv.Itoa(int(bizID)),
+			},
+			{
+				System: sys.SystemIDBSCP,
+				Type:   sys.Project,
+				ID:     strconv.Itoa(int(projectID)),
+			},
+		},
+	}); err != nil {
+		logs.Errorf("grant default environment creator action failed, env id: %d, err: %v, rid: %s",
+			env.GetId(), err, kt.Rid)
+	}
 }
 
 // DeleteProject implements [pbcs.ConfigServer].

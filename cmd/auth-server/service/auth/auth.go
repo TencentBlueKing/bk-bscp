@@ -715,8 +715,21 @@ func (a *Auth) getInstIDNameMap(kt *kit.Kit, resTypeIDsMap map[client.TypeID][]s
 func (a *Auth) GrantResourceCreatorAction(ctx context.Context,
 	opts *client.GrantResourceCreatorActionOption) error {
 
+	kt := kit.FromGrpcContext(ctx)
+
+	// 只有旧拓扑才必须跳过：权限中心里没有项目/环境资源类型，也没有 project_creator /
+	// environment_creator 角色，授权请求一定失败，只会刷错误日志。
+	// 开关关不等于不该写：hierarchical 下模型已注册，关闭期间创建的资源也应写入创建者策略，
+	// 否则开关一打开，这批创建者对自己的项目和环境全部没有权限。
+	if opts != nil && a.topology.IsLegacy() &&
+		(opts.Type == sys.Project || opts.Type == sys.Environment) {
+		logs.Infof("skip granting %s creator action, iam topology is legacy, id: %s, rid: %s",
+			opts.Type, opts.ID, kt.Rid)
+		return nil
+	}
+
 	if a.useV4() {
-		return a.grantResourceCreatorActionV4(kit.FromGrpcContext(ctx), opts)
+		return a.grantResourceCreatorActionV4(kt, opts)
 	}
 
 	return a.auth.GrantResourceCreatorAction(ctx, opts)
