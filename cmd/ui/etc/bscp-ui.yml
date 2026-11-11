@@ -25,7 +25,8 @@ frontend_conf:
     iam_version: ""
     bk_cmdb_host: ""
     bscp_api_url: ""
-    bk_nodeman_host: ""
+    # 节点管理跳转地址, 填写完整 URL, 如 https://nodemgr.example.com/#/node-manager/agent
+    bk_nodemgr_host: ""
     bk_shared_res_url: ""
     # 用户中心(个人中心)跳转地址, 仅多租户环境配置, 填写完整 URL
     user_center_url: ""

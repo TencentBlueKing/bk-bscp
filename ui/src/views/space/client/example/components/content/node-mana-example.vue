@@ -136,7 +136,7 @@
   const basicInfo = inject<{ serviceName: Ref<string>; serviceType: Ref<string> }>('basicInfo');
 
   const linkUrl = {
-    nodeManaUrl: `${(window as any).BK_NODE_HOST}/#/plugin-manager/rule`,
+    nodeManaUrl: (window as any).BK_NODE_HOST,
     // @ts-ignore
     // eslint-disable-next-line
     clientNode: (typeof BSCP_CONFIG !== 'undefined' && BSCP_CONFIG.client_configuration_doc) || '',

@@ -189,7 +189,7 @@ func (s *WebServer) subRouter() http.Handler {
 		Helper:               config.G.Frontend.Helper,
 		GrpcAddr:             config.G.Base.GrpcAddr,
 		HttpAddr:             config.G.Base.HttpAddr,
-		NodeManHost:          config.G.Frontend.Host.BKNODEMANHOST,
+		NodeManHost:          config.G.Frontend.Host.BKNODEMGRHOST,
 		UserManHost:          config.G.Frontend.Host.UserManHost,
 		UserCenterURL:        config.G.Frontend.Host.UserCenterURL,
 		NewUIURL:             config.G.Frontend.Host.NewUIURL,
