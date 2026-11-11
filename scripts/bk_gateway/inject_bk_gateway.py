@@ -11,6 +11,16 @@ import sys
 # “校验失败: backend_config.path: 输入值不匹配要求的模式”。
 GATEWAY_PATH_PATTERN = re.compile(r"^/[\w{}/.-]*$")
 
+# protoc-gen-openapiv2 为 additional_bindings 生成的 operationId 是 “主绑定名 + 序号”，
+# 序号随绑定顺序变化，且看不出路由差异。网关资源名、MCP 工具名都取自 operationId，
+# 因此按路径特征改成稳定的名字，主绑定的名字保持不变。
+GENERATED_SUFFIX_PATTERN = re.compile(r"^(.+?)(\d+)$")
+ENV_SCOPE_PATTERN = re.compile(r"/projects/\{\w+\}/envs/\{\w+\}")
+PROJECT_SCOPE_PATTERN = re.compile(r"/projects/\{\w+\}")
+INNER_TOKEN = "Inner"
+PROJECT_ENV_TOKEN = "ProjectEnv"
+PROJECT_TOKEN = "Project"
+
 DEFAULT_EXTENSIONS = {
     "isPublic": True,
     "allowApplyPermission": True,
@@ -43,6 +53,46 @@ def build_inner_extensions(method, path):
             "resourcePermissionRequired": True
         }
     }
+
+
+def iter_operations(paths):
+    for path, path_item in paths.items():
+        for method, method_config in path_item.items():
+            if isinstance(method_config, dict):
+                yield path, method, method_config
+
+
+def build_binding_operation_id(base_id, path):
+    """按路径特征生成 additional_bindings 的 operationId，如 Config_Inner_ProjectEnv_Publish。"""
+    service, _, rpc = base_id.partition("_")
+    tokens = [service]
+    if "/inner/" in path:
+        tokens.append(INNER_TOKEN)
+    if ENV_SCOPE_PATTERN.search(path):
+        tokens.append(PROJECT_ENV_TOKEN)
+    elif PROJECT_SCOPE_PATTERN.search(path):
+        tokens.append(PROJECT_TOKEN)
+    tokens.append(rpc)
+    return "_".join(tokens)
+
+
+def normalize_operation_ids(paths):
+    """把带序号的 operationId 改为稳定名字，返回改名数量与冲突列表。"""
+    operation_ids = {config.get("operationId") for _, _, config in iter_operations(paths)}
+    renamed = 0
+    for path, _, config in iter_operations(paths):
+        match = GENERATED_SUFFIX_PATTERN.match(config.get("operationId") or "")
+        if not match or match.group(1) not in operation_ids:
+            continue
+        config["operationId"] = build_binding_operation_id(match.group(1), path)
+        renamed += 1
+
+    owners = {}
+    for path, method, config in iter_operations(paths):
+        owners.setdefault(config.get("operationId"), []).append(f"{method.upper()} {path}")
+    errors = [f"operationId 重复: {op_id} <- {', '.join(routes)}"
+              for op_id, routes in owners.items() if len(routes) > 1]
+    return renamed, errors
 
 
 def collect_path_errors(paths):
@@ -98,10 +148,19 @@ def inject_bk_gateway_config(file_path):
         print("请修改 proto 中 google.api.http 的路径（如 gRPC 自定义动词的冒号）后重新生成。")
         return False
 
+    renamed_count, errors = normalize_operation_ids(paths)
+    if errors:
+        print(f"校验失败, {file_path} 中存在 {len(errors)} 个重复的 operationId, 已跳过写入:")
+        for error in errors:
+            print(f"  - {error}")
+        print("同一 rpc 的多个绑定需在 inner、项目、项目+环境维度上可区分，请调整 proto 中的绑定路径。")
+        return False
+
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(swagger_data, f, indent=2, ensure_ascii=False)
-        print(f"成功, 已为 {file_path} 注入蓝鲸网关配置: inner={inner_count}, default={default_count}。")
+        print(f"成功, 已为 {file_path} 注入蓝鲸网关配置: inner={inner_count}, default={default_count}, "
+              f"operationId 改名={renamed_count}。")
     except Exception as e:
         print(f"写入文件失败 [{file_path}]: {e}")
         return False

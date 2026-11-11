@@ -3295,6 +3295,250 @@
         ]
       }
     },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/template_revisions": {
+      "post": {
+        "summary": "按未命名版本服务获取绑定的模板版本列表",
+        "operationId": "Config_ListAppBoundTmplRevisions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAppBoundTmplRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListAppBoundTmplRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/template_revisions": {
+      "post": {
+        "summary": "按未命名版本服务获取绑定的模板版本列表",
+        "operationId": "Config_ListAppBoundTmplRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListAppBoundTmplRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListAppBoundTmplRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/releases/{releaseId}/template_revisions": {
+      "post": {
+        "summary": "按已发布版本服务获取绑定的模板版本列表",
+        "operationId": "Config_ListReleasedAppBoundTmplRevisions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListReleasedAppBoundTmplRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListReleasedAppBoundTmplRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/releases/{releaseId}/template_revisions": {
+      "post": {
+        "summary": "按已发布版本服务获取绑定的模板版本列表",
+        "operationId": "Config_ListReleasedAppBoundTmplRevisions2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsListReleasedAppBoundTmplRevisionsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "releaseId",
+            "description": "服务版本ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigListReleasedAppBoundTmplRevisionsBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz/{bizId}/groups/query/name/{groupName}": {
       "get": {
         "summary": "按名称获取分组",
@@ -5577,6 +5821,120 @@
             "required": true,
             "type": "integer",
             "format": "int64"
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/apps/{appId}/kvs/batch_delete": {
+      "post": {
+        "summary": "批量删除键值配置项",
+        "operationId": "Config_BatchDeleteKv",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchDeleteResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchDeleteKvBody"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/biz/{bizId}/projects/{projectId}/envs/{envId}/apps/{appId}/kvs/batch_delete": {
+      "post": {
+        "summary": "批量删除键值配置项",
+        "operationId": "Config_BatchDeleteKv2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsBatchDeleteResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bizId",
+            "description": "业务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "projectId",
+            "description": "项目ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "appId",
+            "description": "服务ID",
+            "in": "path",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ConfigBatchDeleteKvBody"
+            }
           }
         ],
         "tags": [
@@ -8034,6 +8392,24 @@
         }
       }
     },
+    "ConfigBatchDeleteKvBody": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "键值配置项ID"
+        },
+        "exclusionOperation": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否排除操作：是=true，否=false"
+        }
+      }
+    },
     "ConfigBatchUpsertConfigItemsBody": {
       "type": "object",
       "properties": {
@@ -8464,6 +8840,27 @@
         }
       }
     },
+    "ConfigListAppBoundTmplRevisionsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "type": "object",
+          "description": "搜索"
+        },
+        "withStatus": {
+          "type": "boolean",
+          "default": false,
+          "description": "为模板配置项设置文件状态：是=true，否=false"
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "模板状态：(ADD、REVISE、DELETE、UNCHANGE)"
+        }
+      }
+    },
     "ConfigListAppsBySpaceRestBody": {
       "type": "object",
       "properties": {
@@ -8740,6 +9137,15 @@
         "searchCondition": {
           "type": "object",
           "description": "搜索条件: JSON 格式"
+        }
+      }
+    },
+    "ConfigListReleasedAppBoundTmplRevisionsBody": {
+      "type": "object",
+      "properties": {
+        "search": {
+          "type": "object",
+          "description": "搜索"
         }
       }
     },
@@ -9288,6 +9694,247 @@
       },
       "title": "AppSpec source resource reference: pkg/dal/table/app.go"
     },
+    "pbatbAppBoundTmplRevisionGroupBySet": {
+      "type": "object",
+      "properties": {
+        "templateSpaceId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板空间ID"
+        },
+        "templateSpaceName": {
+          "type": "string",
+          "description": "模板空间名"
+        },
+        "templateSetId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板套餐ID"
+        },
+        "templateSetName": {
+          "type": "string",
+          "description": "模板套餐名"
+        },
+        "templateRevisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbatbAppBoundTmplRevisionGroupBySettemplate_revision_detail"
+          }
+        }
+      },
+      "title": "AppBoundTmplRevisionGroupBySet is app bound template revision group by template set"
+    },
+    "pbatbAppBoundTmplRevisionGroupBySettemplate_revision_detail": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "模板文件名"
+        },
+        "path": {
+          "type": "string",
+          "description": "模板文件路径"
+        },
+        "templateRevisionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件版本ID"
+        },
+        "isLatest": {
+          "type": "boolean",
+          "description": "是否是最新版本：是=true,否=false"
+        },
+        "templateRevisionName": {
+          "type": "string",
+          "description": "模板文件版本名"
+        },
+        "templateRevisionMemo": {
+          "type": "string",
+          "description": "模板文件版本描述"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "配置文件格式：文本文件=file, 二进制文件=binary"
+        },
+        "fileMode": {
+          "type": "string",
+          "default": "unix",
+          "description": "文件模式"
+        },
+        "user": {
+          "type": "string",
+          "description": "用户权限名"
+        },
+        "userGroup": {
+          "type": "string",
+          "description": "用户组权限名"
+        },
+        "privilege": {
+          "type": "string",
+          "description": "文件权限"
+        },
+        "signature": {
+          "type": "string",
+          "description": "文件sha256"
+        },
+        "byteSize": {
+          "type": "string",
+          "format": "uint64",
+          "description": "文件大小"
+        },
+        "creator": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "createAt": {
+          "type": "string",
+          "description": "创建时间"
+        },
+        "fileState": {
+          "type": "string",
+          "description": "文件状态"
+        },
+        "md5": {
+          "type": "string",
+          "description": "文件MD5"
+        },
+        "isConflict": {
+          "type": "boolean",
+          "description": "是否冲突"
+        }
+      }
+    },
+    "pbatbReleasedAppBoundTmplRevisionGroupBySet": {
+      "type": "object",
+      "properties": {
+        "templateSpaceId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板空间ID"
+        },
+        "templateSpaceName": {
+          "type": "string",
+          "description": "模板空间名"
+        },
+        "templateSetId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板套餐ID"
+        },
+        "templateSetName": {
+          "type": "string",
+          "description": "模板套餐名"
+        },
+        "templateRevisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbatbReleasedAppBoundTmplRevisionGroupBySettemplate_revision_detail"
+          }
+        }
+      },
+      "title": "ReleasedAppBoundTmplRevisionGroupBySet is released app bound template revision group by template set"
+    },
+    "pbatbReleasedAppBoundTmplRevisionGroupBySettemplate_revision_detail": {
+      "type": "object",
+      "properties": {
+        "templateId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "模板文件名"
+        },
+        "path": {
+          "type": "string",
+          "description": "模板文件路径"
+        },
+        "templateRevisionId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "模板文件版本ID"
+        },
+        "isLatest": {
+          "type": "boolean",
+          "description": "是否是最新版本：是=true,否=false"
+        },
+        "templateRevisionName": {
+          "type": "string",
+          "description": "模板文件版本名"
+        },
+        "templateRevisionMemo": {
+          "type": "string",
+          "description": "模板文件版本描述"
+        },
+        "fileType": {
+          "type": "string",
+          "description": "配置文件格式：文本文件=file, 二进制文件=binary"
+        },
+        "fileMode": {
+          "type": "string",
+          "default": "unix",
+          "description": "文件模式"
+        },
+        "user": {
+          "type": "string",
+          "description": "用户权限名"
+        },
+        "userGroup": {
+          "type": "string",
+          "description": "用户组权限名"
+        },
+        "privilege": {
+          "type": "string",
+          "description": "文件权限"
+        },
+        "signature": {
+          "type": "string",
+          "description": "文件sha256"
+        },
+        "byteSize": {
+          "type": "string",
+          "format": "uint64",
+          "description": "文件大小"
+        },
+        "originSignature": {
+          "type": "string",
+          "description": "源文件sha256"
+        },
+        "originByteSize": {
+          "type": "string",
+          "format": "uint64",
+          "description": "源文件大小"
+        },
+        "creator": {
+          "type": "string",
+          "description": "创建人"
+        },
+        "reviser": {
+          "type": "string",
+          "description": "更新人"
+        },
+        "createAt": {
+          "type": "string",
+          "description": "创建时间"
+        },
+        "updateAt": {
+          "type": "string",
+          "description": "更新时间"
+        },
+        "md5": {
+          "type": "string",
+          "description": "文件md5"
+        }
+      }
+    },
     "pbatbTemplateBinding": {
       "type": "object",
       "properties": {
@@ -9766,6 +10413,27 @@
         },
         "message": {
           "type": "string"
+        }
+      }
+    },
+    "pbcsBatchDeleteResp": {
+      "type": "object",
+      "properties": {
+        "successfulIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "操作成功的ID"
+        },
+        "failedIds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": "操作失败的ID"
         }
       }
     },
@@ -10288,6 +10956,18 @@
         }
       }
     },
+    "pbcsListAppBoundTmplRevisionsResp": {
+      "type": "object",
+      "properties": {
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbatbAppBoundTmplRevisionGroupBySet"
+          }
+        }
+      }
+    },
     "pbcsListAppsResp": {
       "type": "object",
       "properties": {
@@ -10579,6 +11259,18 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/pbprojectProject"
+          }
+        }
+      }
+    },
+    "pbcsListReleasedAppBoundTmplRevisionsResp": {
+      "type": "object",
+      "properties": {
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbatbReleasedAppBoundTmplRevisionGroupBySet"
           }
         }
       }
