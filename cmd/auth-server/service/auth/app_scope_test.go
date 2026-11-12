@@ -387,6 +387,34 @@ func TestFillResourceScopeAppCreateUsesTargetEnvironmentParent(t *testing.T) {
 	require.Equal(t, uint32(50002), res.EnvironmentID, "环境 ID 即资源实例 ID")
 }
 
+// 前端判权只带 environment_id、不带 resource_id：目标环境必须取自 environment_id，
+// 不能按业务默认环境补齐，否则拥有默认环境授权的用户在其它环境下也会被判为可创建服务。
+func TestFillResourceScopeAppCreateUsesRequestedEnvironmentWithoutResourceID(t *testing.T) {
+	ds := &fakeAppDS{
+		environmentInfos: map[uint32]*pbds.InstanceInfo{
+			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
+		},
+		defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+			100001: {ProjectId: 40000, EnvId: 50000},
+		},
+	}
+	a := newAppScopeAuth(ds)
+
+	res := &meta.ResourceAttribute{
+		Basic:         meta.Basic{Type: meta.App, Action: meta.Create},
+		BizID:         100001,
+		ProjectID:     40002,
+		EnvironmentID: 50002,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Zero(t, ds.defaultCalls, "已指定目标环境时不能退化到默认环境")
+	require.Equal(t, 1, ds.environmentCalls, "目标环境的父级必须回查")
+	require.Equal(t, uint32(50002), res.ResourceID)
+	require.Equal(t, uint32(50002), res.EnvironmentID)
+	require.Equal(t, uint32(40002), res.ProjectID)
+}
+
 // 关闭项目/环境维度校验但权限中心已是新拓扑时，服务创建的鉴权路径仍带项目祖先：
 // 项目必须回查目标环境的真实归属，不能采信请求里的 project_id。
 func TestFillResourceScopeAppCreateRejectsForgedProjectWhenAuthDisabled(t *testing.T) {

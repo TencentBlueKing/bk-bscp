@@ -188,6 +188,14 @@ func (a *Auth) needsEnvironmentScope(res *meta.ResourceAttribute) bool {
 // project_id 作祖先，缺少环境实例时按默认环境补齐。
 // 已有环境实例时父级一律以回查到的真实路径为准，请求里带的业务与项目只当作线索、不参与拼路径。
 func (a *Auth) fillEnvironmentScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
+	// 前端判权只带 environment_id 不带 resource_id，必须先以它作为目标环境实例：
+	// 否则会按业务默认环境补齐，拥有默认环境授权的用户在其它环境下也会被判为可创建服务。
+	for _, res := range resources {
+		if a.needsEnvironmentScope(res) && res.Type == meta.App && res.ResourceID == 0 {
+			res.ResourceID = res.EnvironmentID
+		}
+	}
+
 	envScopes, err := a.lookupEnvironmentScopes(kt, resources)
 	if err != nil {
 		return err

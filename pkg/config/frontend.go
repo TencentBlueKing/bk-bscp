@@ -35,6 +35,11 @@ const (
 	// IAMResourceTopologyEnv IAM 资源拓扑对应的环境变量，取值 auto/legacy/hierarchical，
 	// 仅当配置文件未显式配置 iam.project_environment_auth.topology 时生效，auth-server 使用
 	IAMResourceTopologyEnv = "BK_BSCP_IAM_RESOURCE_TOPOLOGY"
+
+	// iamV3ApplyPath 权限中心 V3 申请加入用户组页面
+	iamV3ApplyPath = "/apply-join-user-group"
+	// iamV4ApplyPath 权限中心 V4 权限申请页面
+	iamV4ApplyPath = "/permission/apply"
 )
 
 // HostConf host conf
@@ -75,11 +80,28 @@ func (h *HostConf) IsIAMV4() bool {
 // 开启 IAM V4 且配置了 bk_iam_v4_host 时使用 V4 地址，
 // 否则统一回退 bk_iam_host，关闭 V4 时即便残留 V4 地址也不会被使用。
 func (h *HostConf) IAMHost() string {
-	if h.IsIAMV4() && h.BKIAMV4Host != "" {
+	if h.useIAMV4Host() {
 		return h.BKIAMV4Host
 	}
 
 	return h.BKIAMHost
+}
+
+// IAMApplyURL 返回 UI 跳转申请权限的页面地址，页面路径与 IAMHost 选用的权限中心版本一致。
+func (h *HostConf) IAMApplyURL() string {
+	host := strings.TrimSuffix(h.IAMHost(), "/")
+	if host == "" {
+		return ""
+	}
+	if h.useIAMV4Host() {
+		return host + iamV4ApplyPath
+	}
+
+	return host + iamV3ApplyPath
+}
+
+func (h *HostConf) useIAMV4Host() bool {
+	return h.IsIAMV4() && h.BKIAMV4Host != ""
 }
 
 // FrontendConf docs and host conf

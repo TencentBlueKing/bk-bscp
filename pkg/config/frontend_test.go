@@ -91,3 +91,39 @@ func TestHostConfIAMHost(t *testing.T) {
 		assert.Equal(t, "https://iam-v3.example.com", h.IAMHost())
 	})
 }
+
+func TestHostConfIAMApplyURL(t *testing.T) {
+	tests := []struct {
+		name string
+		host HostConf
+		want string
+	}{
+		{
+			name: "v3",
+			host: HostConf{BKIAMHost: "https://iam-v3.example.com", BKIAMV4Host: "https://iam-v4.example.com"},
+			want: "https://iam-v3.example.com/apply-join-user-group",
+		},
+		{
+			name: "v4",
+			host: HostConf{BKIAMHost: "https://iam-v3.example.com", BKIAMV4Host: "https://iam-v4.example.com/",
+				IAMVersion: "v4"},
+			want: "https://iam-v4.example.com/permission/apply",
+		},
+		{
+			// 回退到 V3 地址时，页面路径也使用 V3 的
+			name: "v4 without v4 host",
+			host: HostConf{BKIAMHost: "https://iam-v3.example.com", IAMVersion: "v4"},
+			want: "https://iam-v3.example.com/apply-join-user-group",
+		},
+		{
+			name: "no host",
+			host: HostConf{IAMVersion: "v4"},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.host.IAMApplyURL())
+		})
+	}
+}

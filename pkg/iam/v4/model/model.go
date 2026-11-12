@@ -217,7 +217,7 @@ func Roles() []client.Role {
 			// 只授予该环境的查看/编辑/删除。若复用 environment_operator，创建者会额外获得
 			// 环境维度的 app_view，等于能看到该环境下的全部服务，比 V3 授权范围更大。
 			Description: "创建环境后自动授予创建人；包含该环境的查看、编辑、删除与所属项目的查看，" +
-				"不含创建环境，环境下的服务需单独授权",
+				"环境下的服务需单独授权",
 			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
 				projectScoped(ActionProjectView),
 				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete)),

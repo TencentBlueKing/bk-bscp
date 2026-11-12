@@ -679,7 +679,7 @@
   };
 
   const goToIAM = () => {
-    window.open(`${(window as any).BK_IAM_HOST}/apply-join-user-group`, '__blank');
+    window.open((window as any).BK_IAM_APPLY_URL, '__blank');
   };
 
   // 切换密钥规则展开收起

@@ -183,6 +183,7 @@ func (s *WebServer) subRouter() http.Handler {
 		SiteURL:              config.G.Web.RoutePrefix,
 		APIURL:               config.G.Frontend.Host.BSCPAPIURL,
 		IAMHost:              config.G.Frontend.Host.IAMHost(),
+		IAMApplyURL:          config.G.Frontend.Host.IAMApplyURL(),
 		CMDBHost:             config.G.Frontend.Host.BKCMDBHost,
 		BKSharedResBaseJSURL: config.G.Frontend.Host.BKSharedResBaseJSURL,
 		EnableBKNotice:       config.G.Frontend.EnableBKNotice,
