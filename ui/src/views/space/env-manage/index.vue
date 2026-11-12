@@ -279,9 +279,9 @@
           basic: {
             type: 'environment',
             action,
+            ...(envId ? { resource_id: envId } : {}),
           },
           project_id: +projectId.value,
-          ...(envId ? { environment_id: envId } : {}),
         },
       ],
     };

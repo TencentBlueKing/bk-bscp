@@ -41,6 +41,15 @@
     });
   };
 
+  // 同模块内切换业务/项目时组件实例被复用，setup 不会重跑，envId 仍是上一个项目的环境 ID。
+  // 先清空：新项目无可用环境时选择器不会触发 change，若不清空，服务列表会一直展示上一个项目的数据；
+  // 新项目有可用环境时，选择器会自动选中并 change 回写新的 envId。
+  watch(
+    () => `${String(route.params.spaceId || '')}/${String(route.params.projectId || '')}`,
+    () => {
+      envId.value = '';
+    },
+  );
 
   // 项目、环境切换或环境异步就绪后需重新判权，保证请求携带当前有效维度
   watch(

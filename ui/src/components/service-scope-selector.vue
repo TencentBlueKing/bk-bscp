@@ -37,8 +37,7 @@
               @change="(ids: number[]) => handleServiceChange(index, ids)">
               <template #prefix>
                 <div
-                  class="selector-prefix-area"
-                  :style="{ width: '78px' }">
+                  class="selector-prefix-area">
                   <div class="add-require">
                     <span>{{ t('绑定服务') }}</span>
                   </div>
@@ -336,7 +335,6 @@
       font-size: 12px;
       background-color: #FAFBFD;
       border-right: 1px solid #c4c6cc;
-      min-width: 54px;
       .add-require {
         position: relative;
         &:after {

@@ -41,10 +41,12 @@
       <div class="form-actions">
         <bk-button
           theme="primary"
+          class="confirm-btn"
           :disabled="!formData.envId || !formData.appId"
+          :title="t('前往服务使用')"
           @click="handleConfirm">
             <LinkToApp class="link-icon" :id="formData.appId as number" />
-            <span>{{ t('前往服务使用') }}</span>
+            <span class="confirm-btn-text">{{ t('前往服务使用') }}</span>
         </bk-button>
         <bk-button @click="handleCancel">{{ t('取消') }}</bk-button>
       </div>
@@ -361,6 +363,17 @@
     padding: 12px 16px 16px;
     border-radius: 2px;
     background-color: #F5F7FA;
+    // 组件库的必填星号用 absolute + top:0 定位，竖排表单中英文长文案换行后星号会浮到首行文字中间；
+    // 改为内联，使星号始终紧跟 label 文案末尾，并预留宽度避免星号单独折行
+    :deep(.bk-form-item.is-required .bk-form-label) {
+      padding-right: 14px;
+    }
+    :deep(.bk-form-item.is-required .bk-form-label::after) {
+      position: static;
+      display: inline;
+      width: auto;
+      margin-left: 2px;
+    }
     .form-title {
       margin-bottom: 16px;
       font-size: 14px;
@@ -371,10 +384,31 @@
       display: flex;
       gap: 8px;
       margin-top: 24px;
-      .bk-button + .bk-button {
+      // 侧栏内容区仅 200px，收窄按钮内边距并允许按钮收缩，避免撑破父元素
+      .bk-button {
+        min-width: 0;
+        padding: 0 8px;
+      }
+      .confirm-btn {
         flex: 1;
+        :deep(.bk-button-text) {
+          min-width: 0;
+          max-width: 100%;
+          overflow: hidden;
+        }
+        // 文案过长（如英文）时省略，配合按钮 title 显示完整内容
+        .confirm-btn-text {
+          min-width: 0;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
+      .bk-button + .bk-button {
+        flex: 0 0 auto;
       }
       .link-icon {
+        flex-shrink: 0;
         color: #fff;
         margin-left: 0;
         margin-right: 6px;

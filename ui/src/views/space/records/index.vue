@@ -7,6 +7,7 @@
         :placeholder="$t('全部')"
         :use-default-trigger="true"
         :is-use-first-env="false"
+        :ignore-permission="true"
         @change="handleEnvChange" />
       <ServiceSelector
         ref="serviceSelectorRef"
@@ -119,7 +120,7 @@
   };
 
 
-  const handleEnvChange = (_: IEnvItem, isManual: boolean) => {
+  const handleEnvChange = (_: IEnvItem, isManual?: boolean) => {
     if (isManual) {
       isRecord.value = false;
     }

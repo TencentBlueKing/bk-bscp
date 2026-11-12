@@ -5,7 +5,7 @@
     :popover-options="{ extCls: 'env-selector-popover', offset }"
     :clearable="false"
     :filterable="true"
-    search-placeholder="搜索环境名称"
+    :search-placeholder="$t('搜索环境名称')"
     :input-search="false"
     :disabled="props.disabled"
     :popover-min-width="240"
@@ -69,8 +69,8 @@
           :name="env.spec?.name || ''"
           :disabled="props.disabledEnvIds?.includes(String(env.id))">
           <div
-            v-cursor="{ active: !env.prem_view }"
-            :class="['env-option-item', { 'no-perm': !env.prem_view }]"
+            v-cursor="{ active: !hasViewPerm(env) }"
+            :class="['env-option-item', { 'no-perm': !hasViewPerm(env) }]"
             @click="handleOptionClick(env, $event)">
             <span class="env-name">{{ env.spec?.name || '' }}</span>
           </div>
@@ -117,6 +117,7 @@
       useDefaultTrigger?: boolean; // 是否使用默认触发器样式
       disabledEnvIds?: string[]; // 需要禁用的环境 ID 列表
       isUseFirstEnv?: boolean;
+      ignorePermission?: boolean; // 环境仅用于过滤时，跳过环境查看权限判断（如操作记录页）
     }>(),
     {
       modelValue: '',
@@ -125,6 +126,7 @@
       offset: 6,
       useDefaultTrigger: false, // 默认 false，保持现有逻辑（使用 bk-select 原生触发器）
       isUseFirstEnv: true,
+      ignorePermission: false,
     },
   );
 
@@ -136,6 +138,9 @@
 
   const selectedEnvId = ref<string>(props.modelValue);
   const selectorRef = ref();
+
+  // 仅作过滤用途时不校验环境查看权限，所有环境均可选、不置灰、不弹权限申请
+  const hasViewPerm = (env: IEnvItem) => props.ignorePermission || !!env.prem_view;
 
   // 每个 group 的折叠状态，默认全部展开
   const collapsedGroups = ref<Record<EnvType, boolean>>({
@@ -273,7 +278,7 @@
 
   // 点击无查看权限的环境，阻止选中并弹出业务访问权限申请弹窗
   const handleOptionClick = (env: IEnvItem, event: Event) => {
-    if (!env.prem_view) {
+    if (!hasViewPerm(env)) {
       selectorRef.value?.hidePopover();
       event.stopPropagation();
       permissionQuery.value = {
@@ -283,9 +288,9 @@
             basic: {
               type: 'environment',
               action: 'view',
+              resource_id: env.id,
             },
             project_id: +projectId.value,
-            environment_id: env.id
           },
         ],
       };
@@ -353,6 +358,9 @@
     .placeholder-cls {
       color: #c4c6cc;
       font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .angle-down-icon {
