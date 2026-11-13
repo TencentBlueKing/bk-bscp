@@ -292,10 +292,8 @@ func (dao *appDao) CountApps(kit *kit.Kit, bizID, projectID, envID uint32, searc
 	conds1 = dao.handleSearch(conds1, search.AsMap())
 	conds2 = dao.handleSearch(conds2, search.AsMap())
 
-	if envID != 0 {
-		q = q.Where(m.EnvID.Eq(envID))
-		q2 = q2.Where(m.EnvID.Eq(envID))
-	}
+	q = q.Where(m.EnvID.Eq(envID))
+	q2 = q2.Where(m.EnvID.Eq(envID))
 
 	kvAppsCount, err := q.Where(m.BizID.Eq(bizID), m.ProjID.Eq(projectID)).
 		Where(m.ConfigType.Eq(string(table.KV))).Where(conds1...).Count()
@@ -345,9 +343,7 @@ func (dao *appDao) List(kit *kit.Kit, bizID, projectID, envID uint32, configType
 
 	conds = append(conds, m.BizID.Eq(bizID))
 	conds = append(conds, m.ProjID.Eq(projectID))
-	if envID != 0 {
-		conds = append(conds, m.EnvID.Eq(envID))
-	}
+	conds = append(conds, m.EnvID.Eq(envID))
 
 	conds = dao.handleSearch(conds, opt.Search.AsMap())
 

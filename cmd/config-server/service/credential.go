@@ -35,7 +35,7 @@ func (s *Service) CreateCredentials(ctx context.Context,
 	bizID := req.BizId
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Credential, Action: meta.Manage}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
@@ -89,7 +89,7 @@ func (s *Service) ListCredentials(ctx context.Context,
 	bizID := req.BizId
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Credential, Action: meta.View}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
@@ -143,7 +143,7 @@ func (s *Service) DeleteCredential(ctx context.Context,
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Credential, Action: meta.Manage}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
@@ -176,7 +176,7 @@ func (s *Service) UpdateCredential(ctx context.Context,
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Credential, Action: meta.Manage}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
@@ -211,7 +211,7 @@ func (s *Service) CheckCredentialName(ctx context.Context, req *pbcs.CheckCreden
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Credential, Action: meta.View}, BizID: req.BizId},
 	}
 
@@ -241,7 +241,7 @@ func (s *Service) CredentialScopePreview(ctx context.Context, req *pbcs.Credenti
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Credential, Action: meta.View}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)

@@ -86,10 +86,8 @@ type Auth struct {
 	// defaultScopes 缓存按业务解析出的默认项目/环境，用于归属为 0 的历史服务
 	defaultScopes gcache.Cache
 	// projectEnvAuth 是否启用项目/环境维度校验，关闭时项目/环境资源本身不参与鉴权，
-	// 服务等服务级资源仍然逐实例校验。
+	// 服务等服务级资源仍然逐实例校验，资源路径层级只声明业务一级。
 	projectEnvAuth bool
-	// topology IAM 侧注册的资源拓扑，决定服务等资源的祖先链层级。
-	topology meta.ResourceTopology
 }
 
 // Option 定义 Auth 的可选配置。
@@ -102,16 +100,9 @@ func WithProjectEnvironmentAuth(enabled bool) Option {
 	}
 }
 
-// WithResourceTopology 设置 IAM 侧注册的资源拓扑。
-func WithResourceTopology(topology meta.ResourceTopology) Option {
-	return func(a *Auth) {
-		a.topology = topology
-	}
-}
-
 // authOptions 返回当前生效的权限维度选项。
 func (a *Auth) authOptions() PermissionOptions {
-	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvAuth, Topology: a.topology}
+	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvAuth}
 }
 
 // v4Gateway 是本包用到的 V4 网关能力。
@@ -150,9 +141,6 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 		// 默认启用项目/环境维度校验，保持与改造后实现一致；
 		// 运行时是否启用由 auth-server 依据配置开关显式传入。
 		projectEnvAuth: true,
-		// 默认按新拓扑（业务 → 项目 → 环境 → 服务）拼路径，
-		// 实际取值由 auth-server 启动时探测或配置显式指定。
-		topology: meta.TopologyHierarchical,
 	}
 
 	for _, opt := range opts {
@@ -164,10 +152,9 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 
 // WithIAMV4 启用权限中心 V4：鉴权、申请链接与创建者授权改走 V4 实现。
 func (a *Auth) WithIAMV4(cli *clientv4.Client, cfg authv4.Config) error {
-	// 权限维度开关与资源拓扑以 Auth 上的取值为准，
-	// 避免调用方与鉴权器各持一份导致 V3/V4 行为不一致。
+	// 权限维度开关以 Auth 上的取值为准，
+	// 避免调用方与鉴权器各持一份导致 V3/V4 行为不一致；资源拓扑由该开关推导。
 	cfg.IgnoreProjectEnvironment = !a.projectEnvAuth
-	cfg.Topology = a.topology
 
 	authorizer, err := authv4.NewAuthorizer(cli, cfg)
 	if err != nil {
@@ -229,8 +216,8 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 
 	// 服务挂在环境下，鉴权路径需要项目与环境两级归属。调用方常常只带 biz 与实例 ID，
 	// 在这里统一回查或按默认项目/环境补齐，V3 与 V4 共用同一份归属，避免两套路径不一致。
-	// 关闭项目/环境维度校验时项目/环境资源本身被跳过，但服务与服务创建仍要按真实归属归一化，
-	// 否则调用方可以伪造业务或项目拼接鉴权路径。
+	// 开启项目/环境维度校验时，服务与服务创建都按真实归属归一化，调用方无法伪造业务或项目拼接路径；
+	// 关闭时没有项目/环境模型，只归一化服务的业务归属，其余资源按业务维度处理。
 	resources := pbas.ResourceAttributes(req.Resources)
 	if err := a.fillResourceScope(kt, resources); err != nil {
 		return nil, err
@@ -275,66 +262,11 @@ func (a *Auth) AuthorizeBatch(ctx context.Context, req *pbas.AuthorizeBatchReq) 
 		index++
 	}
 
-	if err := a.authorizeAppCreateByBusiness(ctx, opts.Subject, decisions); err != nil {
-		logs.Errorf("authorize app create by business failed, req: %#v, err: %v, rid: %s", req, err, kt.Rid)
-		return nil, err
-	}
-
+	// 服务创建只认按目标环境的 environment_app_create，不再回退到业务维度的 app_create：
+	// 业务级授权是旧拓扑的粗粒度权限（业务下任意环境都可创建），在新拓扑下回退放行会让
+	// 一条业务级授权直接覆盖按项目/环境授予的细粒度创建权限，等于环境隔离失效。
 	resp.Decisions = pbas.PbDecisions(decisions)
 	return resp, nil
-}
-
-// authorizeAppCreateByBusiness 对按环境未通过的服务创建，再按目标环境所属业务校验一次 app_create。
-//
-// 存量的服务创建授权都在业务维度的 app_create 上，而权限中心 V3 不允许修改带策略操作的关联资源，
-// 新拓扑下按环境创建只能使用 environment_app_create。app_create 仍代表「业务下任意环境都可创建服务」，
-// 两者任一通过即放行。业务取自目标环境回查到的真实归属，回查不到时为 0，不做回退。
-func (a *Auth) authorizeAppCreateByBusiness(ctx context.Context, subject client.Subject,
-	decisions []*meta.Decision) error {
-
-	if a.topology.IsLegacy() {
-		return nil
-	}
-
-	pending := make([]*meta.Decision, 0)
-	batch := make([]*client.AuthBatch, 0)
-	for _, decision := range decisions {
-		res := decision.Resource
-		if decision.Authorized || res.Type != meta.App || res.Action != meta.Create || res.BizID == 0 {
-			continue
-		}
-
-		pending = append(pending, decision)
-		batch = append(batch, &client.AuthBatch{
-			Action: client.Action{ID: string(sys.AppCreate)},
-			Resources: []client.Resource{{
-				System: sys.SystemIDCMDB,
-				Type:   sys.Business,
-				ID:     strconv.FormatUint(uint64(res.BizID), 10),
-			}},
-		})
-	}
-
-	if len(batch) == 0 {
-		return nil
-	}
-
-	authDecisions, err := a.auth.AuthorizeBatch(ctx, &client.AuthBatchOptions{
-		System:  sys.SystemIDBSCP,
-		Subject: subject,
-		Batch:   batch,
-	})
-	if err != nil {
-		return err
-	}
-
-	for i, decision := range authDecisions {
-		if i < len(pending) && decision.Authorized {
-			pending[i].Authorized = true
-		}
-	}
-
-	return nil
 }
 
 // authorizeBatchV4 走权限中心 V4 的批量鉴权。
@@ -445,8 +377,8 @@ func (a *Auth) GetPermissionToApply(ctx context.Context, req *pbas.GetPermission
 	}
 
 	resourceAttributes := pbas.ResourceAttributes(req.Resources)
-	// 申请链接要回显「业务 → 项目 → 环境」，与鉴权使用同一份归属；
-	// 关闭项目/环境维度校验时服务创建仍按环境维度申请，归属必须同样回查。
+	// 申请链接的祖先链与鉴权同源，都使用这里回查出的归属：
+	// 服务创建按目标环境取业务（关闭态只用业务），服务按自身归属取业务/项目/环境。
 	if err := a.fillResourceScope(kt, resourceAttributes); err != nil {
 		return nil, err
 	}
@@ -495,10 +427,9 @@ func (a *Auth) genApplyURLV4(kt *kit.Kit, resources []*meta.ResourceAttribute) (
 	permissions := make([]clientv4.ApplyPermission, 0, len(resources))
 
 	for _, res := range resources {
+		// 申请链接的祖先链与鉴权路径同源，都由项目/环境维度开关推导。
 		mapped, err := adaptorv4.AdaptWithOptions(res, adaptorv4.Options{
 			ProjectEnvironmentAuth: a.projectEnvAuth,
-			// 申请链接的祖先链必须与鉴权路径同源，否则旧拓扑下会提交权限中心不存在的节点。
-			Topology: a.topology,
 		})
 		if err != nil {
 			return "", err
@@ -560,12 +491,7 @@ func (a *Auth) getPermissionToApply(kt *kit.Kit, resources []*meta.ResourceAttri
 
 		for rscType := range permissionTypeMap {
 			iamResourceType := permissionTypeMap[rscType]
-
-			for idx, resources := range iamResourceType.Instances {
-				for idx2, resource := range resources {
-					iamResourceType.Instances[idx][idx2].Name = instIDNameMap[resource.ID]
-				}
-			}
+			assignInstanceNames(kt, iamResourceType, instIDNameMap)
 
 			action.RelatedResourceTypes = append(action.RelatedResourceTypes, iamResourceType)
 		}
@@ -573,6 +499,21 @@ func (a *Auth) getPermissionToApply(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	return permission, nil
+}
+
+// assignInstanceNames 把资源实例名称回填到申请信息里。
+// 名称只用于展示，缺失时不影响申请链接的生成，因此只记日志不报错。
+func assignInstanceNames(kt *kit.Kit, iamResourceType *meta.IamResourceType, instIDNameMap map[string]string) {
+	for _, instances := range iamResourceType.Instances {
+		for idx, instance := range instances {
+			name, ok := instIDNameMap[instanceNameKey(client.TypeID(instance.Type), instance.ID)]
+			if !ok {
+				logs.Warnf("iam resource instance name not found, type: %s, id: %s, rid: %s",
+					instance.Type, instance.ID, kt.Rid)
+			}
+			instances[idx].Name = name
+		}
+	}
 }
 
 // parseResources parse bscp auth resource to iam permission resources in organized way
@@ -677,6 +618,12 @@ func (a *Auth) parseIamPathToAncestors(iamPath []string) ([]*meta.IamResourceIns
 	return resources, nil
 }
 
+// instanceNameKey 返回资源实例名称的索引键。
+// 项目、环境的实例 ID 各自独立编号，只按 ID 索引会让同号实例互相覆盖名称。
+func instanceNameKey(resType client.TypeID, id string) string {
+	return string(resType) + "/" + id
+}
+
 // Note how to get ancestor names? right now it means cc biz name, which is not in bscp
 // getInstIDNameMap get resource id to name map by resource ids, groups by resource type
 func (a *Auth) getInstIDNameMap(kt *kit.Kit, resTypeIDsMap map[client.TypeID][]string) (map[string]string, error) {
@@ -690,7 +637,7 @@ func (a *Auth) getInstIDNameMap(kt *kit.Kit, resTypeIDsMap map[client.TypeID][]s
 				if err != nil {
 					return nil, err
 				}
-				nameMap[id] = space.SpaceName
+				nameMap[instanceNameKey(resType, id)] = space.SpaceName
 			}
 		case sys.Application:
 			for _, id := range ids {
@@ -702,7 +649,24 @@ func (a *Auth) getInstIDNameMap(kt *kit.Kit, resTypeIDsMap map[client.TypeID][]s
 				if err != nil {
 					return nil, err
 				}
-				nameMap[id] = app.Spec.Name
+				nameMap[instanceNameKey(resType, id)] = app.Spec.Name
+			}
+		case sys.Project, sys.Environment:
+			// 项目和环境的名称不在 CMDB 里，统一由 data-service 按实例 ID 批量查询，
+			// 未查到的实例不写入名称，避免影响申请链接的生成。
+			if len(ids) == 0 {
+				continue
+			}
+			resp, err := a.ds.FetchInstanceInfo(kt.RpcCtx(), &pbds.FetchInstanceInfoReq{
+				ResourceType: string(resType),
+				Ids:          ids,
+			})
+			if err != nil {
+				logs.Errorf("fetch %s instance name failed, err: %v, rid: %s", resType, err, kt.Rid)
+				return nil, err
+			}
+			for _, detail := range resp.GetDetails() {
+				nameMap[instanceNameKey(resType, detail.GetId())] = detail.GetDisplayName()
 			}
 		case sys.AppCredential:
 			return nil, fmt.Errorf("NOT IMPLEMENTED")
@@ -717,13 +681,11 @@ func (a *Auth) GrantResourceCreatorAction(ctx context.Context,
 
 	kt := kit.FromGrpcContext(ctx)
 
-	// 只有旧拓扑才必须跳过：权限中心里没有项目/环境资源类型，也没有 project_creator /
-	// environment_creator 角色，授权请求一定失败，只会刷错误日志。
-	// 开关关不等于不该写：hierarchical 下模型已注册，关闭期间创建的资源也应写入创建者策略，
-	// 否则开关一打开，这批创建者对自己的项目和环境全部没有权限。
-	if opts != nil && a.topology.IsLegacy() &&
+	// 只有关闭项目/环境维度校验时才必须跳过：权限中心里没有项目/环境资源类型，
+	// 也没有 project_creator / environment_creator 角色，授权请求一定失败，只会刷错误日志。
+	if opts != nil && !a.projectEnvAuth &&
 		(opts.Type == sys.Project || opts.Type == sys.Environment) {
-		logs.Infof("skip granting %s creator action, iam topology is legacy, id: %s, rid: %s",
+		logs.Infof("skip granting %s creator action, project/environment auth is disabled, id: %s, rid: %s",
 			opts.Type, opts.ID, kt.Rid)
 		return nil
 	}

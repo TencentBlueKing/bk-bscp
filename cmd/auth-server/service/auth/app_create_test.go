@@ -50,12 +50,11 @@ func (f *fakeV3Authorizer) AuthorizeBatch(_ context.Context, opts *client.AuthBa
 	return decisions, nil
 }
 
-func newV3Auth(topology meta.ResourceTopology, authorizer *fakeV3Authorizer, ds *fakeAppDS) *Auth {
+func newV3Auth(projectEnvAuth bool, authorizer *fakeV3Authorizer, ds *fakeAppDS) *Auth {
 	return &Auth{
 		auth:            authorizer,
 		ds:              ds,
-		projectEnvAuth:  false,
-		topology:        topology,
+		projectEnvAuth:  projectEnvAuth,
 		disableWriteOpt: &options.DisableWriteOption{},
 		appScopes:       newAppScopeCache(),
 		defaultScopes:   newDefaultScopeCache(),
@@ -86,49 +85,45 @@ func appCreateReq(bizID uint32, extra ...*meta.ResourceAttribute) *pbas.Authoriz
 	}
 }
 
-// 存量授权都在业务维度的 app_create 上：按环境未授权时，回退按业务校验 app_create，
-// 业务取目标环境的真实归属，请求里伪造的业务不参与。
-func TestAuthorizeBatchAppCreateFallsBackToBusiness(t *testing.T) {
+// 业务维度的 app_create 不参与新拓扑下的服务创建判定：只在业务上有创建权限、
+// 目标环境没有 environment_app_create 时，服务创建必须是无权限，否则一条业务级授权
+// 会覆盖按项目/环境授予的细粒度创建权限。
+func TestAuthorizeBatchAppCreateIgnoresBusinessGrant(t *testing.T) {
 	authorizer := &fakeV3Authorizer{allow: map[string]bool{
 		"app_create|biz|100001": true,
 		"app_create|biz|200002": true,
 	}}
-	a := newV3Auth(meta.TopologyHierarchical, authorizer, appCreateEnvDS())
+	a := newV3Auth(true, authorizer, appCreateEnvDS())
 
+	// 请求里带的是伪造的业务，服务创建也不应回退到业务维度。
 	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), appCreateReq(200002))
 	require.NoError(t, err)
 	require.Len(t, resp.Decisions, 1)
-	require.True(t, resp.Decisions[0].Authorized)
+	require.False(t, resp.Decisions[0].Authorized)
 
-	require.Len(t, authorizer.batches, 2)
+	require.Len(t, authorizer.batches, 1, "只有按环境的校验，不再发起按业务的 app_create")
 	require.Equal(t, string(sys.EnvironmentAppCreate), authorizer.batches[0][0].Action.ID)
 	require.Equal(t, sys.Environment, authorizer.batches[0][0].Resources[0].Type)
 	require.Equal(t, "50001", authorizer.batches[0][0].Resources[0].ID)
-
-	require.Len(t, authorizer.batches[1], 1)
-	fallback := authorizer.batches[1][0]
-	require.Equal(t, string(sys.AppCreate), fallback.Action.ID)
-	require.Equal(t, []client.Resource{{System: sys.SystemIDCMDB, Type: sys.Business, ID: "100001"}},
-		fallback.Resources)
 }
 
-// 按环境与按业务都没有授权时，服务创建保持无权限。
+// 按环境与按业务都没有授权时，服务创建保持无权限，且只校验一次目标环境。
 func TestAuthorizeBatchAppCreateDeniedWithoutAnyGrant(t *testing.T) {
 	authorizer := &fakeV3Authorizer{}
-	a := newV3Auth(meta.TopologyHierarchical, authorizer, appCreateEnvDS())
+	a := newV3Auth(true, authorizer, appCreateEnvDS())
 
 	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), appCreateReq(100001))
 	require.NoError(t, err)
 	require.False(t, resp.Decisions[0].Authorized)
-	require.Len(t, authorizer.batches, 2)
+	require.Len(t, authorizer.batches, 1)
 }
 
-// 按环境已授权时不再发起业务维度的校验。
-func TestAuthorizeBatchAppCreateGrantedByEnvironmentSkipsFallback(t *testing.T) {
+// 按环境已授权时放行。
+func TestAuthorizeBatchAppCreateGrantedByEnvironment(t *testing.T) {
 	authorizer := &fakeV3Authorizer{allow: map[string]bool{
 		"environment_app_create|environment|50001": true,
 	}}
-	a := newV3Auth(meta.TopologyHierarchical, authorizer, appCreateEnvDS())
+	a := newV3Auth(true, authorizer, appCreateEnvDS())
 
 	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), appCreateReq(100001))
 	require.NoError(t, err)
@@ -136,10 +131,10 @@ func TestAuthorizeBatchAppCreateGrantedByEnvironmentSkipsFallback(t *testing.T) 
 	require.Len(t, authorizer.batches, 1)
 }
 
-// 目标环境回查不到归属时业务被清空，不能回退到任何业务的授权上。
-func TestAuthorizeBatchAppCreateUnknownEnvironmentSkipsFallback(t *testing.T) {
+// 目标环境回查不到归属时归属被清空，不能借任何业务授权放行。
+func TestAuthorizeBatchAppCreateUnknownEnvironmentDenied(t *testing.T) {
 	authorizer := &fakeV3Authorizer{allow: map[string]bool{"app_create|biz|100001": true}}
-	a := newV3Auth(meta.TopologyHierarchical, authorizer, &fakeAppDS{})
+	a := newV3Auth(true, authorizer, &fakeAppDS{})
 
 	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), appCreateReq(100001))
 	require.NoError(t, err)
@@ -147,10 +142,39 @@ func TestAuthorizeBatchAppCreateUnknownEnvironmentSkipsFallback(t *testing.T) {
 	require.Len(t, authorizer.batches, 1)
 }
 
-// 旧拓扑下服务创建本身就按业务校验 app_create，只发起一次。
-func TestAuthorizeBatchAppCreateLegacyChecksBusinessOnce(t *testing.T) {
+// 只声明 environment_id 的服务创建必须校验声明的环境：默认环境下有权限也不能放行。
+func TestAuthorizeBatchAppCreateUsesDeclaredEnvironment(t *testing.T) {
+	ds := appCreateEnvDS()
+	ds.defaults = map[uint32]*pbds.GetDefaultProjectEnvResp{
+		100001: {ProjectId: 40001, EnvId: 50000},
+	}
+	authorizer := &fakeV3Authorizer{allow: map[string]bool{
+		"environment_app_create|environment|50000": true,
+	}}
+	a := newV3Auth(true, authorizer, ds)
+
+	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), &pbas.AuthorizeBatchReq{
+		User: pbas.PbUserInfo(&meta.UserInfo{UserName: "tester"}),
+		Resources: pbas.PbResourceAttributes([]*meta.ResourceAttribute{{
+			Basic:         meta.Basic{Type: meta.App, Action: meta.Create},
+			BizID:         100001,
+			ProjectID:     40001,
+			EnvironmentID: 50001,
+		}}),
+	})
+	require.NoError(t, err)
+	require.False(t, resp.Decisions[0].Authorized)
+
+	require.Len(t, authorizer.batches, 1)
+	require.Equal(t, "50001", authorizer.batches[0][0].Resources[0].ID)
+	require.Equal(t, []string{"/biz,100001/project,40001/"},
+		authorizer.batches[0][0].Resources[0].Attribute[client.IamPathKey])
+}
+
+// 关闭项目/环境维度校验（旧拓扑）时，服务创建按业务维度校验 app_create。
+func TestAuthorizeBatchAppCreateDisabledChecksBusinessOnce(t *testing.T) {
 	authorizer := &fakeV3Authorizer{}
-	a := newV3Auth(meta.TopologyLegacy, authorizer, appCreateEnvDS())
+	a := newV3Auth(false, authorizer, appCreateEnvDS())
 
 	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), appCreateReq(100001))
 	require.NoError(t, err)
@@ -160,13 +184,14 @@ func TestAuthorizeBatchAppCreateLegacyChecksBusinessOnce(t *testing.T) {
 	require.Equal(t, sys.Business, authorizer.batches[0][0].Resources[0].Type)
 }
 
-// 混合批次里只有服务创建参与回退，其他资源的判定与顺序保持不变。
-func TestAuthorizeBatchAppCreateFallbackKeepsOtherDecisions(t *testing.T) {
+// 混合批次里服务创建的判定不影响其他资源。
+func TestAuthorizeBatchAppCreateKeepsOtherDecisions(t *testing.T) {
 	authorizer := &fakeV3Authorizer{allow: map[string]bool{
-		"find_business_resource|biz|100001": true,
-		"app_create|biz|100001":             true,
+		"find_business_resource|biz|100001":        true,
+		"environment_app_create|environment|50001": false,
+		"app_create|biz|100001":                    true,
 	}}
-	a := newV3Auth(meta.TopologyHierarchical, authorizer, appCreateEnvDS())
+	a := newV3Auth(true, authorizer, appCreateEnvDS())
 
 	req := appCreateReq(100001,
 		&meta.ResourceAttribute{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: 100001},
@@ -178,9 +203,7 @@ func TestAuthorizeBatchAppCreateFallbackKeepsOtherDecisions(t *testing.T) {
 	require.Len(t, resp.Decisions, 3)
 	require.True(t, resp.Decisions[0].Authorized, "business view")
 	require.False(t, resp.Decisions[1].Authorized, "app view")
-	require.True(t, resp.Decisions[2].Authorized, "app create")
+	require.False(t, resp.Decisions[2].Authorized, "business-level app_create must not authorize creation")
 
-	require.Len(t, authorizer.batches, 2)
-	require.Len(t, authorizer.batches[1], 1)
-	require.Equal(t, string(sys.AppCreate), authorizer.batches[1][0].Action.ID)
+	require.Len(t, authorizer.batches, 1)
 }

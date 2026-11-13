@@ -19,24 +19,6 @@ type UserInfo struct {
 	UserName string
 }
 
-// ResourceTopology IAM 侧注册的资源拓扑形态，决定资源鉴权路径的层级。
-//
-// 拓扑由权限中心实际注册的模型决定，与"是否校验项目/环境资源"是两个独立维度：
-// 开关关闭只跳过项目/环境资源本身，不改变服务的祖先链，否则服务级授权会全部匹配不到。
-type ResourceTopology string
-
-const (
-	// TopologyLegacy 旧模型：业务 → 服务，服务路径只声明业务一层。
-	TopologyLegacy ResourceTopology = "legacy"
-	// TopologyHierarchical 新模型：业务 → 项目 → 环境 → 服务。
-	TopologyHierarchical ResourceTopology = "hierarchical"
-)
-
-// IsLegacy 判断是否为旧资源拓扑。
-func (t ResourceTopology) IsLegacy() bool {
-	return t == TopologyLegacy
-}
-
 // ResourceAttribute represent one iam resource
 type ResourceAttribute struct {
 	Basic `json:",inline"`

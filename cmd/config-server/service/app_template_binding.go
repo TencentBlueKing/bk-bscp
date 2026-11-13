@@ -52,6 +52,8 @@ func (s *Service) CreateAppTemplateBinding(ctx context.Context, req *pbcs.Create
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	// Authorize authorize if user has permission to the resources.
@@ -92,6 +94,8 @@ func (s *Service) DeleteAppTemplateBinding(ctx context.Context, req *pbcs.Delete
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -133,6 +137,8 @@ func (s *Service) UpdateAppTemplateBinding(ctx context.Context, req *pbcs.Update
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err = s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -166,6 +172,8 @@ func (s *Service) ListAppTemplateBindings(ctx context.Context, req *pbcs.ListApp
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -223,6 +231,8 @@ func (s *Service) ListAppBoundTmplRevisions(ctx context.Context, req *pbcs.ListA
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -411,6 +421,8 @@ func (s *Service) ListReleasedAppBoundTmplRevisions(ctx context.Context,
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -500,6 +512,8 @@ func (s *Service) GetReleasedAppBoundTmplRevision(ctx context.Context,
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -549,6 +563,8 @@ func (s *Service) UpdateAppBoundTmplRevisions(ctx context.Context, req *pbcs.Upd
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err = s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -655,8 +671,11 @@ func (s *Service) DeleteAppBoundTmplSets(ctx context.Context, req *pbcs.DeleteAp
 	}
 	templateSetIDs = tools.RemoveDuplicates(templateSetIDs)
 
+	// 该请求体没有项目/环境字段，归属取请求上下文（auth-server 仍会按服务真实归属改写）
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ProjectID),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.EnvID),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err = s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -758,6 +777,8 @@ func (s *Service) CheckAppTemplateBinding(ctx context.Context, req *pbcs.CheckAp
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err = s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -796,6 +817,8 @@ func (s *Service) ImportFromTemplateSetToApp(ctx context.Context, req *pbcs.Impo
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(kit, res...); err != nil {
