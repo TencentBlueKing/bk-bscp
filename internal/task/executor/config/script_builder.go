@@ -622,18 +622,50 @@ for /f "skip=1 tokens=*" %%%%a in ('certutil -hashfile "%s" MD5 ^| findstr /v "C
 `, winPath), nil
 }
 
-// buildWindowsCatScript 构建 Windows 文件内容读取脚本
+// buildWindowsCatScript 构建 Windows 文件内容读取脚本。
+// 不能再用 type 把文件字节直接打到 stdout：脚本输出在 Windows 采集链路中可能被按系统 ANSI
+// 代码页解释，UTF-8 的韩文、日文、俄文会被二次解码成乱码。这里改为输出文件字节的 Base64
+// （纯 ASCII，不受代码页影响），由服务端还原原始字节后再按字符集转成可展示文本。
+//
+// 读取失败必须显式失败：if exist 只保证检查时刻文件存在，无权限、被独占锁定、检查后被删除
+// 或实际是目录时 ReadAllBytes 仍会抛异常，因此 PowerShell 内用 try/catch + Stop 错误策略，
+// 并通过 exit 1 与批处理的 errorlevel 把失败码传给 GSE，避免失败被当成空内容或半截内容。
+//
+// 输出格式为「Base64 + 换行 + 原始字节数」，用 [Console]::Out.Write 而不是 Write-Output 以免
+// 追加多余换行。字节数是完整性凭据：screen 若在采集链路里被截断，末尾的字节数会一起丢失或
+// 与解码结果不一致，服务端据此判定采集失败，而不是拿半份内容当成现网配置。
+//
+// 目标路径通过环境变量传给 PowerShell，避免路径里的引号破坏 -Command 的字符串；
+// setlocal DisableDelayedExpansion 防止继承的延迟展开把路径中的 ! 吃掉。
+// nolint:lll
 func (b *ScriptBuilder) buildWindowsCatScript(absPath string) (string, error) {
 	winPath := ToWindowsPath(absPath)
 
 	return fmt.Sprintf(`@echo off
-if exist "%s" (
-    type "%s"
-) else (
+setlocal DisableDelayedExpansion
+set "BSCP_TARGET=%s"
+if not exist "%%BSCP_TARGET%%" (
     echo FILE_NOT_FOUND
     exit /b 1
 )
-`, winPath, winPath), nil
+powershell -NoProfile -NonInteractive -Command "%s"
+if errorlevel 1 exit /b 1
+`, escapeWindowsBatchLiteral(winPath), windowsCatPSCommand), nil
+}
+
+// windowsCatPSCommand 是读取脚本里 PowerShell 的 -Command 参数。拆成拼接常量只为避免
+// 超长的源码行，生成的 .bat 中仍是一条完整的 powershell 命令。
+const windowsCatPSCommand = "$ErrorActionPreference='Stop'; " +
+	"try { $bytes=[IO.File]::ReadAllBytes($env:BSCP_TARGET); " +
+	"[Console]::Out.Write([Convert]::ToBase64String($bytes) + [char]10 + $bytes.Length) } " +
+	"catch { [Console]::Out.WriteLine('BSCP_READ_FAILED: ' + $_.Exception.Message); exit 1 }"
+
+// escapeWindowsBatchLiteral 转义要作为字面量写进批处理脚本的字符串。
+// cmd 解析批处理时会对 %NAME% 做环境变量展开，路径里的 % 会被替换或吞掉，
+// 成对写成 %% 才能让 cmd 还原出字面 %。双引号内的 & | ^ < > 不再有特殊含义，
+// 路径中的 ! 由 setlocal DisableDelayedExpansion 保证不再被延迟展开处理。
+func escapeWindowsBatchLiteral(s string) string {
+	return strings.ReplaceAll(s, "%", "%%")
 }
 
 // ---- 公共辅助函数 ----

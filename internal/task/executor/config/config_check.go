@@ -13,11 +13,16 @@
 package config
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
+	"golang.org/x/text/encoding/simplifiedchinese"
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/components/bkcmdb"
@@ -381,7 +386,13 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 		)
 	}
 
-	commonPayload.ConfigPayload.ConfigContent = r.Screen
+	content, err := catOutputToConfigContent(r.Screen, fileMode, commonPayload.ConfigPayload.Charset)
+	if err != nil {
+		logs.Errorf("[FetchConfigContent STEP]: decode cat output failed, batch_id=%d, err=%v",
+			payload.BatchID, err)
+		return fmt.Errorf("[FetchConfigContent STEP]: read current config content failed: %w", err)
+	}
+	commonPayload.ConfigPayload.ConfigContent = content
 
 	if err := c.SetCommonPayload(commonPayload); err != nil {
 		return fmt.Errorf("[FetchConfigContent STEP]: set common payload failed: %w", err)
@@ -389,6 +400,88 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 
 	// 这是 配置内容不一致 的业务错误
 	return fmt.Errorf("config content inconsistent")
+}
+
+// catOutputToConfigContent 把读取脚本上报的 screen 转成可展示的配置内容。
+// Windows 脚本只上报文件字节的 Base64，避免 Windows 脚本输出采集链路中的代码页转换影响：
+// 脚本输出若被按系统 ANSI 代码页解释，UTF-8 的韩文、日文、俄文可能被二次解码成乱码，
+// 而 Base64 是纯 ASCII，不受代码页影响。
+// 解码失败说明输出被截断、夹杂了其它信息或采集异常，此时必须报错：退回原始 screen 会把
+// Base64 或 PowerShell 报错当成现网配置展示，既制造虚假差异，也掩盖了采集本身失败。
+// Linux 脚本直接 cat，Agent 不做转码，保持原样。
+func catOutputToConfigContent(screen string, fileMode table.FileMode,
+	charset table.FileCharset) (string, error) {
+	if fileMode != table.Windows {
+		return screen, nil
+	}
+
+	raw, err := decodeBase64Screen(screen)
+	if err != nil {
+		return "", fmt.Errorf("decode cat output as base64 failed: %w, screen=%s",
+			err, truncateForScreen(screen, 128))
+	}
+	return toDisplayConfigContent(raw, charset), nil
+}
+
+// decodeBase64Screen 解析脚本上报的「Base64 + 原始字节数」输出。GSE 的 screen 可能带换行或
+// 首尾空白，按空白切分后最后一段是脚本写入的字节数。
+// 字节数同时是格式校验与完整性校验：screen 在采集链路里被截断时末尾字节数会一起丢失，
+// 或与解码结果长度不一致。原文长度是 3 的倍数时 Base64 不带 padding，截断到 4 字符组边界
+// 仍能解码成功，只检查解码错误是发现不了这种截断的。
+func decodeBase64Screen(screen string) ([]byte, error) {
+	fields := strings.Fields(screen)
+	if len(fields) == 0 {
+		return nil, errors.New("cat output is empty")
+	}
+
+	lengthToken := fields[len(fields)-1]
+	want, err := strconv.Atoi(lengthToken)
+	if err != nil {
+		return nil, fmt.Errorf("cat output missing byte length trailer, got %q", lengthToken)
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(strings.Join(fields[:len(fields)-1], ""))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(raw) != want {
+		return nil, fmt.Errorf("cat output is incomplete, got %d bytes, want %d", len(raw), want)
+	}
+	return raw, nil
+}
+
+// truncateForScreen 截断要写进错误信息的 screen，避免把整份 Base64 塞进任务错误里。
+// 截断后按合法 UTF-8 修正，防止错误信息里出现半个多字节字符。
+func truncateForScreen(screen string, max int) string {
+	screen = strings.TrimSpace(screen)
+	if len(screen) <= max {
+		return screen
+	}
+	return strings.ToValidUTF8(screen[:max], "") + "..."
+}
+
+// toDisplayConfigContent 把文件原始字节转成可展示的 UTF-8 文本：
+//   - 去掉下发时补的 UTF-8 BOM，避免与「最后一次下发」内容对比时多出看不见的首行差异；
+//   - 合法 UTF-8 原样返回，韩文、日文、俄文等无需额外处理；
+//   - GBK 字符集按 GBK 解码，否则 GBK 配置在对比页会显示成乱码；
+//   - 其余非法字节替换为 U+FFFD，保证返回值一定是合法 UTF-8，protobuf/JSON 不会因此报错。
+func toDisplayConfigContent(raw []byte, charset table.FileCharset) string {
+	content := raw
+	// 只有「去掉 BOM 后仍是合法 UTF-8」才认为是下发补的 BOM：GBK 文件的首字节行里
+	// 也可能出现 EF BB BF，按 GBK 解释时它们属于正文，不能剥掉。
+	if rest := bytes.TrimPrefix(content, []byte(utf8BOM)); len(rest) != len(content) && utf8.Valid(rest) {
+		content = rest
+	}
+	if utf8.Valid(content) {
+		return string(content)
+	}
+	if charset == table.GBK {
+		if decoded, err := simplifiedchinese.GBK.NewDecoder().Bytes(content); err == nil {
+			return string(decoded)
+		}
+	}
+	return strings.ToValidUTF8(string(content), "\ufffd")
 }
 
 // Callback implements istep.Callback.
