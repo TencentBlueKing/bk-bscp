@@ -348,27 +348,8 @@ func (a authorizer) Authorize(kt *kit.Kit, resources ...*meta.ResourceAttribute)
 
 	st := status.New(codes.PermissionDenied, "permission denied")
 	details := pbas.ApplyDetail{
-		Resources: []*pbas.BasicDetail{},
+		Resources: pbas.PermissionApplyResources(permResp.Permission),
 		ApplyUrl:  permResp.ApplyUrl,
-	}
-	for _, action := range permResp.Permission.Actions {
-		for _, resourceType := range action.RelatedResourceTypes {
-			for _, instance := range resourceType.Instances {
-				for _, i := range instance.Instances {
-					if i.Type != resourceType.Type {
-						continue
-					}
-					details.Resources = append(details.Resources, &pbas.BasicDetail{
-						Type:         resourceType.Type,
-						TypeName:     resourceType.TypeName,
-						Action:       action.Id,
-						ActionName:   action.Name,
-						ResourceId:   i.Id,
-						ResourceName: i.Name,
-					})
-				}
-			}
-		}
 	}
 	st, err = st.WithDetails(&details)
 	if err != nil {

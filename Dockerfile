@@ -25,6 +25,7 @@ COPY scripts/itsm-templates/system_bk_bscp.json /bk-bscp/etc/itsm/system_bk_bscp
 COPY scripts/bkai-syncing/package /bk-bscp/bkai
 COPY .agents/skills/bkbscp-kv-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-kv-config/SKILL.md
 COPY .agents/skills/bkbscp-file-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-file-config/SKILL.md
+COPY .agents/skills/bkbscp-process-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-process-config/SKILL.md
 # 复制 Python 模块到镜像中
 COPY render/python /bk-bscp/render/python
 WORKDIR /bk-bscp/render/python

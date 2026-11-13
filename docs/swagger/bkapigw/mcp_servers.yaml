@@ -89,3 +89,31 @@ mcp_servers:
       - Config_GetEnvironmentByName
       # 文件内容（按服务 / 模板空间反查项目环境，不区分环境）
       - get_content_download_url
+  - name: process-config
+    title: 服务配置中心-进程配置管理
+    description: 服务配置中心进程与配置管理：进程查询、按表达式启停托管、配置生成/检查/下发、任务批次轮询、CMDB 与 GSE 状态同步。对齐标准运维 gsekit 进程配置插件，不包含模板增删改与缩容清除
+    labels: [bscp]
+    category_names: [Official, ConfigManagement]
+    is_public: true
+    status: 1
+    protocol_type: streamable_http
+    oauth2_public_client_enabled: true
+    oauth2_personal_client_enabled: true
+    raw_response_enabled: false
+    resource_names:
+      # 发现进程与 IP（插件 IP 选择器对应 inner_ips）
+      - Config_ListProcess
+      - Config_ListProcessInnerIPs
+      # 配置类操作可选的模板范围
+      - Config_ListConfigTemplate
+      # 进程启停 / 托管，对应插件 process 对象
+      - Config_OperateProcess
+      # 配置生成、检查、下发。下发是「生成成功后再 push」
+      - Config_GenerateConfig
+      - Config_CheckConfig
+      - Config_PushConfig
+      # 异步批次轮询
+      - Config_GetTaskBatchDetail
+      # 刷新进程实例：同步 CMDB 与 GSE，再查同步状态
+      - Config_SyncCmdbGseStatus
+      - Config_CmdbGseStatus

@@ -21,6 +21,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
+	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
 
@@ -121,4 +122,35 @@ func TestAssignInstanceNamesFillsEveryInstance(t *testing.T) {
 	// 回查不到名称的实例保持空名称，不影响其余实例。
 	require.Empty(t, iamResourceType.Instances[1][0].Name)
 	require.Empty(t, iamResourceType.Instances[1][1].Name)
+}
+
+// 项目查看的申请弹窗要带上业务祖先和项目本身，展示成「业务/项目」。
+// 只留下项目节点时，项目名称没查到会让弹窗的「关联的资源实例」整列空白。
+func TestProjectViewApplyDialogShowsInstancePath(t *testing.T) {
+	a := &Auth{projectEnvAuth: true}
+	_, permissionMap, err := a.parseResources(testKit(), []*meta.ResourceAttribute{{
+		Basic: meta.Basic{Type: meta.Project, Action: meta.View, ResourceID: 8},
+		BizID: 3,
+	}})
+	require.NoError(t, err)
+
+	iamType := permissionMap[sys.ProjectView][sys.Project]
+	assignInstanceNames(testKit(), iamType, map[string]string{
+		instanceNameKey(sys.Business, "3"): "czl测试",
+		instanceNameKey(sys.Project, "8"):  "11111",
+	})
+
+	perm := pbas.PbIamPermission(&meta.IamPermission{
+		Actions: []*meta.IamAction{{
+			ID:                   string(sys.ProjectView),
+			Name:                 sys.ActionIDNameMap[sys.ProjectView],
+			RelatedResourceTypes: []*meta.IamResourceType{iamType},
+		}},
+	})
+	details := pbas.PermissionApplyResources(perm)
+
+	require.Len(t, details, 1)
+	require.Equal(t, "项目查看", details[0].ActionName)
+	require.Equal(t, "8", details[0].ResourceId)
+	require.Equal(t, "czl测试/11111", details[0].ResourceName)
 }
