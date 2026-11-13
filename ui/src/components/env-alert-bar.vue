@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue';
+  import { ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
   import EnvSelector from './env-selector.vue';
   import { EnvType, IEnvItem } from '../../types/env';
@@ -40,7 +40,7 @@
 
   const { t } = useI18n();
 
-  withDefaults(
+  const props = withDefaults(
     defineProps<{
       modelValue?: string;
     }>(),
@@ -55,10 +55,22 @@
   }>();
 
   const envType = ref(EnvType.PRODUCTION);
-  const envName = ref('');
+  const envName = ref('Default');
+
+  // 外部清空 modelValue（切换项目后无可用环境）时同步复位显示，避免残留上一个项目的环境名与类型
+  watch(
+    () => props.modelValue,
+    (val) => {
+      if (!val) {
+        envName.value = 'Default';
+        envType.value = EnvType.PRODUCTION;
+      }
+    },
+  );
+
   const handleChange = (env: IEnvItem, isManual?: boolean) => {
-    envType.value = env.spec.type;
-    envName.value = env.spec.name || '';
+    envType.value = env.spec.type || EnvType.PRODUCTION;
+    envName.value = env.spec.name || 'Default';
     emit('change', env, isManual);
   };
 </script>

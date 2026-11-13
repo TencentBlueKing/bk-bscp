@@ -47,39 +47,43 @@ func TestAdaptDisabledSkipsProjectAndEnvironment(t *testing.T) {
 	}
 }
 
-// 关闭项目/环境维度校验后，服务创建仍按目标环境授权，路径保持「业务 → 项目」两级。
-func TestAdaptDisabledAppCreateKeepsEnvironmentParent(t *testing.T) {
+// 关闭项目/环境维度校验后，服务创建回到业务维度：实例是业务，不再要求目标环境。
+func TestAdaptDisabledAppCreateUsesBiz(t *testing.T) {
 	got, err := AdaptWithOptions(attrInEnv(meta.Create, 100001, 40001, 50001, 50001), disabled)
 	require.NoError(t, err)
 
-	// 资源实例仍是目标环境（模型约束），路径必须与注册父链一致，不能只声明业务。
 	require.False(t, got.Skip)
 	require.Equal(t, model.ActionAppCreate, got.ActionID)
-	require.Equal(t, model.ResourceTypeEnvironment, got.ResourceType)
-	require.Equal(t, "50001", got.ResourceID)
-	require.Equal(t, "/biz,100001/project,40001/", got.AuthResource().Attributes[client.IAMPathAttrKey])
+	require.Equal(t, model.ResourceTypeBiz, got.ResourceType)
+	require.Equal(t, "100001", got.ResourceID)
+	// 业务是拓扑根节点，不带路径。
+	require.Empty(t, got.AuthResource().Attributes)
 
 	applied := got.ApplyResource()
 	require.Len(t, applied, 1)
-	require.Equal(t, []client.ResourceRef{
-		{Type: model.ResourceTypeBiz, ID: "100001"},
-		{Type: model.ResourceTypeProject, ID: "40001"},
-	}, applied[0].Ancestors)
+	require.Equal(t, model.ResourceTypeBiz, applied[0].Type)
+	require.Equal(t, "100001", applied[0].ID)
+	require.Empty(t, applied[0].Ancestors)
 }
 
-// 没有目标环境实例时无法构造合法的申请项，鉴权仍按业务维度发起。
+// 关闭项目/环境维度校验后，服务创建只依赖业务，没有目标环境也能生成鉴权与申请项。
 func TestAdaptDisabledAppCreateWithoutEnv(t *testing.T) {
 	a := &meta.ResourceAttribute{Basic: meta.Basic{Type: meta.App, Action: meta.Create}, BizID: 100001}
 
 	got, err := AdaptWithOptions(a, disabled)
 	require.NoError(t, err)
 	require.False(t, got.Skip)
-	require.Nil(t, got.ApplyResource())
-	require.Equal(t, "/biz,100001/project,0/", got.AuthResource().Attributes[client.IAMPathAttrKey])
+	require.Equal(t, model.ResourceTypeBiz, got.ResourceType)
+	require.Equal(t, "100001", got.ResourceID)
+
+	applied := got.ApplyResource()
+	require.Len(t, applied, 1)
+	require.Equal(t, model.ResourceTypeBiz, applied[0].Type)
+	require.Equal(t, "100001", applied[0].ID)
 }
 
-// 关闭项目/环境维度校验后，服务鉴权仍针对服务实例，路径保持三级完整形态。
-func TestAdaptDisabledAppKeepsFullPath(t *testing.T) {
+// 关闭项目/环境维度校验后按旧模型注册，服务鉴权路径只声明业务一层。
+func TestAdaptDisabledAppUsesBizPath(t *testing.T) {
 	cases := []struct {
 		action meta.Action
 		want   string
@@ -99,19 +103,14 @@ func TestAdaptDisabledAppKeepsFullPath(t *testing.T) {
 		require.Equal(t, model.ResourceTypeApp, got.ResourceType)
 		require.Equal(t, "30001", got.ResourceID)
 
-		// 归属仍随映射结果保留：路径与申请链接都要用到它们。
-		require.Equal(t, "40001", got.ProjectID)
-		require.Equal(t, "50001", got.EnvironmentID)
-
 		res := got.AuthResource()
 		require.NotNil(t, res)
-		require.Equal(t, "/biz,100001/project,40001/environment,50001/",
-			res.Attributes[client.IAMPathAttrKey])
+		require.Equal(t, "/biz,100001/", res.Attributes[client.IAMPathAttrKey])
 	}
 }
 
-// 关闭项目/环境维度校验后，申请链接同样提交完整祖先链。
-func TestAdaptDisabledApplyResourceKeepsFullAncestors(t *testing.T) {
+// 关闭项目/环境维度校验后，申请链接只回显业务一级祖先。
+func TestAdaptDisabledApplyResourceUsesBizAncestors(t *testing.T) {
 	got, err := AdaptWithOptions(attrInEnv(meta.Update, 100001, 40001, 50001, 30001), disabled)
 	require.NoError(t, err)
 
@@ -121,8 +120,6 @@ func TestAdaptDisabledApplyResourceKeepsFullAncestors(t *testing.T) {
 	require.Equal(t, model.ResourceTypeApp, applied[0].Type)
 	require.Equal(t, []client.ResourceRef{
 		{Type: model.ResourceTypeBiz, ID: "100001"},
-		{Type: model.ResourceTypeProject, ID: "40001"},
-		{Type: model.ResourceTypeEnvironment, ID: "50001"},
 	}, applied[0].Ancestors)
 }
 
@@ -149,51 +146,9 @@ func TestAdaptDisabledKeepsOtherResources(t *testing.T) {
 	require.True(t, ci.Skip)
 }
 
-// disabledLegacy 是关闭项目/环境维度校验且权限中心仍为旧拓扑时的映射选项。
-var disabledLegacy = Options{ProjectEnvironmentAuth: false, Topology: meta.TopologyLegacy}
-
-// 旧拓扑下服务鉴权路径只声明业务一层，与项目/环境引入前一致。
-func TestAdaptLegacyAppUsesBizPath(t *testing.T) {
-	cases := []struct {
-		action meta.Action
-		want   string
-	}{
-		{meta.View, model.ActionAppView},
-		{meta.Update, model.ActionAppEdit},
-		{meta.Delete, model.ActionAppDelete},
-		{meta.GenerateRelease, model.ActionReleaseGenerate},
-		{meta.Publish, model.ActionReleasePublish},
-	}
-
-	for _, c := range cases {
-		got, err := AdaptWithOptions(attrInEnv(c.action, 100001, 40001, 50001, 30001), disabledLegacy)
-		require.NoError(t, err, "action %s", c.action)
-		require.False(t, got.Skip)
-		require.Equal(t, c.want, got.ActionID)
-		require.Equal(t, model.ResourceTypeApp, got.ResourceType)
-		require.Equal(t, "/biz,100001/", got.AuthResource().Attributes[client.IAMPathAttrKey])
-	}
-}
-
-// 旧拓扑下 app_create 只关联业务实例，资源维度必须是业务。
-func TestAdaptLegacyAppCreateUsesBiz(t *testing.T) {
-	got, err := AdaptWithOptions(attrInEnv(meta.Create, 100001, 40001, 50001, 50001), disabledLegacy)
-	require.NoError(t, err)
-	require.False(t, got.Skip)
-	require.Equal(t, model.ActionAppCreate, got.ActionID)
-	require.Equal(t, model.ResourceTypeBiz, got.ResourceType)
-	require.Equal(t, "100001", got.ResourceID)
-
-	applied := got.ApplyResource()
-	require.Len(t, applied, 1)
-	require.Equal(t, model.ResourceTypeBiz, applied[0].Type)
-	require.Equal(t, "100001", applied[0].ID)
-	require.Empty(t, applied[0].Ancestors)
-}
-
-// 旧拓扑下服务申请链接只回显「业务 → 服务」两级祖先。
-func TestAdaptLegacyApplyResourceUsesBizAncestors(t *testing.T) {
-	got, err := AdaptWithOptions(attrInEnv(meta.View, 100001, 40001, 50001, 30001), disabledLegacy)
+// 关闭项目/环境维度校验后，服务申请项只回显业务一级祖先（示例用例保留在 disabled 变量上）。
+func TestAdaptDisabledApplyResourceWithoutProjectEnv(t *testing.T) {
+	got, err := AdaptWithOptions(attrInEnv(meta.View, 100001, 40001, 50001, 30001), disabled)
 	require.NoError(t, err)
 
 	applied := got.ApplyResource()

@@ -59,7 +59,8 @@ func newDefaultScopeCache() gcache.Cache {
 // resources 由调用方提交，若沿用请求里的归属，把服务 X 的 project/env 填成自己有权限的
 // 环境 E 就能拼出 E 的路径拿到 is_allowed=true，与环境侧 applyEnvironmentParent 的
 // 「父级一律以回查为准」也不一致。
-// 服务必须挂在具体项目与环境下，归属缺失或查不到时保持为空，由鉴权路径缺失退化为无权限。
+// 服务查不到归属时开启项目/环境维度校验一律拒绝（业务也置空，避免业务授权经路径继承命中），
+// 关闭时退化为业务维度；服务存在但还没绑定项目/环境时保留业务层级，只让业务维度的授权命中。
 func (a *Auth) fillAppScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
 	pending := make([]*meta.ResourceAttribute, 0)
 	ids := make([]uint32, 0)
@@ -93,31 +94,46 @@ func (a *Auth) fillAppScope(kt *kit.Kit, resources []*meta.ResourceAttribute) er
 		scope, ok := scopes[res.ResourceID]
 		if !ok {
 			logs.Warnf("app %d has no resolvable scope, drop biz %d/project %d/environment %d declared by the "+
-				"request, authorization will be denied, rid: %s",
-				res.ResourceID, res.BizID, res.ProjectID, res.EnvironmentID, kt.Rid)
+				"request, rid: %s", res.ResourceID, res.BizID, res.ProjectID, res.EnvironmentID, kt.Rid)
 			res.ProjectID = 0
 			res.EnvironmentID = 0
+			// 开启项目/环境维度校验时必须真的拒绝：只清空项目/环境会拼出
+			// /biz,{请求的biz}/project,0/environment,0/，业务维度的授权仍经路径继承命中，
+			// 等于用一个不存在的服务 ID 换到 is_allowed=true。清空业务后路径变成
+			// /biz,0/project,0/environment,0/，任何授权都命中不到。
+			// 关闭时没有项目/环境模型，保留调用方声明的业务，退化为业务维度判定。
+			if a.projectEnvAuth {
+				res.BizID = 0
+			}
 
 			continue
 		}
 
 		// 业务层级同样以服务自身归属为准：调用方传入的业务 ID 只用于前置的业务访问校验，
 		// 不能决定服务鉴权路径，否则传错业务就能用另一个业务的授权访问该服务。
-		if (res.BizID != 0 && res.BizID != scope.bizID) ||
-			(res.ProjectID != 0 && res.ProjectID != scope.projectID) ||
-			(res.EnvironmentID != 0 && res.EnvironmentID != scope.envID) {
-			logs.Warnf("app %d belongs to biz %d/project %d/environment %d, but resource declares %d/%d/%d, "+
+		if res.BizID != 0 && res.BizID != scope.bizID {
+			logs.Warnf("app %d belongs to biz %d, but resource declares biz %d, use the app's own scope, rid: %s",
+				res.ResourceID, scope.bizID, res.BizID, kt.Rid)
+		}
+
+		// 项目/环境只在开启项目/环境维度校验时参与路径，关闭时声明值与实际归属不一致属正常情况。
+		if a.projectEnvAuth && ((res.ProjectID != 0 && res.ProjectID != scope.projectID) ||
+			(res.EnvironmentID != 0 && res.EnvironmentID != scope.envID)) {
+			logs.Warnf("app %d belongs to project %d/environment %d, but resource declares %d/%d, "+
 				"use the app's own scope, rid: %s",
-				res.ResourceID, scope.bizID, scope.projectID, scope.envID,
-				res.BizID, res.ProjectID, res.EnvironmentID, kt.Rid)
+				res.ResourceID, scope.projectID, scope.envID, res.ProjectID, res.EnvironmentID, kt.Rid)
 		}
 
 		res.BizID = scope.bizID
 		res.ProjectID = scope.projectID
 		res.EnvironmentID = scope.envID
 
-		if res.ProjectID == 0 || res.EnvironmentID == 0 {
-			logs.Warnf("app %d is not bound to a project/environment, authorization will be denied, rid: %s",
+		// 关闭项目/环境维度校验时服务只按业务一级判定，没有归属是正常情况，不再告警。
+		// 开启时归属缺失仍保留业务层级：历史服务还没回填项目/环境，按「业务 → 项目 → 环境」拼出的
+		// /biz,{biz}/project,0/environment,0/ 只让业务维度的授权命中，项目/环境维度因 ID 对不上而不命中，
+		// 与 adaptor.appScoped 的约定一致。
+		if a.projectEnvAuth && (res.ProjectID == 0 || res.EnvironmentID == 0) {
+			logs.Warnf("app %d is not bound to a project/environment, only biz-level authorization can match, rid: %s",
 				res.ResourceID, kt.Rid)
 		}
 	}
@@ -131,8 +147,8 @@ func (a *Auth) fillAppScope(kt *kit.Kit, resources []*meta.ResourceAttribute) er
 // 权限中心按无拓扑处理，结果就是"已经授权了却一直判无权限"。
 // 因此统一在鉴权入口解析实例的真实归属，未指定实例时再补默认归属，供 V3/V4 共用。
 //
-// 项目/环境维度开关只影响这两类资源本身：它们不参与鉴权时无需补默认归属，
-// 但服务创建（app_create）的归属仍要回查，见 needsEnvironmentScope。
+// 关闭项目/环境维度开关时没有项目/环境模型，所有资源都按业务维度处理：
+// 只归一化服务的业务归属，项目/环境与服务创建的父级都不回查，见 needsEnvironmentScope。
 func (a *Auth) fillResourceScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
 	if err := a.fillAppScope(kt, resources); err != nil {
 		return err
@@ -160,41 +176,39 @@ func (a *Auth) fillResourceScope(kt *kit.Kit, resources []*meta.ResourceAttribut
 
 // needsEnvironmentScope 判断资源是否需要回查环境的真实父级（业务与项目）。
 //
-// 服务创建的授权维度是目标环境，新拓扑下路径为 /biz,{biz}/project,{pid}/，
-// 因此只要拓扑不是 legacy 就必须回查，与项目/环境维度开关无关：
-// 跳过回查会让 project 祖先直接采信调用方提交的 project_id，
-// 拥有项目 P1 权限的调用方配上 P2 下的环境就能拼出 P1 的路径。
-// 环境资源本身只在开启项目/环境维度校验时才需要归属。
+// 只有开启项目/环境维度校验时才需要：此时项目和环境的资源类型都已注册，
+// 服务创建按目标环境授权，路径为 /biz,{biz}/project,{pid}/，项目祖先不能采信调用方提交的 project_id；
+// 环境资源本身也按实例校验。
+// 关闭开关时没有项目/环境模型，所有资源（含服务创建）都退回业务维度，没有环境实例可回查。
 func (a *Auth) needsEnvironmentScope(res *meta.ResourceAttribute) bool {
-	if res == nil || res.Action == meta.SkipAction {
+	if !a.projectEnvAuth || res == nil || res.Action == meta.SkipAction {
 		return false
 	}
 
 	switch res.Type {
 	case meta.Environment:
-		return a.projectEnvAuth
+		return true
 	case meta.App:
 		// 服务只有创建动作按环境维度鉴权
-		return res.Action == meta.Create && !a.topology.IsLegacy()
+		return res.Action == meta.Create
 	default:
 		return false
 	}
 }
 
-// fillEnvironmentScope 补齐「按项目或环境鉴权」的归属。
+// fillEnvironmentScope 补齐「按项目或环境鉴权」的归属，只在开启项目/环境维度校验时生效。
 //
 // 覆盖两类资源：在环境下创建服务（app_create，授权维度是目标环境）与环境操作
-// （view/update/delete/create，仅开启项目/环境维度校验时参与）。它们的鉴权路径都需要
-// project_id 作祖先，缺少环境实例时按默认环境补齐。
+// （view/update/delete/create）。它们的鉴权路径都需要 project_id 作祖先，缺少环境实例时按默认环境补齐。
 // 已有环境实例时父级一律以回查到的真实路径为准，请求里带的业务与项目只当作线索、不参与拼路径。
+// 关闭开关时没有项目/环境模型，所有资源都按业务维度处理，这里不做任何回查。
 func (a *Auth) fillEnvironmentScope(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
-	// 前端判权只带 environment_id 不带 resource_id，必须先以它作为目标环境实例：
-	// 否则会按业务默认环境补齐，拥有默认环境授权的用户在其它环境下也会被判为可创建服务。
-	for _, res := range resources {
-		if a.needsEnvironmentScope(res) && res.Type == meta.App && res.ResourceID == 0 {
-			res.ResourceID = res.EnvironmentID
-		}
+	if !a.projectEnvAuth {
+		return nil
 	}
+
+	resolveAppCreateTargetEnv(kt, resources)
+	resolveEnvironmentInstance(kt, resources)
 
 	envScopes, err := a.lookupEnvironmentScopes(kt, resources)
 	if err != nil {
@@ -224,6 +238,53 @@ func (a *Auth) fillEnvironmentScope(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	return nil
+}
+
+// resolveAppCreateTargetEnv 用调用方声明的 environment_id 补齐服务创建的目标环境实例。
+//
+// 服务创建按目标环境授权，资源实例 ID 即目标环境 ID。config-server 创建服务时两个字段都带，
+// 但权限查询（包括前端「创建服务」按钮调用的 /api/v1/auth/iam/permission/check）习惯只用
+// environment_id 声明目标环境。若按「未指定目标环境」处理，实例会被补成业务默认环境：
+// 用户在默认环境有创建权限、在声明的环境没有权限时仍返回 is_allowed=true，
+// 申请链接也会指向默认环境。因此先以 environment_id 作为实例，再按该环境的真实父级拼路径。
+func resolveAppCreateTargetEnv(kt *kit.Kit, resources []*meta.ResourceAttribute) {
+	for _, res := range resources {
+		if res == nil || res.Type != meta.App || res.Action != meta.Create || res.ResourceID != 0 {
+			continue
+		}
+
+		if res.EnvironmentID == 0 {
+			continue
+		}
+
+		logs.Infof("app create declares environment %d without resource instance, use it as the target "+
+			"environment, rid: %s", res.EnvironmentID, kt.Rid)
+		res.ResourceID = res.EnvironmentID
+	}
+}
+
+// resolveEnvironmentInstance 用调用方声明的 environment_id 补齐环境资源的实例。
+//
+// 环境按环境实例鉴权，资源实例 ID 即环境 ID。权限查询（包括前端切换环境、环境列表操作调用的
+// /api/v1/auth/iam/permission/check）习惯只用 environment_id 声明目标环境，与 app_create
+// 一致。若按「未指定实例」处理，实例会被补成业务默认环境：切换任何环境都只校验默认环境，
+// 用户在不该访问的环境上也可能被判为有权限，申请链接里的资源名也始终是默认环境（Default）。
+// 创建环境时资源实例是所属项目，此时 environment_id 不是实例，保持原有补齐逻辑。
+func resolveEnvironmentInstance(kt *kit.Kit, resources []*meta.ResourceAttribute) {
+	for _, res := range resources {
+		if res == nil || res.Type != meta.Environment || res.Action == meta.Create ||
+			res.Action == meta.SkipAction || res.ResourceID != 0 {
+			continue
+		}
+
+		if res.EnvironmentID == 0 {
+			continue
+		}
+
+		logs.Infof("environment %s declares environment %d without resource instance, use it as the "+
+			"environment instance, rid: %s", res.Action, res.EnvironmentID, kt.Rid)
+		res.ResourceID = res.EnvironmentID
+	}
 }
 
 // applyEnvironmentParent 用回查到的真实父级覆盖请求声明的业务与项目。

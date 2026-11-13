@@ -746,6 +746,14 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -825,6 +833,14 @@
             "required": false,
             "type": "boolean",
             "default": false
+          },
+          {
+            "name": "envId",
+            "description": "环境ID",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
           }
         ],
         "tags": [

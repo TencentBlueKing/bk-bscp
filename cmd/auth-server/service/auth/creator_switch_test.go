@@ -22,14 +22,13 @@ import (
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
-	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	sdkauth "github.com/TencentBlueKing/bk-bscp/pkg/iam/sdk/auth"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
 	authv4 "github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/auth"
 )
 
-// newCreatorGrantAuth 构造走 V4 分发、开关与拓扑取值可控的 Auth。
-func newCreatorGrantAuth(t *testing.T, projectEnvAuth bool, topology meta.ResourceTopology, gw v4Gateway) *Auth {
+// newCreatorGrantAuth 构造走 V4 分发、开关取值可控的 Auth，拓扑由开关推导。
+func newCreatorGrantAuth(t *testing.T, projectEnvAuth bool, gw v4Gateway) *Auth {
 	t.Helper()
 
 	authorizer, err := authv4.NewAuthorizer(&fakeAuthzV4Gateway{}, authv4.Config{})
@@ -39,7 +38,6 @@ func newCreatorGrantAuth(t *testing.T, projectEnvAuth bool, topology meta.Resour
 		v4:             authorizer,
 		v4Cli:          gw,
 		projectEnvAuth: projectEnvAuth,
-		topology:       topology,
 	}
 }
 
@@ -89,41 +87,39 @@ func creatorGrantOption(resourceType client.TypeID, id string) *client.GrantReso
 	}
 }
 
-// 旧拓扑下权限中心没有项目/环境资源类型，也没有对应的创建者角色，授权请求一定失败，
-// 因此必须跳过，且判断只取拓扑，与开关取值无关。V3、V4 表现一致。
-func TestGrantCreatorActionSkipsProjectAndEnvironmentInLegacyTopology(t *testing.T) {
-	ctx := creatorContext("alice")
-
-	for _, projectEnvAuth := range []bool{false, true} {
-		for _, resourceType := range []client.TypeID{sys.Project, sys.Environment} {
-			t.Run(string(resourceType), func(t *testing.T) {
-				gw := new(fakeV4Gateway)
-				v4Auth := newCreatorGrantAuth(t, projectEnvAuth, meta.TopologyLegacy, gw)
-
-				require.NoError(t, v4Auth.GrantResourceCreatorAction(
-					ctx, creatorGrantOption(resourceType, "40001")))
-				require.Zero(t, gw.calls, "v4 should skip %s creator grant", resourceType)
-
-				v3 := new(fakeV3CreatorAuthorizer)
-				v3Auth := &Auth{auth: v3, projectEnvAuth: projectEnvAuth, topology: meta.TopologyLegacy}
-
-				require.NoError(t, v3Auth.GrantResourceCreatorAction(
-					ctx, creatorGrantOption(resourceType, "40001")))
-				require.Zero(t, v3.calls, "v3 should skip %s creator grant", resourceType)
-			})
-		}
-	}
-}
-
-// 新拓扑下模型已注册，即使开关关闭也要写创建者策略：否则关闭期间创建的项目和环境，
-// 在开关打开后创建者对自己的资源全部没有权限。V3、V4 表现一致。
-func TestGrantCreatorActionWritesProjectAndEnvironmentInHierarchicalTopology(t *testing.T) {
+// 旧拓扑（项目/环境维度校验关闭）下权限中心没有项目/环境资源类型，也没有对应的创建者角色，
+// 授权请求一定失败，因此必须跳过。V3、V4 表现一致。
+func TestGrantCreatorActionSkipsProjectAndEnvironmentWhenAuthDisabled(t *testing.T) {
 	ctx := creatorContext("alice")
 
 	for _, resourceType := range []client.TypeID{sys.Project, sys.Environment} {
 		t.Run(string(resourceType), func(t *testing.T) {
 			gw := new(fakeV4Gateway)
-			v4Auth := newCreatorGrantAuth(t, false, meta.TopologyHierarchical, gw)
+			v4Auth := newCreatorGrantAuth(t, false, gw)
+
+			require.NoError(t, v4Auth.GrantResourceCreatorAction(
+				ctx, creatorGrantOption(resourceType, "40001")))
+			require.Zero(t, gw.calls, "v4 should skip %s creator grant", resourceType)
+
+			v3 := new(fakeV3CreatorAuthorizer)
+			v3Auth := &Auth{auth: v3, projectEnvAuth: false}
+
+			require.NoError(t, v3Auth.GrantResourceCreatorAction(
+				ctx, creatorGrantOption(resourceType, "40001")))
+			require.Zero(t, v3.calls, "v3 should skip %s creator grant", resourceType)
+		})
+	}
+}
+
+// 新拓扑（项目/环境维度校验开启）下模型已注册，项目/环境创建者必须写创建者策略，
+// 否则创建者对自己的资源全部没有权限。V3、V4 表现一致。
+func TestGrantCreatorActionWritesProjectAndEnvironmentWhenAuthEnabled(t *testing.T) {
+	ctx := creatorContext("alice")
+
+	for _, resourceType := range []client.TypeID{sys.Project, sys.Environment} {
+		t.Run(string(resourceType), func(t *testing.T) {
+			gw := new(fakeV4Gateway)
+			v4Auth := newCreatorGrantAuth(t, true, gw)
 
 			require.NoError(t, v4Auth.GrantResourceCreatorAction(
 				ctx, creatorGrantOption(resourceType, "40001")))
@@ -131,7 +127,7 @@ func TestGrantCreatorActionWritesProjectAndEnvironmentInHierarchicalTopology(t *
 			require.Len(t, gw.items, 2)
 
 			v3 := new(fakeV3CreatorAuthorizer)
-			v3Auth := &Auth{auth: v3, projectEnvAuth: false, topology: meta.TopologyHierarchical}
+			v3Auth := &Auth{auth: v3, projectEnvAuth: true}
 
 			require.NoError(t, v3Auth.GrantResourceCreatorAction(
 				ctx, creatorGrantOption(resourceType, "40001")))
@@ -146,7 +142,7 @@ func TestGrantCreatorActionKeepsProjectAndEnvironmentWhenEnabled(t *testing.T) {
 	ctx := creatorContext("alice")
 
 	gw := new(fakeV4Gateway)
-	v4Auth := newCreatorGrantAuth(t, true, meta.TopologyHierarchical, gw)
+	v4Auth := newCreatorGrantAuth(t, true, gw)
 
 	require.NoError(t, v4Auth.GrantResourceCreatorAction(
 		ctx, creatorGrantOption(sys.Environment, "50001")))
@@ -163,12 +159,12 @@ func TestGrantCreatorActionKeepsProjectAndEnvironmentWhenEnabled(t *testing.T) {
 	require.Equal(t, "2", scopes["biz"])
 }
 
-// 服务创建者授权只按拓扑判断，与开关无关：新拓扑下 app_operator 里的
+// 服务创建者授权与项目/环境维度开关无关：app_operator 里的
 // project_view / environment_view 必须按服务所属项目、环境各授一次，
 // 否则创建者对自己新建的服务改不了配置项与 KV。
-func TestGrantCreatorActionKeepsApplicationScopesInHierarchicalTopology(t *testing.T) {
+func TestGrantCreatorActionKeepsApplicationScopesWhenAuthEnabled(t *testing.T) {
 	gw := new(fakeV4Gateway)
-	a := newCreatorGrantAuth(t, false, meta.TopologyHierarchical, gw)
+	a := newCreatorGrantAuth(t, false, gw)
 
 	require.NoError(t, a.GrantResourceCreatorAction(
 		creatorContext("alice"), creatorOption("30001", "2", "alice")))

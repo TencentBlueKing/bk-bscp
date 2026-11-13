@@ -77,7 +77,7 @@ func Actions() []client.Action {
 // project_view 按被授权服务/环境所属的项目授予，environment_view 按所属环境授予，
 // 只覆盖那一个项目与环境，不会扩散到同业务下的其它项目与环境。
 func Roles() []client.Role {
-	return []client.Role{
+	roles := []client.Role{
 		{
 			ID:          RoleBizViewer,
 			Name:        "业务只读",
@@ -98,10 +98,13 @@ func Roles() []client.Role {
 			ID:   RoleAppCreator,
 			Name: "服务创建者",
 			// 服务创建按环境授权：授权时选到项目下的具体环境，项目/业务维度的授权经路径继承覆盖。
-			Description: "在指定环境下创建服务；创建后自动获得该服务的运维权限，" +
-				"访问他人创建的服务需另行申请",
-			Actions: append(bizScoped(ActionFindBusinessResource),
-				environmentScoped(ActionAppCreate)...),
+			// 创建接口同时要求项目、环境的查看权限（与读取服务内资源同一条规则），
+			// 因此角色自带 project_view / environment_view，只覆盖被授权的那一个项目与环境。
+			Description: "在指定环境下创建服务，并查看该服务所属的项目与环境；" +
+				"创建后自动获得该服务的运维权限，访问他人创建的服务需另行申请",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView), environmentScoped(ActionEnvironmentView),
+				environmentScoped(ActionAppCreate)),
 		},
 		{
 			ID:   RoleCredentialManager,
@@ -196,6 +199,14 @@ func Roles() []client.Role {
 				projectScoped(ActionProjectView),
 				environmentScoped(ActionEnvironmentView, ActionAppView)),
 		},
+	}
+
+	return append(roles, creatorRoles()...)
+}
+
+// creatorRoles 返回「创建后自动授予」的角色，与 V3 的 ResourceCreatorActions 对齐。
+func creatorRoles() []client.Role {
+	return []client.Role{
 		{
 			ID: RoleProjectCreator,
 			// 只用于创建项目后的自动授权，与 V3 的 ResourceCreatorActions 对齐：

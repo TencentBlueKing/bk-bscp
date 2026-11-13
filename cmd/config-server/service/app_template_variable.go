@@ -31,6 +31,8 @@ func (s *Service) ExtractAppTmplVariables(ctx context.Context, req *pbcs.Extract
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -63,6 +65,8 @@ func (s *Service) GetAppTmplVariableRefs(ctx context.Context, req *pbcs.GetAppTm
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -99,6 +103,8 @@ func (s *Service) GetReleasedAppTmplVariableRefs(ctx context.Context, req *pbcs.
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -132,6 +138,8 @@ func (s *Service) ListAppTmplVariables(ctx context.Context, req *pbcs.ListAppTmp
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -168,6 +176,8 @@ func (s *Service) ListReleasedAppTmplVariables(ctx context.Context, req *pbcs.Li
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
@@ -201,6 +211,8 @@ func (s *Service) UpdateAppTmplVariables(ctx context.Context, req *pbcs.UpdateAp
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {

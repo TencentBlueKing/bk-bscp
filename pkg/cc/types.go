@@ -376,31 +376,16 @@ type IAM struct {
 // IAMProjectEnvironmentAuth 定义项目与环境维度权限校验的开关。
 //
 // 项目、环境是 IAM 中较晚注册的资源类型，权限中心侧存在同步延迟；
-// 该开关关闭时项目、环境资源本身不参与鉴权，服务等服务级资源仍然逐实例校验。
+// 该开关关闭时表示权限中心尚未升级到项目/环境模型：项目、环境资源本身不参与鉴权，
+// 所有资源（含服务创建）都按业务维度处理，服务等服务级资源仍然逐实例校验。
 //
-// 开关只决定"是否校验项目/环境资源"，不决定资源的祖先链形态：
-// 祖先链由权限中心实际注册的拓扑决定的，见 IAMResourceTopology。
+// 开关同时决定资源的祖先链形态：开启时按「业务 → 项目 → 环境」三级路径，
+// 关闭时只有业务一级。开启前必须先执行 migrate init-iam / init-iam-v4。
 type IAMProjectEnvironmentAuth struct {
 	// Enabled 是否启用项目与环境维度的 IAM 权限校验。
 	// 未配置时读取环境变量 BK_BSCP_IAM_PROJECT_ENV_AUTH，仍为空时按 false 处理。
 	Enabled *bool `yaml:"enabled"`
-	// Topology IAM 侧已注册的资源拓扑，取值 auto/legacy/hierarchical，为空时按 auto 处理。
-	// 未配置时读取环境变量 BK_BSCP_IAM_RESOURCE_TOPOLOGY。
-	Topology IAMResourceTopology `yaml:"topology"`
 }
-
-// IAMResourceTopology IAM 侧资源拓扑形态，决定服务等资源的祖先链长度。
-type IAMResourceTopology string
-
-const (
-	// IAMResourceTopologyAuto 由 auth-server 启动时探测权限中心已注册的拓扑。
-	// 探测失败时启动失败，需显式配置 legacy 或 hierarchical 才能继续。
-	IAMResourceTopologyAuto IAMResourceTopology = "auto"
-	// IAMResourceTopologyLegacy 旧模型：业务 → 服务，服务路径为 /biz,{bizID}/。
-	IAMResourceTopologyLegacy IAMResourceTopology = "legacy"
-	// IAMResourceTopologyHierarchical 新模型：业务 → 项目 → 环境 → 服务。
-	IAMResourceTopologyHierarchical IAMResourceTopology = "hierarchical"
-)
 
 // IAMV4 defines the runtime of the bkiam gateway for IAM V4.
 type IAMV4 struct {
@@ -471,48 +456,6 @@ func (s IAM) resolveProjectEnvAuth() (bool, error) {
 	return enabled, nil
 }
 
-// ResolveTopology 返回 IAM 资源拓扑配置的最终取值。
-// 配置文件显式配置优先；未配置时读取环境变量，仍为空时按 auto 处理（由 auth-server 探测）。
-// 环境变量取值非法时按 auto 处理，具体报错由 validate 统一给出。
-func (s IAM) ResolveTopology() IAMResourceTopology {
-	topology, err := s.resolveTopology()
-	if err != nil {
-		return IAMResourceTopologyAuto
-	}
-
-	return topology
-}
-
-// resolveTopology 解析拓扑取值：配置文件 > 环境变量 > auto。
-func (s IAM) resolveTopology() (IAMResourceTopology, error) {
-	if s.ProjectEnvironmentAuth.Topology != "" {
-		return s.ProjectEnvironmentAuth.Topology, validateTopology(s.ProjectEnvironmentAuth.Topology)
-	}
-
-	raw := strings.TrimSpace(os.Getenv(config.IAMResourceTopologyEnv))
-	if raw == "" {
-		return IAMResourceTopologyAuto, nil
-	}
-
-	topology := IAMResourceTopology(raw)
-	if err := validateTopology(topology); err != nil {
-		return IAMResourceTopologyAuto, fmt.Errorf("invalid %s: %q, should be one of auto, legacy, hierarchical",
-			config.IAMResourceTopologyEnv, raw)
-	}
-
-	return topology, nil
-}
-
-// validateTopology 校验拓扑取值是否在支持范围内。
-func validateTopology(topology IAMResourceTopology) error {
-	switch topology {
-	case IAMResourceTopologyAuto, IAMResourceTopologyLegacy, IAMResourceTopologyHierarchical:
-		return nil
-	default:
-		return fmt.Errorf("unsupported iam resource topology: %s, should be one of auto, legacy, hierarchical", topology)
-	}
-}
-
 // trySetDefault set the default value of the iam runtime.
 func (s *IAM) trySetDefault() {
 	// 版本支持通过环境变量 BK_BSCP_IAM_VERSION 设置，仅当配置文件未指定时生效，
@@ -572,10 +515,6 @@ func (s IAM) validate() error {
 	}
 
 	if _, err := s.resolveProjectEnvAuth(); err != nil {
-		return err
-	}
-
-	if _, err := s.resolveTopology(); err != nil {
 		return err
 	}
 

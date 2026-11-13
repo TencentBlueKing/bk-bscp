@@ -31,6 +31,8 @@ func (s *Service) GetLastSelect(ctx context.Context, req *pbcs.GetLastSelectReq)
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
@@ -65,6 +67,8 @@ func (s *Service) GetLastPublish(ctx context.Context, req *pbcs.GetLastPublishRe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
@@ -102,6 +106,8 @@ func (s *Service) GetReleasesStatus(ctx context.Context, req *pbcs.GetReleasesSt
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)

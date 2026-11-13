@@ -51,7 +51,8 @@ const (
 	BusinessViewResource client.ActionID = "find_business_resource"
 
 	// AppCreate 按业务创建服务。线上已有按业务授予的策略，权限中心 V3 不允许修改带策略操作的关联资源，
-	// 因此保持关联业务，作为业务下任意环境可创建服务的粗粒度权限。
+	// 因此保持关联业务，只在关闭项目/环境维度校验时作为业务下任意环境可创建服务的粗粒度权限。
+	// 开启项目/环境维度校验时服务创建只校验 EnvironmentAppCreate，不会回退到它。
 	AppCreate client.ActionID = "app_create"
 	// EnvironmentAppCreate 按环境创建服务，细粒度权限。
 	EnvironmentAppCreate client.ActionID = "environment_app_create"

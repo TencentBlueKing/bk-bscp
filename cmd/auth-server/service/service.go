@@ -532,16 +532,23 @@ func (s *Service) initLogicModule() error {
 		}
 	}
 
-	// 项目/环境维度校验是否启用由配置开关决定，V3 与 V4 共用同一份取值；
-	// 资源拓扑决定鉴权路径的层级，与开关相互独立，避免新拓扑下把服务路径裁短。
+	// 项目/环境维度校验是否启用由配置开关决定，V3 与 V4 共用同一份取值。
+	// 这一项同时决定资源鉴权路径的层级：开启表示权限中心已注册项目/环境模型（三级路径），
+	// 关闭时只有业务一级。
 	projectEnvAuth := s.iamSettings.ProjectEnvAuthEnabled()
-	topology, err := auth.ResolveTopology(projectEnvAuth,
-		string(s.iamSettings.ResolveTopology()), s.topologyProbe())
-	if err != nil {
-		return err
+	logs.Infof("iam project/environment auth: %s", enabledText(projectEnvAuth))
+
+	// V4 关闭开关时按业务维度鉴权：app_create 以 biz 实例下发、服务路径只到业务一级，
+	// 这要求权限中心线上模型仍是业务维度的旧拓扑（服务祖先链为 [biz]）。
+	// 线上模型由 migrate 同步、常驻进程探测不到，所以这里不拦启动，但必须以 Error 级别显著提示：
+	// 模型已是新拓扑却关着开关时，服务级鉴权会全部失败，而且只表现为 403，很难和权限配置问题区分。
+	if s.iamSettings.IsV4() && !projectEnvAuth {
+		logs.Errorf("iam v4 is running with project/environment auth disabled: app_create is authorized at biz " +
+			"dimension and app paths only declare biz. This works only when the online v4 model still keeps " +
+			"the app ancestors as [biz]; if migrate init-iam-v4 has already been executed, set " +
+			"iam.project_environment_auth.enabled=true, otherwise every app-level authorization will be denied. " +
+			"Check the online model with migrate diff-iam-v4")
 	}
-	logs.Infof("iam project/environment auth: %s, resource topology: %s",
-		enabledText(projectEnvAuth), topology)
 
 	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, func(tenantID string) *bkiam.IAM {
 		return s.client.iam.WithTenant(tenantID)
@@ -549,7 +556,6 @@ func (s *Service) initLogicModule() error {
 		s.disableWriteOpt,
 		s.spaceMgr,
 		auth.WithProjectEnvironmentAuth(projectEnvAuth),
-		auth.WithResourceTopology(topology),
 	)
 	if err != nil {
 		return err
@@ -580,76 +586,6 @@ func enabledText(enabled bool) string {
 	}
 
 	return "disabled, project/environment resources are not authorized"
-}
-
-// 启动探测 IAM 资源拓扑的参数。
-const (
-	// topologyDetectTimeout 是单次探测的超时时间。
-	topologyDetectTimeout = 5 * time.Second
-	// topologyDetectAttempts 是探测的最大尝试次数，避免权限中心瞬时不可用直接让启动失败。
-	topologyDetectAttempts = 3
-	// topologyDetectRetryInterval 是两次探测之间的间隔。
-	topologyDetectRetryInterval = 2 * time.Second
-)
-
-// topologyProbe 返回探测 IAM 资源拓扑的函数，按当前 IAM 版本选择 V3/V4 实现。
-//
-// 探测必须带上与 migrate init-iam / init-iam-v4 相同的模型租户：权限中心按租户隔离模型，
-// 多租户环境下缺少 X-Bk-Tenant-Id 的请求会被拒绝。V3 客户端从 ctx 元数据取租户，
-// V4 客户端从 kit 取租户，因此两者都先构造带租户的 kit 再派生超时 ctx。
-// 探测仍失败时由 ResolveTopology 返回错误，不再静默回退。
-func (s *Service) topologyProbe() func() (meta.ResourceTopology, error) {
-	return func() (meta.ResourceTopology, error) {
-		tenantID := cc.ModelTenantID()
-
-		var lastErr error
-		for attempt := 1; attempt <= topologyDetectAttempts; attempt++ {
-			topology, err := s.detectTopologyOnce(tenantID)
-			if err == nil {
-				return topology, nil
-			}
-
-			lastErr = err
-			logs.Warnf("detect iam resource topology failed, tenant: %s, attempt: %d/%d, err: %v",
-				tenantID, attempt, topologyDetectAttempts, err)
-
-			if attempt < topologyDetectAttempts {
-				time.Sleep(topologyDetectRetryInterval)
-			}
-		}
-
-		return "", lastErr
-	}
-}
-
-// topologyProbeKit 构造探测用的 kit 与 ctx：租户同时落在 kit 和 ctx 元数据上，
-// 分别对应 V4 客户端（读 kit.TenantID）与 V3 客户端（从 ctx 取租户）的取值方式。
-func topologyProbeKit(tenantID string) (*kit.Kit, context.Context, context.CancelFunc) {
-	kt := kit.NewWithTenant(tenantID)
-	ctx, cancel := context.WithTimeout(kt.Ctx, topologyDetectTimeout)
-	kt.Ctx = ctx
-
-	return kt, ctx, cancel
-}
-
-// detectTopologyOnce 按当前 IAM 版本探测一次资源拓扑。
-func (s *Service) detectTopologyOnce(tenantID string) (meta.ResourceTopology, error) {
-	kt, ctx, cancel := topologyProbeKit(tenantID)
-	defer cancel()
-
-	if s.iamSettings.IsV4() {
-		if s.client.iamV4 == nil {
-			return "", fmt.Errorf("iam v4 client is nil")
-		}
-
-		return auth.DetectTopologyV4(kt, s.client.iamV4)
-	}
-
-	if s.client.sys == nil {
-		return "", fmt.Errorf("iam v3 sys client is nil")
-	}
-
-	return auth.DetectTopologyV3(ctx, s.client.sys)
 }
 
 // GetUserInfo 获取用户信息

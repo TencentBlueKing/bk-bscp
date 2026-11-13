@@ -45,9 +45,16 @@
       <!-- 卡片视图 -->
       <template v-if="activeShow === 'card'">
         <bk-loading :style="{ height: '100%', width: '100%' }" :loading="isLoading">
+          <!-- 没有任何有权限的环境时，引导申请权限 -->
+          <bk-exception
+            v-if="noAvailableEnv"
+            class="no-env-tip"
+            type="empty">
+            <bk-button text theme="primary" @click="handleApply">{{ t('申请权限') }}</bk-button>
+          </bk-exception>
           <!-- 空状态 -->
           <EmptyList
-            v-if="isEmpty"
+            v-else-if="isEmpty"
             :is-search-empty="isSearchEmpty"
             :has-create-service-perm="props.hasCreateServicePerm"
             :perm-check-loading="props.permCheckLoading"
@@ -90,7 +97,14 @@
         @delete="handleDeleteService"
         @clone="handleCloneService">
         <template #empty>
+          <bk-exception
+            v-if="noAvailableEnv"
+            class="no-env-tip"
+            type="empty">
+            <bk-button text theme="primary" @click="handleApply">{{ t('申请权限') }}</bk-button>
+          </bk-exception>
           <EmptyList
+            v-else
             :is-search-empty="isSearchEmpty"
             :has-create-service-perm="props.hasCreateServicePerm"
             :perm-check-loading="props.permCheckLoading"
@@ -162,7 +176,7 @@
   import SearchSelector from '../../../../../components/search-selector.vue';
   import CloneService from './clone-service/index.vue';
 
-  const { permissionQuery, showApplyPermDialog, projectId } = storeToRefs(useGlobalStore());
+  const { permissionQuery, showApplyPermDialog, projectId, applyPermUrl } = storeToRefs(useGlobalStore());
   const { userInfo } = storeToRefs(useUserStore());
   const { t } = useI18n();
 
@@ -248,6 +262,8 @@
     return rules;
   });
   const isEmpty = computed(() => serviceList.value.length === 0);
+  // 全部环境无 view 权限时，上层环境选择器不会下发 envId，此时不能发起列表请求
+  const noAvailableEnv = computed(() => !props.envId);
 
   watch(
     () => [props.spaceId, activeType.value],
@@ -259,6 +275,16 @@
   // 加载服务列表
   const loadAppList = async () => {
     isLoading.value = true;
+    // 无可用环境：清空列表并收口 loading，让空态提示能够展示
+    if (!props.envId) {
+      serviceList.value = [];
+      pagination.value.count = 0;
+      typePanels.value.forEach((panel) => {
+        panel.count = 0;
+      });
+      isLoading.value = false;
+      return;
+    }
     try {
       const bizId = props.spaceId;
       const envId = props.envId;
@@ -288,6 +314,11 @@
     } finally {
       isLoading.value = false;
     }
+  };
+
+  // 与无权限提示页一致：跳转权限中心申请链接
+  const handleApply = () => {
+    window.open(applyPermUrl.value, '__blank');
   };
 
   const handleCreateServiceClick = () => {
@@ -329,17 +360,15 @@
     loadAppList();
   };
 
-  // 监听环境变化，重新加载服务列表
+  // 监听环境变化，重新加载服务列表；envId 为空时由 loadAppList 统一收口 loading 与空态
   watch(
     () => props.envId,
-    (val) => {
-      if (val) {
-        refreshSeviceList();
-      }
+    () => {
+      refreshSeviceList();
     },
     {
-      immediate: true
-    }
+      immediate: true,
+    },
   );
 
   // 删除服务
@@ -505,6 +534,16 @@
           background: #dcdee5;
         }
       }
+    }
+  }
+  .no-env-tip {
+    width: 100%;
+    padding: 24px;
+    :deep(.bk-exception-footer) {
+      display: flex;
+      justify-content: center;
+      margin-top: 5px;
+      font-size: 12px;
     }
   }
   .service-list-pagination {

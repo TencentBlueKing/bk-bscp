@@ -326,7 +326,7 @@ func TestAppAncestorsFollowEnvironmentChain(t *testing.T) {
 }
 
 // app_creator 是唯一"能创建服务但不能读写他人服务"的角色，它的存在让创建者自动授权
-// 产生真实的权限增量。三个断言各自锁住一条设计决策，改动前请先读注释。
+// 产生真实的权限增量。四个断言各自锁住一条设计决策，改动前请先读注释。
 func TestAppCreatorScopesCreationOnly(t *testing.T) {
 	var actions map[string]string
 	for _, role := range Roles() {
@@ -348,13 +348,20 @@ func TestAppCreatorScopesCreationOnly(t *testing.T) {
 	// 二、放行业务访问前置校验，否则持有者连业务都进不去。
 	require.Equal(t, ResourceTypeBiz, actions[ActionFindBusinessResource])
 
-	// 三、刻意不含 app_view。这不是遗漏：app_view 在纯 biz 维度角色里只能按 biz 授权，
+	// 三、创建接口要求项目、环境的查看权限（与读取服务内资源同一条规则），
+	// 角色必须自带这两项，否则只有创建权限的用户会被自己的创建请求拒绝。
+	require.Equal(t, ResourceTypeProject, actions[ActionProjectView],
+		"creating an app requires project_view on its project")
+	require.Equal(t, ResourceTypeEnvironment, actions[ActionEnvironmentView],
+		"creating an app requires environment_view on the target environment")
+
+	// 四、刻意不含 app_view。这不是遗漏：app_view 在纯 biz 维度角色里只能按 biz 授权，
 	// 一给就放开了业务下所有服务的详情访问，与本角色"他人服务需另行申请"的语义冲突。
 	// 自己创建的服务由创建者自动授权（app_operator on 该 app）覆盖。
 	require.NotContains(t, actions, ActionAppView,
 		"app_view would leak read access to every app under the business")
 
-	require.Len(t, actions, 2, "keep this role minimal")
+	require.Len(t, actions, 4, "keep this role minimal")
 }
 
 // 服务维度角色必须同时含 biz 与 app 两种授权维度，这是 IAM V4 允许角色跨维度的直接体现，

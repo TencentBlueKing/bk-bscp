@@ -34,6 +34,8 @@ func (s *Service) ListClients(ctx context.Context, req *pbcs.ListClientsReq) (
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -104,6 +106,8 @@ func (s *Service) ClientConfigVersionStatistics(ctx context.Context, req *pbclie
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -139,6 +143,8 @@ func (s *Service) ClientPullTrendStatistics(ctx context.Context, req *pbclient.C
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -176,6 +182,8 @@ func (s *Service) ClientPullStatistics(ctx context.Context, req *pbclient.Client
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -211,6 +219,8 @@ func (s *Service) ClientLabelStatistics(ctx context.Context, req *pbclient.Clien
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -248,6 +258,8 @@ func (s *Service) ClientAnnotationStatistics(ctx context.Context, req *pbclient.
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -283,6 +295,8 @@ func (s *Service) ClientVersionStatistics(ctx context.Context, req *pbclient.Cli
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -318,6 +332,8 @@ func (s *Service) ListClientLabelAndAnnotation(ctx context.Context, req *pbcs.Li
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -343,6 +359,8 @@ func (s *Service) ClientSpecificFailedReason(ctx context.Context, req *pbclient.
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 
@@ -378,6 +396,8 @@ func (s *Service) RetryClients(ctx context.Context, req *pbcs.RetryClientsReq) (
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
+		meta.ProjectViewResource(req.BizId, kt.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, kt.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Publish, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 

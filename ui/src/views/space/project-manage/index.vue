@@ -242,8 +242,8 @@
           basic: {
             type: 'project',
             action,
+            ...(projectId ? { resource_id: projectId } : {}),
           },
-          ...(projectId ? { project_id: projectId } : {}),
         },
       ],
     };

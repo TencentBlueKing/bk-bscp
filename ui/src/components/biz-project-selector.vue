@@ -368,8 +368,8 @@
             basic: {
               type: 'project',
               action: 'view',
+              resource_id: +proj.id,
             },
-            project_id: +proj.id,
           },
         ],
       };

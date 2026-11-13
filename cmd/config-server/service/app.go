@@ -40,36 +40,25 @@ import (
 // appCreateAuthResources 构造创建/克隆服务的鉴权资源。
 // 服务落在具体环境里，创建权限按目标环境授予（app_create @ environment）：授权页面因此
 // 需要先选项目、再选环境，项目/业务维度的授权经拓扑路径继承覆盖到该环境。
+// 同时要求目标项目与环境的查看权限：创建者至少要看得见自己要在哪儿建服务，
+// 只凭一条环境创建授权就能盲建到看不见的环境里，会让"看不见的东西也能被创建"。
 // 创建后会把该服务的运维权限自动授予创建者，因此创建权限只覆盖被授权的环境，
 // 不会因为一条业务维度的授权就扩散到业务下的全部项目与环境。
 func appCreateAuthResources(bizID, projectID, envID uint32) []*meta.ResourceAttribute {
-	return []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: bizID},
-		{
-			// ResourceID 是目标环境 ID：创建时尚无服务实例，授权维度落在服务将要归属的环境上。
-			Basic:         meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: envID},
-			BizID:         bizID,
-			ProjectID:     projectID,
-			EnvironmentID: envID,
-		},
-	}
+	return meta.AppCreateAuthResources(bizID, projectID, envID)
 }
 
-// appCloneAuthResources 构造克隆服务的鉴权资源：在创建的基础上追加 app_edit。
-// 克隆请求不携带源服务实例，app_edit 只能按业务维度校验，与合入前保持一致。
-func appCloneAuthResources(bizID, projectID, envID uint32) []*meta.ResourceAttribute {
-	return append(appCreateAuthResources(bizID, projectID, envID),
-		&meta.ResourceAttribute{Basic: meta.Basic{Type: meta.App, Action: meta.Update}, BizID: bizID},
-	)
-}
-
-// appListAuthResources 服务列表的鉴权资源：只校验业务访问，不按环境维度拦截。
-// 列表按上层放行并返回全部服务，环境与服务的逐项权限由 ListAppsAnnotation
-// 带回前端置灰并引导申请。ListAppsRest 与 ListAppsBySpaceRest 共用这一处，
-// 避免两个入口的规则再次分叉。
-func appListAuthResources(bizID uint32) []*meta.ResourceAttribute {
+// appListAuthResources 服务列表的鉴权资源：业务访问 + 项目查看 + 环境查看。
+// 与服务自身的查看保持一致：列表同样收敛到项目/环境范围，缺对应权限就拿不到该范围的服务。
+// 项目、环境与其它接口用同一份规则（见 meta.AppAuthResources），不做入口内特殊处理：
+// 声明的归属为 0 时由 auth-server 按业务默认项目/环境补齐，与单个服务接口一致。
+// 服务维度的逐项动作权限仍由 ListAppsAnnotation 带回前端置灰并引导申请，
+// ListAppsRest 与 ListAppsBySpaceRest 共用这一处，避免两个入口的规则再次分叉。
+func appListAuthResources(bizID, projectID, envID uint32) []*meta.ResourceAttribute {
 	return []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: bizID},
+		meta.ProjectViewResource(bizID, projectID),
+		meta.EnvironmentViewResource(bizID, envID),
 	}
 }
 
@@ -109,18 +98,28 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 		return nil, err
 	}
 
+	s.grantAppCreatorAction(kt, req.BizId, projectID, envID, rp.Id, req.Name)
+
+	resp := &pbcs.CreateAppResp{Id: rp.Id}
+	return resp, nil
+}
+
+// grantAppCreatorAction 把新服务的运维权限授予创建者，创建与克隆共用：
+// 两者都是在目标环境里新建服务实例，创建者都应拿到该实例的管理权限。
+// 服务所属的业务、项目与环境由祖先链声明，权限中心据此回显三级拓扑。
+// 授权是补授动作，失败只记日志，不影响服务创建/克隆结果。
+func (s *Service) grantAppCreatorAction(kt *kit.Kit, bizID, projectID, envID, appID uint32, name string) {
 	if err := s.authorizer.GrantResourceCreatorAction(kt, &client.GrantResourceCreatorActionOption{
 		System:  sys.SystemIDBSCP,
 		Type:    sys.Application,
-		ID:      strconv.Itoa(int(rp.Id)),
-		Name:    req.Name,
+		ID:      strconv.Itoa(int(appID)),
+		Name:    name,
 		Creator: kt.User,
-		// 声明服务所属的业务、项目与环境，权限中心据此回显三级拓扑
 		Ancestors: []client.GrantResourceCreatorActionAncestor{
 			{
 				System: sys.SystemIDCMDB,
 				Type:   sys.Business,
-				ID:     strconv.Itoa(int(req.BizId)),
+				ID:     strconv.Itoa(int(bizID)),
 			},
 			{
 				System: sys.SystemIDBSCP,
@@ -134,21 +133,16 @@ func (s *Service) CreateApp(ctx context.Context, req *pbcs.CreateAppReq) (*pbcs.
 			},
 		},
 	}); err != nil {
-		logs.Errorf("grant app creator action failed, err: %v, rid: %s", err, kt.Rid)
+		logs.Errorf("grant app creator action failed, id: %d, err: %v, rid: %s", appID, err, kt.Rid)
 	}
-
-	resp := &pbcs.CreateAppResp{Id: rp.Id}
-	return resp, nil
 }
 
 // UpdateApp update app with options
 func (s *Service) UpdateApp(ctx context.Context, req *pbcs.UpdateAppReq) (*pbapp.App, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.GetAppId()}, BizID: req.BizId},
-	}
+	res := appWriteAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.GetProjectId()),
+		grpcKit.ResolvedEnvID(req.GetEnvId()), req.GetAppId())
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
 		return nil, err
@@ -183,10 +177,8 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbcs.DeleteAppReq) (*pbcs.
 	kt := kit.FromGrpcContext(ctx)
 	resp := new(pbcs.DeleteAppResp)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Delete, ResourceID: req.GetAppId()}, BizID: req.BizId},
-	}
+	res := meta.AppAuthResources(req.BizId, kt.ResolvedProjectID(req.GetProjectId()),
+		kt.ResolvedEnvID(req.GetEnvId()), req.GetAppId(), meta.Delete)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -208,12 +200,12 @@ func (s *Service) DeleteApp(ctx context.Context, req *pbcs.DeleteAppReq) (*pbcs.
 }
 
 // GetApp get app with app id
+// 服务挂在项目与环境之下，读取服务与其它服务内资源采用同一条规则：
+// 业务访问 + 项目查看 + 环境查看 + 服务查看，四项必须同时通过。
 func (s *Service) GetApp(ctx context.Context, req *pbcs.GetAppReq) (*pbapp.App, error) {
 	kt := kit.FromGrpcContext(ctx)
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.GetProjectId()),
+		kt.ResolvedEnvID(req.GetEnvId()), req.AppId)
 	err := s.authorizer.Authorize(kt, res...)
 	if err != nil {
 		return nil, err
@@ -250,10 +242,8 @@ func (s *Service) GetAppByName(ctx context.Context, req *pbcs.GetAppByNameReq) (
 		return nil, err
 	}
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: rp.Id}, BizID: req.BizId},
-	}
+	res := appViewAuthResources(req.BizId, kt.ResolvedProjectID(req.GetProjectId()),
+		kt.ResolvedEnvID(req.GetEnvId()), rp.Id)
 	if err := s.authorizer.Authorize(kt, res...); err != nil {
 		return nil, err
 	}
@@ -265,7 +255,8 @@ func (s *Service) GetAppByName(ctx context.Context, req *pbcs.GetAppByNameReq) (
 func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (*pbcs.ListAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	err := s.authorizer.Authorize(kt, appListAuthResources(req.BizId)...)
+	err := s.authorizer.Authorize(kt, appListAuthResources(req.BizId,
+		kt.ResolvedProjectID(req.GetProjectId()), kt.ResolvedEnvID(req.GetEnvId()))...)
 	if err != nil {
 		return nil, err
 	}
@@ -294,6 +285,7 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 		Search:    req.Search,
 		All:       req.All,
 		ProjectId: kt.ResolvedProjectID(req.GetProjectId()),
+		EnvId:     kt.ResolvedEnvID(req.GetEnvId()),
 	}
 	rp, err := s.client.DS.ListAppsRest(kt.RpcCtx(), r)
 	if err != nil {
@@ -326,12 +318,13 @@ func (s *Service) ListAppsRest(ctx context.Context, req *pbcs.ListAppsRestReq) (
 }
 
 // ListAppsBySpaceRest list apps with rest filter
-// 与 ListAppsRest 同一条规则（见 appListAuthResources）：只校验业务访问，
-// 不按环境维度拦截，未授权的服务由 ListAppsAnnotation 置灰并引导申请。
+// 与 ListAppsRest 共用同一条规则（见 appListAuthResources）：业务访问 + 项目查看 + 环境查看，
+// 未授权的服务由 ListAppsAnnotation 置灰并引导申请。
 func (s *Service) ListAppsBySpaceRest(ctx context.Context, req *pbcs.ListAppsBySpaceRestReq) (*pbcs.ListAppsResp, error) {
 	kt := kit.FromGrpcContext(ctx)
 
-	err := s.authorizer.Authorize(kt, appListAuthResources(req.BizId)...)
+	err := s.authorizer.Authorize(kt, appListAuthResources(req.BizId,
+		kt.ResolvedProjectID(req.GetProjectId()), kt.ResolvedEnvID(req.GetEnvId()))...)
 	if err != nil {
 		return nil, err
 	}
@@ -470,8 +463,9 @@ func (s *Service) CloneApp(ctx context.Context, req *pbcs.CloneAppReq) (*pbcs.Cr
 	projectID := kt.ResolvedProjectID(req.GetProjectId())
 	envID := kt.ResolvedEnvID(req.GetEnvId())
 
-	// 克隆 = 在目标环境里新建服务 + 源服务的编辑权限，两项都要校验。
-	if err := s.authorizer.Authorize(kt, appCloneAuthResources(req.BizId, projectID, envID)...); err != nil {
+	// 克隆 = 在目标环境里新建服务，鉴权与创建一致：业务访问 + 目标环境上的服务创建权限。
+	// 克隆请求不携带源服务实例，不额外校验源服务的编辑权限。和之前代码一致
+	if err := s.authorizer.Authorize(kt, appCreateAuthResources(req.BizId, projectID, envID)...); err != nil {
 		return nil, err
 	}
 
@@ -545,8 +539,13 @@ func (s *Service) CloneApp(ctx context.Context, req *pbcs.CloneAppReq) (*pbcs.Cr
 		EnvId:       kt.ResolvedEnvID(req.GetEnvId()),
 	})
 	if err != nil {
+		logs.Errorf("clone app failed, err: %v, rid: %s", err, kt.Rid)
 		return nil, err
 	}
+
+	// 克隆同样产生一个新服务实例，必须与创建一致地把该实例的运维权限授予当前用户，
+	// 否则用户克隆出来的服务自己也无权管理。
+	s.grantAppCreatorAction(kt, req.GetBizId(), projectID, envID, resp.GetId(), req.GetName())
 
 	return &pbcs.CreateAppResp{
 		Id: resp.GetId(),
