@@ -468,7 +468,25 @@ func (s *Service) CheckPermission(ctx context.Context, req *pbas.CheckPermission
 		return nil, errf.New(errf.DoAuthorizeFailed, "get permission to apply failed")
 	}
 	resp.ApplyUrl = permResp.ApplyUrl
-	resp.Resources = pbas.PermissionApplyResources(permResp.Permission)
+	for _, action := range permResp.Permission.Actions {
+		for _, resourceType := range action.RelatedResourceTypes {
+			for _, instance := range resourceType.Instances {
+				for _, i := range instance.Instances {
+					if i.Type != resourceType.Type {
+						continue
+					}
+					resp.Resources = append(resp.Resources, &pbas.BasicDetail{
+						Type:         resourceType.Type,
+						TypeName:     resourceType.TypeName,
+						Action:       action.Id,
+						ActionName:   action.Name,
+						ResourceId:   i.Id,
+						ResourceName: i.Name,
+					})
+				}
+			}
+		}
+	}
 	return resp, nil
 }
 

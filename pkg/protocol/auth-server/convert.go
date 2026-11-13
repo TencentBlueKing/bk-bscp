@@ -14,8 +14,6 @@
 package pbas
 
 import (
-	"strings"
-
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 )
@@ -143,70 +141,6 @@ func BasicDetails(perm *IamPermission) []meta.BasicDetail {
 	}
 
 	return result
-}
-
-// PermissionApplyResources 把申请信息收成前端权限弹窗的一行一行。
-//
-// 每一行对应一条实例链。关联的资源实例按权限中心的展示写成「业务/项目」这种路径：
-// 只取与操作资源类型相同的叶子节点时，祖先名称会被丢掉；叶子名称暂时缺失时，整列就是空白。
-func PermissionApplyResources(perm *IamPermission) []*BasicDetail {
-	result := make([]*BasicDetail, 0)
-	if perm == nil {
-		return result
-	}
-	for _, action := range perm.Actions {
-		if action == nil {
-			continue
-		}
-		for _, resourceType := range action.RelatedResourceTypes {
-			if resourceType == nil {
-				continue
-			}
-			for _, chain := range resourceType.Instances {
-				if chain == nil {
-					continue
-				}
-				leaf := instanceOfType(chain.Instances, resourceType.Type)
-				if leaf == nil {
-					continue
-				}
-				result = append(result, &BasicDetail{
-					Type:         resourceType.Type,
-					TypeName:     resourceType.TypeName,
-					Action:       action.Id,
-					ActionName:   action.Name,
-					ResourceId:   leaf.Id,
-					ResourceName: instanceChainName(chain.Instances),
-				})
-			}
-		}
-	}
-
-	return result
-}
-
-// instanceOfType 返回实例链里与操作资源类型相同的节点，即这条链要申请的实例。
-func instanceOfType(instances []*IamResourceInstance, resourceType string) *IamResourceInstance {
-	for _, instance := range instances {
-		if instance != nil && instance.Type == resourceType {
-			return instance
-		}
-	}
-
-	return nil
-}
-
-// instanceChainName 把一条实例链拼成「业务/项目」。没有名称的节点不占一段，避免出现多余的斜杠。
-func instanceChainName(instances []*IamResourceInstance) string {
-	names := make([]string, 0, len(instances))
-	for _, instance := range instances {
-		if instance == nil || instance.Name == "" {
-			continue
-		}
-		names = append(names, instance.Name)
-	}
-
-	return strings.Join(names, "/")
 }
 
 // Decision convert pb Decision to meta type Decision
