@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	istep "github.com/Tencent/bk-bcs/bcs-common/common/task/steps/iface"
 
@@ -135,13 +136,14 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 		return fmt.Errorf("render full path failed: %w", err)
 	}
 
+	cfg := commonPayload.ConfigPayload
 	builder := &ScriptBuilder{FileMode: fileMode, MaxBackups: e.GseConf.MaxBackups}
 	script, err := builder.BuildConfigPushScript(
-		base64.StdEncoding.EncodeToString([]byte(commonPayload.ConfigPayload.ConfigContent)),
+		base64.StdEncoding.EncodeToString([]byte(deliveredConfigContent(cfg.ConfigContent, cfg.ConfigFileMode, cfg.Charset))),
 		fullPath,
-		commonPayload.ConfigPayload.ConfigFilePermission,
-		commonPayload.ConfigPayload.ConfigFileOwner,
-		commonPayload.ConfigPayload.ConfigFileGroup,
+		cfg.ConfigFilePermission,
+		cfg.ConfigFileOwner,
+		cfg.ConfigFileGroup,
 	)
 	if err != nil {
 		logs.Errorf("[ReleaseConfig STEP]: build config script failed: %v", err)
@@ -161,8 +163,7 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 	req := &gse.ExecuteScriptReq{
 		Agents: []gse.Agent{
 			{
-				BkAgentID: commonPayload.ProcessPayload.AgentID,
-				User:      executionUser,
+				BkAgentID: commonPayload.ProcessPayload.AgentID, User: executionUser,
 			},
 		},
 		Scripts: []gse.Script{
@@ -273,7 +274,7 @@ func (e *PushConfigExecutor) Callback(c *istep.Context, cbErr error) error {
 			CcProcessID:      proc.CcProcessID,
 			ModuleInstSeq:    proc.ModuleInstSeq,
 			GenerateTaskID:   c.GetTaskID(),
-			Md5:              tools.ByteMD5([]byte(cfg.ConfigContent)),
+			Md5:              tools.ByteMD5([]byte(deliveredConfigContent(cfg.ConfigContent, cfg.ConfigFileMode, cfg.Charset))),
 			Content:          cfg.ConfigContent,
 			TenantID:         payload.TenantID,
 		},
@@ -566,4 +567,21 @@ func renderFullPath(ctx context.Context, commonPayload *common.TaskPayload) (str
 
 	logs.Infof("render full path: %s -> %s", fullPath, renderedPath)
 	return renderedPath, nil
+}
+
+// utf8BOM 是 UTF-8 字节序标记(EF BB BF)。支持 BOM 识别的 Windows 应用可据此识别 UTF-8。
+const utf8BOM = "\xEF\xBB\xBF"
+
+// deliveredConfigContent 返回实际写入目标文件的配置内容。
+// Windows 的 UTF-8 文本（含历史任务中未指定字符集的情况）统一保留一个前导 BOM，
+// 正文中的 U+FEFF 不变。非 UTF-8 字节及其他字符集原样返回，避免错误标记编码。
+// 下发内容和目标文件 MD5 基线共用此函数，重复处理保持结果一致。
+func deliveredConfigContent(content string, fileMode table.FileMode, charset table.FileCharset) string {
+	if fileMode != table.Windows || (charset != "" && charset != table.UTF8) || !utf8.ValidString(content) {
+		return content
+	}
+	for strings.HasPrefix(content, utf8BOM) {
+		content = strings.TrimPrefix(content, utf8BOM)
+	}
+	return utf8BOM + content
 }
