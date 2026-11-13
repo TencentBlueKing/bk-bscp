@@ -534,8 +534,8 @@ func (s *Service) ListConfigItemCount(ctx context.Context, req *pbcs.ListConfigI
 	grpcKit := kit.FromGrpcContext(ctx)
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
-		environmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -652,8 +652,8 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbcs.Comp
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, projectID),
-		environmentViewResource(req.BizId, envID),
+		meta.ProjectViewResource(req.BizId, projectID),
+		meta.EnvironmentViewResource(req.BizId, envID),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.AppId}, BizID: req.BizId},
 		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: req.OtherAppId}, BizID: req.BizId},
 	}
@@ -672,7 +672,7 @@ func (s *Service) CompareConfigItemConflicts(ctx context.Context, req *pbcs.Comp
 
 		if otherEnvID != 0 && otherEnvID != envID {
 			if err := s.authorizer.Authorize(grpcKit,
-				environmentViewResource(req.GetBizId(), otherEnvID)); err != nil {
+				meta.EnvironmentViewResource(req.GetBizId(), otherEnvID)); err != nil {
 				return nil, err
 			}
 		}

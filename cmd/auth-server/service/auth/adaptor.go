@@ -27,20 +27,14 @@ import (
 // PermissionOptions 控制资源映射时启用的权限维度与拓扑形态。
 type PermissionOptions struct {
 	// ProjectEnvironmentAuth 是否启用项目与环境维度的权限校验。
-	// 关闭时只有项目、环境资源本身不进入鉴权；服务相关操作仍然校验，
-	// 鉴权路径也保持与注册父链一致的完整形态。
+	// 关闭时项目、环境资源本身不进入鉴权，服务创建回到业务维度（app_create），
+	// 资源路径按旧模型「业务 → 服务」一级；开启时按三级路径。
 	ProjectEnvironmentAuth bool
-	// Topology IAM 侧注册的资源拓扑，决定服务等资源的祖先链层级。
-	// 零值按新模型（三级路径）处理，避免调用方漏传时把路径裁成旧模型。
-	Topology meta.ResourceTopology
 }
 
 // defaultPermissionOptions 返回默认开启项目/环境维度校验的选项。
 func defaultPermissionOptions() PermissionOptions {
-	return PermissionOptions{
-		ProjectEnvironmentAuth: true,
-		Topology:               meta.TopologyHierarchical,
-	}
+	return PermissionOptions{ProjectEnvironmentAuth: true}
 }
 
 // AdaptAuthOptions convert bscp auth resource to iam action id and resources
@@ -73,7 +67,7 @@ func AdaptAuthOptionsWithOptions(a *meta.ResourceAttribute, opts PermissionOptio
 	case meta.Biz:
 		return genBizResource(a)
 	case meta.App:
-		return genAppResource(a, opts.Topology)
+		return genAppResource(a, opts)
 	case meta.Credential:
 		return genCredResource(a)
 	case meta.Audit:
@@ -86,7 +80,7 @@ func AdaptAuthOptionsWithOptions(a *meta.ResourceAttribute, opts PermissionOptio
 	case meta.Project:
 		return genProjectResource(a)
 	case meta.Environment:
-		return genEnvResource(a, opts.Topology)
+		return genEnvResource(a)
 	// case meta.Commit:
 	//	return genCommitResource(a)
 	// case meta.ConfigItem:
@@ -117,30 +111,6 @@ func AdaptAuthOptionsWithOptions(a *meta.ResourceAttribute, opts PermissionOptio
 	}
 }
 
-// AdaptIAMResourceOptions 鉴权, 查看 isAllow 接口使用
-func AdaptIAMResourceOptions(a *meta.ResourceAttribute) (*bkiam.Request, error) {
-	if a == nil {
-		return nil, errors.New("resource attribute is not set")
-	}
-
-	switch a.Type {
-	case meta.Biz:
-		return genBizIAMResource(a)
-	case meta.App:
-		return genAppIAMResource(a, meta.TopologyHierarchical)
-	case meta.Credential:
-		return genCredIAMResource(a)
-	case meta.ProcConfigMgmt:
-		return genProcConfigMgmtRes(a)
-	case meta.Project:
-		return genProjectIAMResource(a)
-	case meta.Environment:
-		return genEnvIAMResource(a, meta.TopologyHierarchical)
-	default:
-		return nil, fmt.Errorf("unsupported bscp auth type: %s", a.Type)
-	}
-}
-
 // AdaptIAMApplicationOptions 申请链接, applyURL 接口使用
 func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute, opts PermissionOptions) (*bkiam.Application, error) {
 	if len(as) == 0 {
@@ -161,7 +131,7 @@ func AdaptIAMApplicationOptions(as []*meta.ResourceAttribute, opts PermissionOpt
 			}
 			actions = append(actions, action)
 		case meta.App:
-			action, err := genAppIAMApplication(a, opts.Topology)
+			action, err := genAppIAMApplication(a, opts)
 			if err != nil {
 				return nil, err
 			}

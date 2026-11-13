@@ -127,10 +127,7 @@ func (m *kvService) Export(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.View, ResourceID: uint32(appId)}, BizID: kt.BizID},
-	}
+	res := meta.AppAuthResources(kt.BizID, kt.ProjectID, kt.EnvID, uint32(appId), meta.View)
 	if err := m.authorizer.Authorize(kt, res...); err != nil {
 		_ = render.Render(w, r, rest.GRPCErr(err))
 		return

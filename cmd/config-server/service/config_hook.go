@@ -30,8 +30,8 @@ func (s *Service) UpdateConfigHook(ctx context.Context, req *pbcs.UpdateConfigHo
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
-		environmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.EnvironmentViewResource(req.BizId, grpcKit.ResolvedEnvID(req.EnvId)),
 		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: req.AppId}, BizID: req.BizId},
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {

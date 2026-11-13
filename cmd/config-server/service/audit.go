@@ -33,7 +33,7 @@ func (s *Service) ListAudits(ctx context.Context, req *pbcs.ListAuditsReq) (
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		projectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 		{Basic: meta.Basic{Type: meta.Audit, Action: meta.View, ResourceID: req.BizId}, BizID: req.BizId},
 	}
 	err := s.authorizer.Authorize(grpcKit, res...)

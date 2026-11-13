@@ -301,10 +301,7 @@ func (c *configImport) ConfigFileImport(w http.ResponseWriter, r *http.Request) 
 	}
 	kt.AppID = uint32(appId)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: kt.BizID},
-		{Basic: meta.Basic{Type: meta.App, Action: meta.Update, ResourceID: kt.AppID}, BizID: kt.BizID},
-	}
+	res := meta.AppAuthResources(kt.BizID, kt.ProjectID, kt.EnvID, kt.AppID, meta.Update)
 	if err := c.authorizer.Authorize(kt, res...); err != nil {
 		_ = render.Render(w, r, rest.GRPCErr(err))
 		return

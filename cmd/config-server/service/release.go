@@ -29,7 +29,7 @@ func (s *Service) CreateRelease(ctx context.Context, req *pbcs.CreateReleaseReq)
 	// the url path doesn't include appID, set the appID to use later
 	grpcKit.AppID = req.AppId
 
-	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+	res := meta.AppAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
 		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.GenerateRelease)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {

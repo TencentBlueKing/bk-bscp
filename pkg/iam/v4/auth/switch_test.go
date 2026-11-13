@@ -42,10 +42,10 @@ func TestAuthorizeBatchIgnoresProjectEnvironmentWhenDisabled(t *testing.T) {
 	require.Zero(t, gw.callCount())
 }
 
-// 关闭项目/环境维度后，服务创建仍然校验，只是按业务维度判定。
-func TestAuthorizeBatchAppCreateKeepsBizDimensionWhenDisabled(t *testing.T) {
+// 关闭项目/环境维度后，服务创建回到业务维度：动作不变，实例是业务。
+func TestAuthorizeBatchAppCreateUsesBizDimensionWhenDisabled(t *testing.T) {
 	gw := &fakeGateway{allow: map[string]bool{
-		model.ActionAppCreate + "|50001": false,
+		model.ActionAppCreate + "|100001": false,
 	}}
 	a := newTestAuthorizer(t, gw, Config{IgnoreProjectEnvironment: true})
 
@@ -60,10 +60,10 @@ func TestAuthorizeBatchAppCreateKeepsBizDimensionWhenDisabled(t *testing.T) {
 	require.Len(t, decisions, 1)
 	require.False(t, decisions[0].Authorized)
 
-	// 仍然向权限中心发问，动作与实例不变，由路径决定只认业务维度。
+	// 仍然向权限中心发问，动作不变，实例换成业务。
 	require.Equal(t, 1, gw.callCount())
 	require.Equal(t, model.ActionAppCreate, gw.calls[0].actionID)
-	require.Equal(t, []string{"50001"}, gw.calls[0].resourceIDs)
+	require.Equal(t, []string{"100001"}, gw.calls[0].resourceIDs)
 }
 
 // 关闭项目/环境维度后，服务鉴权仍按服务实例发问，只是路径退化为业务单级。

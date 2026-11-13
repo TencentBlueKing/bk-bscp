@@ -145,7 +145,6 @@ func newAppScopeAuth(ds pbds.DataClient) *Auth {
 	return &Auth{
 		ds:             ds,
 		projectEnvAuth: true,
-		topology:       meta.TopologyHierarchical,
 		appScopes:      newAppScopeCache(),
 		defaultScopes:  newDefaultScopeCache(),
 	}
@@ -215,6 +214,8 @@ func TestFillAppScopeOverridesRequestedScope(t *testing.T) {
 }
 
 // 服务不存在时清空归属，退化为无权限，而不是带着调用方给的值继续鉴权。
+// 开启项目/环境维度校验时业务也要清空：只清项目/环境会拼出
+// /biz,{请求的biz}/project,0/environment,0/，业务维度的授权仍会经路径继承放行。
 func TestFillAppScopeDropsScopeWhenAppUnknown(t *testing.T) {
 	a := newAppScopeAuth(&fakeAppDS{})
 
@@ -223,8 +224,73 @@ func TestFillAppScopeDropsScopeWhenAppUnknown(t *testing.T) {
 	res.EnvironmentID = 50001
 	require.NoError(t, a.fillAppScope(testKit(), []*meta.ResourceAttribute{res}))
 
+	require.Zero(t, res.BizID)
 	require.Zero(t, res.ProjectID)
 	require.Zero(t, res.EnvironmentID)
+}
+
+// 关闭项目/环境维度校验时没有项目/环境模型，服务查不到归属只退化为业务维度，
+// 保留调用方声明的业务，不能因此把业务维度也判死。
+func TestFillAppScopeKeepsBizWhenAppUnknownAndDisabled(t *testing.T) {
+	a := newAppScopeAuth(&fakeAppDS{})
+	a.projectEnvAuth = false
+
+	res := appResource(meta.View, 39999)
+	res.ProjectID = 40001
+	res.EnvironmentID = 50001
+	require.NoError(t, a.fillAppScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Equal(t, uint32(100001), res.BizID)
+	require.Zero(t, res.ProjectID)
+	require.Zero(t, res.EnvironmentID)
+}
+
+// 同一批次混入归属不同的多个服务时，项目/环境查看统一取第一个服务的归属（fail-closed），
+// 不因批次混合而放开：服务内资源的鉴权主体仍是服务自身。
+func TestAlignServiceScopedViewsUsesFirstAppScope(t *testing.T) {
+	res := []*meta.ResourceAttribute{
+		appResource(meta.View, 30001),
+		meta.ProjectViewResource(100001, 40002),
+		meta.EnvironmentViewResource(100001, 50002),
+		appResource(meta.View, 30002),
+		meta.ProjectViewResource(100001, 40002),
+		meta.EnvironmentViewResource(100001, 50002),
+	}
+	// fillAppScope 已按服务自身归属写入
+	res[0].ProjectID, res[0].EnvironmentID = 40001, 50001
+	res[3].ProjectID, res[3].EnvironmentID = 40002, 50002
+
+	alignServiceScopedViews(testKit(), res)
+
+	require.Equal(t, uint32(40001), res[1].ResourceID, "项目查看取第一个服务的项目")
+	require.Equal(t, uint32(50001), res[2].ResourceID, "环境查看取第一个服务的环境")
+	require.Equal(t, uint32(100001), res[2].BizID)
+	// 第二个服务对应的查看资源同样被收敛到第一个服务的归属，宁可少放行也不放开
+	require.Equal(t, uint32(40001), res[4].ResourceID)
+	require.Equal(t, uint32(50001), res[5].ResourceID)
+}
+
+// 只有查看动作会被收敛；写动作的项目/环境资源不参与服务内资源的附加收敛。
+func TestAlignServiceScopedViewsSkipsNonViewResources(t *testing.T) {
+	res := []*meta.ResourceAttribute{
+		appResource(meta.View, 30001),
+		{Basic: meta.Basic{Type: meta.Project, Action: meta.Update, ResourceID: 40002}, BizID: 100001},
+	}
+	res[0].ProjectID, res[0].EnvironmentID = 40001, 50001
+
+	alignServiceScopedViews(testKit(), res)
+
+	require.Equal(t, uint32(40002), res[1].ResourceID, "写动作保持调用方声明的实例")
+}
+
+// 批次里没有可用的服务归属时，项目/环境资源保持原样（如项目、环境自身的接口）。
+func TestAlignServiceScopedViewsNoAppKeepsResources(t *testing.T) {
+	projectRes := meta.ProjectViewResource(100001, 40002)
+
+	alignServiceScopedViews(testKit(), []*meta.ResourceAttribute{projectRes})
+
+	require.Equal(t, uint32(40002), projectRes.ResourceID)
+	require.Equal(t, uint32(40002), projectRes.ProjectID)
 }
 
 // 同一批内的多个服务合并成一次批量回查，不逐个串行请求 data-service。
@@ -387,45 +453,79 @@ func TestFillResourceScopeAppCreateUsesTargetEnvironmentParent(t *testing.T) {
 	require.Equal(t, uint32(50002), res.EnvironmentID, "环境 ID 即资源实例 ID")
 }
 
-// 关闭项目/环境维度校验但权限中心已是新拓扑时，服务创建的鉴权路径仍带项目祖先：
-// 项目必须回查目标环境的真实归属，不能采信请求里的 project_id。
-func TestFillResourceScopeAppCreateRejectsForgedProjectWhenAuthDisabled(t *testing.T) {
+// 服务创建只声明 environment_id 时必须按该环境鉴权：按「未指定目标环境」处理会被补成
+// 业务默认环境，用户在默认环境有权限、在声明的环境没有权限时也会被判为有权限。
+func TestFillResourceScopeAppCreateUsesDeclaredEnvironment(t *testing.T) {
 	ds := &fakeAppDS{
 		environmentInfos: map[uint32]*pbds.InstanceInfo{
 			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
 		},
+		defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+			100001: {ProjectId: 40001, EnvId: 50000},
+		},
 	}
 	a := newAppScopeAuth(ds)
-	a.projectEnvAuth = false
 
 	res := &meta.ResourceAttribute{
-		Basic:     meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
-		BizID:     100001,
-		ProjectID: 40001,
+		Basic:         meta.Basic{Type: meta.App, Action: meta.Create},
+		BizID:         100001,
+		ProjectID:     40001,
+		EnvironmentID: 50002,
 	}
 	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
 
-	require.Equal(t, 1, ds.environmentCalls, "开关关闭时服务创建同样要回查环境父级")
-	require.Equal(t, uint32(40002), res.ProjectID, "项目祖先必须取自环境自身路径")
-	require.Equal(t, uint32(50002), res.EnvironmentID)
+	require.Equal(t, uint32(50002), res.ResourceID, "environment_id 即目标环境")
+	require.Equal(t, uint32(40002), res.ProjectID, "项目祖先取自目标环境的真实路径")
+	require.Equal(t, uint32(100001), res.BizID)
+	require.Zero(t, ds.defaultCalls, "不得回退到业务默认环境")
 }
 
-// 开关关闭时 project_id 为 0 也要补齐，否则服务创建的申请链接会直接丢掉该申请项。
-func TestFillResourceScopeAppCreateFillsProjectWhenAuthDisabled(t *testing.T) {
+// 声明的环境回查不到父级时清空归属，不能悄悄换成默认环境放行。
+func TestFillResourceScopeAppCreateDropsDeclaredEnvironmentWhenUnknown(t *testing.T) {
+	ds := &fakeAppDS{defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+		100001: {ProjectId: 40001, EnvId: 50000},
+	}}
+	a := newAppScopeAuth(ds)
+
+	res := &meta.ResourceAttribute{
+		Basic:         meta.Basic{Type: meta.App, Action: meta.Create},
+		BizID:         100001,
+		ProjectID:     40001,
+		EnvironmentID: 50099,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Equal(t, uint32(50099), res.ResourceID)
+	require.Zero(t, res.BizID)
+	require.Zero(t, res.ProjectID)
+	require.Zero(t, ds.defaultCalls)
+}
+
+// 环境资源只声明 environment_id 时必须按该环境鉴权：按「未指定实例」处理会退回业务默认环境，
+// 切换任意环境都拿默认环境（Default）去校验，申请链接里的资源名也永远停在默认环境。
+func TestFillResourceScopeEnvironmentUsesDeclaredEnvironment(t *testing.T) {
 	ds := &fakeAppDS{
 		environmentInfos: map[uint32]*pbds.InstanceInfo{
 			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
 		},
+		defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+			100001: {ProjectId: 40001, EnvId: 50000},
+		},
 	}
 	a := newAppScopeAuth(ds)
-	a.projectEnvAuth = false
 
 	res := &meta.ResourceAttribute{
-		Basic: meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
-		BizID: 100001,
+		Basic:         meta.Basic{Type: meta.Environment, Action: meta.View},
+		BizID:         100001,
+		ProjectID:     40001,
+		EnvironmentID: 50002,
 	}
 	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
-	require.Equal(t, uint32(40002), res.ProjectID)
+
+	require.Equal(t, uint32(50002), res.ResourceID, "environment_id 即环境实例")
+	require.Equal(t, uint32(40002), res.ProjectID, "项目祖先取自环境自身的真实路径")
+	require.Equal(t, uint32(100001), res.BizID)
+	require.Zero(t, ds.defaultCalls, "不得回退到业务默认环境")
 }
 
 // 开关关闭时项目/环境资源本身不参与鉴权，不做无谓的回查与默认归属补齐。
@@ -446,12 +546,19 @@ func TestFillResourceScopeSkipsProjectEnvironmentLookupWhenAuthDisabled(t *testi
 	require.Zero(t, resources[0].ProjectID)
 }
 
-// 旧拓扑下服务创建只按业务授权，没有项目祖先需要回查。
-func TestFillResourceScopeAppCreateSkipsLookupInLegacyTopology(t *testing.T) {
-	ds := &fakeAppDS{}
+// 开关关闭时没有项目/环境模型，服务创建只按业务维度处理：不解析目标环境、不回查环境父级、
+// 也不做默认环境补齐，请求声明的业务与归属保持原样。
+func TestFillResourceScopeAppCreateSkipsEnvironmentWhenAuthDisabled(t *testing.T) {
+	ds := &fakeAppDS{
+		environmentInfos: map[uint32]*pbds.InstanceInfo{
+			50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
+		},
+		defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+			100001: {ProjectId: 40001, EnvId: 50000},
+		},
+	}
 	a := newAppScopeAuth(ds)
 	a.projectEnvAuth = false
-	a.topology = meta.TopologyLegacy
 
 	res := &meta.ResourceAttribute{
 		Basic:     meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50002},
@@ -459,7 +566,11 @@ func TestFillResourceScopeAppCreateSkipsLookupInLegacyTopology(t *testing.T) {
 		ProjectID: 40001,
 	}
 	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
 	require.Zero(t, ds.environmentCalls)
+	require.Zero(t, ds.defaultCalls)
+	require.Equal(t, uint32(100001), res.BizID)
+	require.Equal(t, uint32(40001), res.ProjectID)
 }
 
 func TestFillResourceScopePropagatesEnvironmentLookupError(t *testing.T) {

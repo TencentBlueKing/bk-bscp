@@ -32,9 +32,6 @@ const (
 	// IAMProjectEnvAuthEnv 项目/环境维度权限校验开关对应的环境变量，取值 true/false，
 	// 仅当配置文件未显式配置 iam.project_environment_auth.enabled 时生效，auth-server 使用
 	IAMProjectEnvAuthEnv = "BK_BSCP_IAM_PROJECT_ENV_AUTH"
-	// IAMResourceTopologyEnv IAM 资源拓扑对应的环境变量，取值 auto/legacy/hierarchical，
-	// 仅当配置文件未显式配置 iam.project_environment_auth.topology 时生效，auth-server 使用
-	IAMResourceTopologyEnv = "BK_BSCP_IAM_RESOURCE_TOPOLOGY"
 )
 
 // HostConf host conf

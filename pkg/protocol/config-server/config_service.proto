@@ -2782,6 +2782,7 @@ message ListAppsRestReq {
   uint32 project_id = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "项目ID" }];
   bool all = 7
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "是否获取所有", default: "false" }];
+  uint32 env_id = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "环境ID" }];
 }
 
 message ListAppsBySpaceRestReq {

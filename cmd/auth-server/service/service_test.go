@@ -18,22 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
-	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbas "github.com/TencentBlueKing/bk-bscp/pkg/protocol/auth-server"
 )
-
-// 探测必须带上模型租户：V4 客户端读 kit.TenantID，V3 客户端从 ctx 元数据取租户。
-// 任一取值缺失都会让多租户环境下的探测被权限中心拒绝。
-func TestTopologyProbeKitCarriesTenant(t *testing.T) {
-	kt, ctx, cancel := topologyProbeKit("system")
-	defer cancel()
-
-	require.Equal(t, "system", kt.TenantID)
-	require.Equal(t, "system", kit.FromGrpcContext(ctx).TenantID)
-
-	_, ok := ctx.Deadline()
-	require.True(t, ok, "probe context should carry the detect timeout")
-}
 
 // CheckPermission 的申请信息只应包含未通过的资源，已授权资源不能重复返回。
 func TestUnauthorizedResources(t *testing.T) {

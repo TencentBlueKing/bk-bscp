@@ -288,18 +288,18 @@ func TestGrantCreatorActionV4Project(t *testing.T) {
 		bizScoped.Resources)
 }
 
-// 申请链接的祖先链必须与鉴权路径同源：旧拓扑下服务只声明业务一层，
-// 漏传拓扑会让链接带上权限中心并不存在的 project/environment 节点而被拒绝。
-func TestGenApplyURLV4FollowsTopology(t *testing.T) {
+// 申请链接的祖先链必须与鉴权路径同源：旧拓扑（开关关闭）下服务只声明业务一层，
+// 漏传开关会让链接带上权限中心并不存在的 project/environment 节点而被拒绝。
+func TestGenApplyURLV4FollowsProjectEnvAuth(t *testing.T) {
 	cases := []struct {
-		name     string
-		topology meta.ResourceTopology
-		want     []clientv4.ResourceRef
+		name           string
+		projectEnvAuth bool
+		want           []clientv4.ResourceRef
 	}{
-		{"legacy", meta.TopologyLegacy, []clientv4.ResourceRef{
+		{"legacy", false, []clientv4.ResourceRef{
 			{Type: model.ResourceTypeBiz, ID: "100001"},
 		}},
-		{"hierarchical", meta.TopologyHierarchical, []clientv4.ResourceRef{
+		{"hierarchical", true, []clientv4.ResourceRef{
 			{Type: model.ResourceTypeBiz, ID: "100001"},
 			{Type: model.ResourceTypeProject, ID: "40001"},
 			{Type: model.ResourceTypeEnvironment, ID: "50001"},
@@ -308,7 +308,7 @@ func TestGenApplyURLV4FollowsTopology(t *testing.T) {
 
 	for _, c := range cases {
 		gw := new(fakeV4Gateway)
-		a := &Auth{v4Cli: gw, topology: c.topology}
+		a := &Auth{v4Cli: gw, projectEnvAuth: c.projectEnvAuth}
 
 		url, err := a.genApplyURLV4(testKit(), []*meta.ResourceAttribute{{
 			Basic:         meta.Basic{Type: meta.App, Action: meta.View, ResourceID: 30001},

@@ -33,7 +33,7 @@ func (s *Service) Publish(ctx context.Context, req *pbcs.PublishReq) (
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+	res := meta.AppAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
 		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.Publish)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *Service) SubmitPublishApprove(ctx context.Context, req *pbcs.SubmitPubl
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+	res := meta.AppAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
 		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.Publish)
 	err := s.authorizer.Authorize(grpcKit, res...)
 	if err != nil {
@@ -226,7 +226,7 @@ func (s *Service) Approve(ctx context.Context, req *pbcs.ApproveReq) (*pbcs.Appr
 	// 审批通过和驳回无需权限
 	// 撤销和上线使用上线版本权限
 	if req.PublishStatus == string(table.RevokedPublish) || req.PublishStatus == string(table.AlreadyPublish) {
-		res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+		res := meta.AppAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
 			grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.Publish)
 		err := s.authorizer.Authorize(grpcKit, res...)
 		if err != nil {
@@ -264,7 +264,7 @@ func (s *Service) GenerateReleaseAndPublish(ctx context.Context, req *pbcs.Gener
 
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := appAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
+	res := meta.AppAuthResources(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId),
 		grpcKit.ResolvedEnvID(req.EnvId), req.AppId, meta.GenerateRelease,
 		meta.Publish)
 	err := s.authorizer.Authorize(grpcKit, res...)

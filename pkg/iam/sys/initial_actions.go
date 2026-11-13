@@ -163,6 +163,7 @@ func genApplicationActions() []client.ResourceAction {
 	actions := make([]client.ResourceAction, 0)
 
 	// app_create 已有按业务授予的策略，权限中心不允许修改带策略操作的关联资源，必须保持关联业务。
+	// 只在关闭项目/环境维度校验时作为服务创建的动作；开启时服务创建只校验 EnvironmentAppCreate。
 	actions = append(actions, client.ResourceAction{
 		ID:                   AppCreate,
 		Name:                 ActionIDNameMap[AppCreate],
