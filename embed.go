@@ -71,6 +71,7 @@ type IndexConfig struct {
 	RunEnv               string
 	StaticURL            string
 	IAMHost              string
+	IAMApplyURL          string // 权限中心申请权限页面地址
 	CMDBHost             string
 	APIURL               string
 	SiteURL              string // vue 路由前缀
@@ -206,6 +207,7 @@ func (e *EmbedWeb) RenderIndexHandler(conf *IndexConfig) http.Handler {
 			"RUN_ENV":                   conf.RunEnv,
 			"BK_BCS_BSCP_API":           conf.APIURL,
 			"BK_IAM_HOST":               conf.IAMHost,
+			"BK_IAM_APPLY_URL":          conf.IAMApplyURL,
 			"BK_CC_HOST":                conf.CMDBHost,
 			"BK_SHARED_RES_BASE_JS_URL": conf.BKSharedResBaseJSURL,
 			"BK_BSCP_CONFIG":            bscpConfig,

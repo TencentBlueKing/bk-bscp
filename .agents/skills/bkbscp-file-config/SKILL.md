@@ -1,19 +1,19 @@
 ---
-name: bscp-file-config
-slug: bscp-file-config
-version: 2.1.0
+name: bkbscp-file-config
+slug: bkbscp-file-config
+version: 2.1.1
 description: |
-  bscp（蓝鲸基础配置平台）文件型配置只读查看指引。为挂载了 bk-bscp-prod-file-manage 的模型补充
+  bscp（蓝鲸基础配置平台）文件型配置只读查看指引。为挂载了 bk-bscp-prod-file-config 的模型补充
   MCP 工具 schema 表达不了的领域知识：文件型（config_type=file）配置的领域模型、项目/环境与两套工具的选择、
   只读查看编排、参数获取、字段级业务约束与报错处置，帮助模型正确完成
   "定位项目环境 → 定位服务 → 查询配置项元数据 → 取下载 URL 查看文件内容"闭环。
   Use this skill whenever the user asks to 查看 bscp 文件配置, 看某文件型服务的配置,
   查询文件配置项, 看文件配置内容, 取文件下载 URL 查看文件内容, 看某个项目/环境下的文件配置,
-  or invokes bk-bscp-prod-file-manage 的工具（Config_ListConfigItems / Config_ListReleasedConfigItems /
+  or invokes bk-bscp-prod-file-config 的工具（Config_ListConfigItems / Config_ListReleasedConfigItems /
   对应的 Config_Env_* 工具 / get_content_download_url / ListProjects / ListEnvironments 等）。
 metadata:
   requires:
-    mcps: ["bk-bscp-prod-file-manage"]
+    mcps: ["bk-bscp-prod-file-config"]
 ---
 
 # bscp 文件型配置只读查看指引
@@ -30,12 +30,13 @@ metadata:
 
 ## 前置条件
 
-本 skill 依赖 `bk-bscp-prod-file-manage`（蓝鲸 API 网关提供的 bscp **文件型专用** MCP Server）暴露的工具，
-与 KV 型的 `bk-bscp-prod-server-mcp` 相互独立。**开始操作前必须先确认这些工具已可用**：
+本 skill 依赖 `bk-bscp-prod-file-config`（蓝鲸 API 网关提供的 bscp **文件型专用** MCP Server）暴露的工具，
+与 KV 型的 `bk-bscp-prod-kv-config` 相互独立。过渡期内旧 MCP `bk-bscp-prod-file-manage` 提供同名工具，同样可用。
+**开始操作前必须先确认这些工具已可用**：
 
-1. 检查当前会话是否已挂载 `bk-bscp-prod-file-manage`，能看到 `Config_GetAppByName`、`Config_ListConfigItems`、
-   `get_content_download_url` 等工具。
-2. **若工具不存在**：不要臆造工具名或伪造调用结果，直接告知用户"未检测到 `bk-bscp-prod-file-manage`
+1. 检查当前会话是否已挂载 `bk-bscp-prod-file-config` 或 `bk-bscp-prod-file-manage`，能看到 `Config_GetAppByName`、
+   `Config_ListConfigItems`、`get_content_download_url` 等工具；任一 MCP 提供所需工具即可继续。
+2. **若工具不存在**：不要臆造工具名或伪造调用结果，直接告知用户"未检测到 `bk-bscp-prod-file-config`
    或对应工具，可能尚未挂载 / 在网关注册"，说明缺失的能力，然后停下等待用户确认接入，或退化为对可用工具的编排。
 3. **若只有原有工具、没有 `Config_Env_*` 与项目 / 环境查询工具**：说明 MCP 尚未追加带项目环境的工具，
    只能查看默认项目的默认环境。用户要查看其他项目或环境时如实告知，不要拿原有工具硬调。
@@ -55,7 +56,7 @@ metadata:
 | 取文件下载 URL | `get_content_download_url`（不区分项目环境，见下） | 同左 |
 
 - `get_content_download_url` 通过请求头里的服务 ID（或模板空间 ID）定位内容，服务端按服务反查项目环境，任何环境的服务都能用。
-- 工具集里的 `get_released_config_item` / `list_released_config_item` 是历史遗留工具，参数放在请求头里且只作用于默认环境，
+- 旧 MCP `bk-bscp-prod-file-manage` 工具集里的 `get_released_config_item` / `list_released_config_item` 是历史遗留工具，参数放在请求头里且只作用于默认环境，
   优先使用 `Config_GetReleasedConfigItem` / `Config_ListReleasedConfigItems` 及其 `Config_Env_*` 版本。
 
 ## 项目与环境：两套工具怎么选
@@ -226,7 +227,7 @@ get_content_download_url {..., X-Bkapi-File-Content-Id:"<未上传的 sha256>"} 
 
 ## 文件型 vs KV 型差异（速查）
 
-| 维度 | 文件型（本 skill，只读查看） | KV 型（见 bscp-kv-config） |
+| 维度 | 文件型（本 skill，只读查看） | KV 型（见 bkbscp-kv-config） |
 |------|------------------|--------------------------|
 | 配置对象 | config_item：signature（SHA256）+ 元数据（path/name/byte_size/权限），另有绑定的模板文件 | kv：key / kvType / value |
 | 类型校验 | 操作前校验 `config_type=file` | 操作前校验 `config_type=kv` |

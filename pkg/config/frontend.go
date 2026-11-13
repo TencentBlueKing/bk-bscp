@@ -32,6 +32,11 @@ const (
 	// IAMProjectEnvAuthEnv 项目/环境维度权限校验开关对应的环境变量，取值 true/false，
 	// 仅当配置文件未显式配置 iam.project_environment_auth.enabled 时生效，auth-server 使用
 	IAMProjectEnvAuthEnv = "BK_BSCP_IAM_PROJECT_ENV_AUTH"
+
+	// iamV3ApplyPath 权限中心 V3 申请加入用户组页面
+	iamV3ApplyPath = "/apply-join-user-group"
+	// iamV4ApplyPath 权限中心 V4 权限申请页面
+	iamV4ApplyPath = "/permission/apply"
 )
 
 // HostConf host conf
@@ -40,7 +45,7 @@ type HostConf struct {
 	BKIAMV4Host          string `yaml:"bk_iam_v4_host"`    // 权限中心 V4，为空时使用 bk_iam_host
 	BKCMDBHost           string `yaml:"bk_cmdb_host"`      // 配置平台
 	BSCPAPIURL           string `yaml:"bscp_api_url"`      // bscp api地址
-	BKNODEMANHOST        string `yaml:"bk_nodeman_host"`   // 节点管理地址
+	BKNODEMGRHOST        string `yaml:"bk_nodemgr_host"`   // 节点管理跳转地址，填写完整 URL
 	BKSharedResURL       string `yaml:"bk_shared_res_url"` // 对应运维公共变量bkSharedResUrl, PaaS环境变量BKPAAS_SHARED_RES_URL
 	BKSharedResBaseJSURL string `yaml:"-"`                 // 规则是${bkSharedResUrl}/${目录名 aka app_code}/base.js
 	UserManHost          string `yaml:"user_man_host"`     // 用户列表host
@@ -72,11 +77,28 @@ func (h *HostConf) IsIAMV4() bool {
 // 开启 IAM V4 且配置了 bk_iam_v4_host 时使用 V4 地址，
 // 否则统一回退 bk_iam_host，关闭 V4 时即便残留 V4 地址也不会被使用。
 func (h *HostConf) IAMHost() string {
-	if h.IsIAMV4() && h.BKIAMV4Host != "" {
+	if h.useIAMV4Host() {
 		return h.BKIAMV4Host
 	}
 
 	return h.BKIAMHost
+}
+
+// IAMApplyURL 返回 UI 跳转申请权限的页面地址，页面路径与 IAMHost 选用的权限中心版本一致。
+func (h *HostConf) IAMApplyURL() string {
+	host := strings.TrimSuffix(h.IAMHost(), "/")
+	if host == "" {
+		return ""
+	}
+	if h.useIAMV4Host() {
+		return host + iamV4ApplyPath
+	}
+
+	return host + iamV3ApplyPath
+}
+
+func (h *HostConf) useIAMV4Host() bool {
+	return h.IsIAMV4() && h.BKIAMV4Host != ""
 }
 
 // FrontendConf docs and host conf

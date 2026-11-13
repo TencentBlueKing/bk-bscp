@@ -86,7 +86,7 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 			Content: string(data),
 			Delete:  false,
 		})
-		if err != nil {
+		if errS != nil {
 			return fmt.Errorf("sync resource from %s failed, err: %s", file, errS.Error())
 		}
 		if syncResourcesResp.Code != 0 {
@@ -145,6 +145,11 @@ func ReleaseSwagger(esbOpt cc.Esb, apiGwOpt cc.ApiGateway, language, version str
 	}
 
 	fmt.Println("swagger sync successful")
+
+	// MCP 同步要求资源已在该环境生效，因此在发布之后执行；失败不回滚已发布的资源版本
+	if err = syncMcpServers(gw, syncApiResp.Data.Name, apiGwOpt.Env, esbOpt, apiGwOpt.Mcp); err != nil {
+		return fmt.Errorf("%w: %s", ErrMcpSync, err.Error())
+	}
 
 	return nil
 }

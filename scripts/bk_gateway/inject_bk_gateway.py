@@ -22,7 +22,7 @@ ENV_TOKEN = "Env"
 PROJECT_TOKEN = "Project"
 
 # 蓝鲸网关要求 “MCP Server 名称 + 工具名称” 不超过 64 字符。MCP Server 名称形如
-# bk-bscp-prod-file-manage（24 字符），工具名取自 operationId，因此 operationId 不能超过 40 字符。
+# bk-bscp-prod-file-config（24 字符），工具名取自 operationId，因此 operationId 不能超过 40 字符。
 # /inner/ 接口仅供内部系统以应用身份调用，不注册为 MCP 工具，不受此限制。
 MAX_OPERATION_ID_LENGTH = 40
 # 改名后仍超长时，按顺序缩写 rpc 部分，直到满足长度要求。

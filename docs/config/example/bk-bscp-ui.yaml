@@ -35,7 +35,7 @@ frontend_conf:
     # 权限中心版本, 取值 v3/v4, 为空时读环境变量 BK_BSCP_IAM_VERSION, 再为空时视为 v3
     iam_version: ""
     bk_cmdb_host: "[cmdb url]"
-    bk_nodeman_host: "[nodeman url]"
+    bk_nodemgr_host: "[nodemgr url]/#/node-manager/agent"
     bk_shared_res_url: "[bkrepo url]"
     # bscp api 域名，与 ingress 保持一致
     bscp_api_url: "[bscp api url]"

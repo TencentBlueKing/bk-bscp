@@ -1,0 +1,91 @@
+# 随 init-apigateway 同步到网关 stage 的 MCP Server 声明，字段对应网关 v2 sync stage mcp-servers 接口。
+# 网关生成的 MCP Server 全名为 {网关名}-{stage}-{name}，如 bk-bscp-prod-kv-config。
+# resource_names 必须是 swagger.json 中的 operationId；资源名一经 MCP 使用即视为对外契约，不再改名。
+# target_app_codes 由运行时按 esb.appCode 与 apiGateway.mcp.grantAppCodes 注入，不在此处维护。
+mcp_servers:
+  - name: kv-config
+    title: 服务配置中心-KV配置管理
+    description: 服务配置中心 KV 型配置的项目环境查询、服务查询、KV 增删改查、生成版本、发布与已发布配置查询
+    labels: [bscp]
+    category_names: [Official, ConfigManagement]
+    is_public: true
+    status: 1
+    protocol_type: streamable_http
+    oauth2_public_client_enabled: true
+    oauth2_personal_client_enabled: true
+    raw_response_enabled: false
+    resource_names:
+      # 原有接口：只作用于默认项目的默认环境
+      - Config_ListAppsBySpaceRest
+      - Config_GetAppByName
+      - Config_ListKvs
+      - Config_CreateKv
+      - Config_UpdateKv
+      - Config_DeleteKv
+      - Config_BatchUpsertKvs
+      - Config_BatchDeleteKv
+      - Config_ListReleases
+      - Config_CreateRelease
+      - Config_Publish
+      - Config_ListReleasedKvs
+      - Config_GetReleasedKv
+      # 带项目环境的接口
+      - Config_Env_ListAppsBySpaceRest
+      - Config_Env_GetAppByName
+      - Config_Env_ListKvs
+      - Config_Env_CreateKv
+      - Config_Env_UpdateKv
+      - Config_Env_DeleteKv
+      - Config_Env_BatchUpsertKvs
+      - Config_Env_BatchDeleteKv
+      - Config_Env_ListReleases
+      - Config_Env_CreateRelease
+      - Config_Env_Publish
+      - Config_Env_ListReleasedKvs
+      - Config_Env_GetReleasedKv
+      # 项目 / 环境查询
+      - Config_ListProjects
+      - Config_GetProjectByKey
+      - Config_ListEnvironments
+      - Config_GetEnvironmentByName
+  - name: file-config
+    title: 服务配置中心-文件配置查看
+    description: 服务配置中心文件型配置的只读查看：项目环境查询、服务与版本查询、配置项元数据查询、模板绑定查询与文件临时下载 URL，不包含写操作
+    labels: [bscp]
+    category_names: [Official, ConfigManagement]
+    is_public: true
+    status: 1
+    protocol_type: streamable_http
+    oauth2_public_client_enabled: true
+    oauth2_personal_client_enabled: true
+    raw_response_enabled: false
+    resource_names:
+      # 原有接口：只作用于默认项目的默认环境
+      - Config_ListAppsBySpaceRest
+      - Config_GetAppByName
+      - Config_ListReleases
+      - Config_GetReleaseByName
+      - Config_ListConfigItems
+      - Config_GetConfigItem
+      - Config_ListReleasedConfigItems
+      - Config_GetReleasedConfigItem
+      - Config_ListAppBoundTmplRevisions
+      - Config_ListReleasedAppBoundTmplRevisions
+      # 带项目环境的接口
+      - Config_Env_ListAppsBySpaceRest
+      - Config_Env_GetAppByName
+      - Config_Env_ListReleases
+      - Config_Env_GetReleaseByName
+      - Config_Env_ListConfigItems
+      - Config_Env_GetConfigItem
+      - Config_Env_ListReleasedConfigItems
+      - Config_Env_GetReleasedConfigItem
+      - Config_Env_ListAppBoundTmplRevisions
+      - Config_Env_ListReleasedAppBoundTmplRevs
+      # 项目 / 环境查询
+      - Config_ListProjects
+      - Config_GetProjectByKey
+      - Config_ListEnvironments
+      - Config_GetEnvironmentByName
+      # 文件内容（按服务 / 模板空间反查项目环境，不区分环境）
+      - get_content_download_url

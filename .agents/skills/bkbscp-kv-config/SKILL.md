@@ -1,21 +1,21 @@
 ---
-name: bscp-kv-config
-slug: bscp-kv-config
-version: 1.1.0
+name: bkbscp-kv-config
+slug: bkbscp-kv-config
+version: 1.1.1
 description: |
-  bscp（蓝鲸基础配置平台）KV 配置操作指引。为挂载了 bk-bscp-prod-server-mcp 的模型补充
+  bscp（蓝鲸基础配置平台）KV 配置操作指引。为挂载了 bk-bscp-prod-kv-config 的模型补充
   MCP 工具 schema 表达不了的领域知识：领域模型、项目/环境与两套工具的选择、端到端调用编排、
   参数获取、字段级业务约束、报错处置与场景化示例，帮助模型正确完成
   "定位项目环境 → 改 KV → 生成版本 → 发布 → 验证"闭环。
   Use this skill whenever the user asks to 操作 bscp 配置, 改 bscp KV, 新增/更新/删除 KV,
   发布 bscp 版本, 灰度发布, kv 配置查询/更新/发布, 看看某个服务的配置, 帮我发版,
   改某个项目/环境下的 KV,
-  or invokes any bk-bscp-prod-server-mcp Config_* tool
+  or invokes any bk-bscp-prod-kv-config Config_* tool
   (CreateKv/UpdateKv/DeleteKv/BatchUpsertKvs/CreateRelease/Publish 及对应的 Config_Env_* 工具,
   ListProjects/ListEnvironments 等).
 metadata:
   requires:
-    mcps: ["bk-bscp-prod-server-mcp"]
+    mcps: ["bk-bscp-prod-kv-config"]
 ---
 
 # bscp KV 配置操作指引
@@ -26,16 +26,18 @@ metadata:
 **不重复** MCP 工具已有的单字段描述——填参时字段含义以 MCP 工具 schema 为准。文中的业务
 约束来自 bscp 服务端的实际校验规则，会随 bscp 版本演进；若与调用返回的报错不一致，以服务端返回为准。
 
-适用范围：`bk-bscp-prod-server-mcp` 的两套 KV 工具（不带项目环境的原有工具、带项目环境的
+适用范围：`bk-bscp-prod-kv-config` 的两套 KV 工具（不带项目环境的原有工具、带项目环境的
 `Config_Env_*` 工具）及项目 / 环境查询工具，聚焦 `config_type=kv` 服务的 KV 配置闭环。
 不覆盖模板、分组管理、客户端等 KV 闭环以外的接口。
 
 ## 前置条件
 
-本 skill 依赖 `bk-bscp-prod-server-mcp`（蓝鲸 API 网关提供的 bscp MCP Server）暴露的 `Config_*` 工具。
+本 skill 依赖 `bk-bscp-prod-kv-config`（蓝鲸 API 网关提供的 bscp KV 型 MCP Server）暴露的 `Config_*` 工具。
+过渡期内旧 MCP `bk-bscp-prod-server-mcp` 提供同名工具，同样可用。
 **开始操作前必须先确认这些工具已可用**：
 
-1. 检查当前会话是否已挂载 `bk-bscp-prod-server-mcp`，能看到 `Config_ListAppsBySpaceRest`/`Config_CreateKv` 等工具。
+1. 检查当前会话是否已挂载 `bk-bscp-prod-kv-config` 或 `bk-bscp-prod-server-mcp`，能看到
+   `Config_ListAppsBySpaceRest`/`Config_CreateKv` 等工具；任一 MCP 提供所需工具即可继续。
 2. **若工具不存在**：不要臆造工具名或伪造调用结果，直接告知用户"未检测到 bscp MCP，需要先接入"，并给出下述接入指引，然后停下等待用户完成配置。
 3. **若只有原有工具、没有 `Config_Env_*` 与项目 / 环境查询工具**：说明 MCP 尚未追加带项目环境的工具，
    只能操作默认项目的默认环境。用户要操作其他项目或环境时如实告知，不要拿原有工具硬调。
@@ -43,7 +45,7 @@ metadata:
 
 ### 接入指引（当工具缺失时告知用户）
 
-请在你的 AI IDE（Cursor / Claude 等）的 MCP 配置中添加 `bk-bscp-prod-server-mcp`，通常需要准备：
+请在你的 AI IDE（Cursor / Claude 等）的 MCP 配置中添加 `bk-bscp-prod-kv-config`，通常需要准备：
 
 - **MCP Server 地址**：蓝鲸 API 网关上 bscp MCP Server 的接入地址；
 - **鉴权信息**：调用网关所需的鉴权（如网关应用凭证 / `X-Bkapi-Authorization`）；
