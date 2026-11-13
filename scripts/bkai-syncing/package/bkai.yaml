@@ -6,3 +6,4 @@ metadata:
 resources:
   - skills/bkbscp-kv-config
   - skills/bkbscp-file-config
+  - skills/bkbscp-process-config
