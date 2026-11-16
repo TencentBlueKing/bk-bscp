@@ -186,8 +186,9 @@ type ConfigPayload struct {
 	ConfigFileMode          table.FileMode // 目标操作系统类型: "win" / "unix"
 	ConfigInstanceKey       string         // 配置实例标识: {configTemplateID}-{ccProcessID}-{moduleInstSeq}
 	ConfigContent           string
-	ConfigContentSignature  string        // 配置内容的签名(sha256)
-	CompareStatus           CompareStatus // 对比状态
+	Charset                 table.FileCharset // 配置字符集，实际只有空(存量)与 UTF-8，仅决定 Windows 下发是否补 BOM 与展示解码，不做编码转换
+	ConfigContentSignature  string            // 配置内容的签名(sha256)
+	CompareStatus           CompareStatus     // 对比状态
 	// LastDispatchedContent 本次下发前机器上的配置内容快照，任务执行时记录，不受后续下发覆盖，空表示从未下发
 	LastDispatchedContent string
 	// LastDispatchedSignature 上述快照内容的 md5
@@ -446,6 +447,7 @@ func BuildConfigTaskPayload(
 			ConfigFileMode:          templateRevision.Spec.FileMode,
 			ConfigInstanceKey:       key,
 			ConfigContent:           "",
+			Charset:                 templateRevision.Spec.Charset,
 		},
 	}
 }
