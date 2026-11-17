@@ -1,0 +1,11 @@
+apiVersion: bkai.tencent.com/v1
+kind: Skill
+metadata:
+  code: bkbscp-process-config
+  name: 服务配置中心-进程配置管理
+  # 不填 version，由平台按 ZIP hash 自动递增
+  description: 服务配置中心进程配置的查询、启停托管、配置生成/检查/下发与状态同步指引，配合 bk-bscp-prod-process-config MCP 使用
+spec:
+  generate_type: space
+  is_public: true
+  tag_names: []

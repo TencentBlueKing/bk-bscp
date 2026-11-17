@@ -67,6 +67,7 @@
 | TAPD | TAPD MCP，`project.json.workspace_id` | 拉取、澄清、评审和更新需求 | 写操作按 Skill 流程确认 |
 | BSCP KV 配置 | `bk-bscp-prod-kv-config` MCP + `bkbscp-kv-config` | 查询或按授权变更 KV 配置 | 发布及写操作必须遵循闭环验证 |
 | BSCP 文件配置 | `bk-bscp-prod-file-config` MCP + `bkbscp-file-config` | 查询配置元数据和下载内容 | 默认只读 |
+| BSCP 进程配置 | `bk-bscp-prod-process-config` MCP + `bkbscp-process-config` | 按表达式启停托管、生成/检查/下发配置、同步 CMDB 与 GSE | 调用方默认已迁移；写操作必须先确认范围并轮询批次 |
 | 代码结构图谱 | `graphify`、`docs/dev-map/graph.json` | 代码定位、依赖路径和概念查询 | 代码变化后增量更新 |
 
 ### 3.2 运行时与外部系统

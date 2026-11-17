@@ -29,7 +29,7 @@ operationId 即蓝鲸网关的资源名，也是网关 MCP 的工具名。`scrip
 ## MCP Server
 
 `mcp_servers.yaml` 声明随 `init-apigateway` 同步到网关的 MCP Server（`bk-bscp-{stage}-kv-config`、
-`bk-bscp-{stage}-file-config`），需在配置中开启 `apiGateway.mcp.enabled`。同步后网关按资源维度为
+`bk-bscp-{stage}-file-config`、`bk-bscp-{stage}-process-config`），需在配置中开启 `apiGateway.mcp.enabled`。同步后网关按资源维度为
 `esb.appCode` 与 `apiGateway.mcp.grantAppCodes` 授予 `resource_names` 并集的访问权限。
 
 - `resource_names` 中的资源名即 MCP 工具名，被 MCP 使用后视为对外契约，不再改名：网关导入时资源改名等同

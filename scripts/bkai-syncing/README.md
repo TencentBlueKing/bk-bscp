@@ -16,7 +16,9 @@ scripts/bkai-syncing/
     └── skills/
         ├── bkbscp-kv-config/
         │   └── skill.yaml
-        └── bkbscp-file-config/
+        ├── bkbscp-file-config/
+        │   └── skill.yaml
+        └── bkbscp-process-config/
             └── skill.yaml
 ```
 
@@ -26,12 +28,13 @@ scripts/bkai-syncing/
 |-----------|------|---------|
 | `bkbscp-kv-config` | 服务配置中心-KV配置管理 | `bk-bscp-prod-kv-config` |
 | `bkbscp-file-config` | 服务配置中心-文件配置查看 | `bk-bscp-prod-file-config` |
+| `bkbscp-process-config` | 服务配置中心-进程配置管理 | `bk-bscp-prod-process-config` |
 
 ## 运行方式
 
 bscp 不单独构建同步镜像：
 
-1. hyper 镜像（`bk-bscp-hyper`）在 `/bk-bscp/bkai/` 下携带完整同步包（本目录 `package/` + 两份 `SKILL.md`）。
+1. hyper 镜像（`bk-bscp-hyper`）在 `/bk-bscp/bkai/` 下携带完整同步包（本目录 `package/` + 各 skill 的 `SKILL.md`）。
 2. Helm Job 的 initContainer 使用 hyper 镜像，把 `/bk-bscp/bkai/` 复制到共享 emptyDir。
 3. 主容器直接使用 AIDev 平台提供的 `bk-aidev-init` 镜像（地址在 chart `bkai.image` 中配置），执行
    `sync --confirm -f <emptyDir>/bkai.yaml`。

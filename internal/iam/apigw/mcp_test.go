@@ -93,12 +93,12 @@ func TestEmbeddedMcpServers(t *testing.T) {
 	for _, s := range servers {
 		counts[s.Name] = len(s.ResourceNames)
 	}
-	want := map[string]int{"kv-config": 30, "file-config": 25}
+	want := map[string]int{"kv-config": 30, "file-config": 25, "process-config": 10}
 	if !reflect.DeepEqual(counts, want) {
 		t.Errorf("mcp tool counts = %v, want %v", counts, want)
 	}
-	if got := len(mcpResourceNames(servers)); got != 45 {
-		t.Errorf("mcp resource union = %d, want 45", got)
+	if got := len(mcpResourceNames(servers)); got != 55 {
+		t.Errorf("mcp resource union = %d, want 55", got)
 	}
 }
 
