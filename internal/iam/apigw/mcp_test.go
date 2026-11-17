@@ -250,8 +250,9 @@ func TestSyncMcpServers(t *testing.T) {
 	if err = json.Unmarshal(syncReq.body, &gotSync); err != nil {
 		t.Fatalf("unmarshal sync body: %v", err)
 	}
-	if gotSync.Name != "prod" || len(gotSync.McpServers) != 2 {
-		t.Fatalf("sync body name = %s, servers = %d", gotSync.Name, len(gotSync.McpServers))
+	embedded := loadEmbeddedMcpServers(t)
+	if gotSync.Name != "prod" || len(gotSync.McpServers) != len(embedded) {
+		t.Fatalf("sync body name = %s, servers = %d, want %d", gotSync.Name, len(gotSync.McpServers), len(embedded))
 	}
 	for _, s := range gotSync.McpServers {
 		if !reflect.DeepEqual(s.TargetAppCodes, wantApps) {
@@ -259,7 +260,7 @@ func TestSyncMcpServers(t *testing.T) {
 		}
 	}
 
-	wantResources := mcpResourceNames(loadEmbeddedMcpServers(t))
+	wantResources := mcpResourceNames(embedded)
 	for i, app := range wantApps {
 		r := f.requests[1+i]
 		if r.path != "/api/v2/sync/gateways/bk-bscp/permissions/grant/" {
