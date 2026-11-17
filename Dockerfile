@@ -1,11 +1,10 @@
 # 使用 uv 镜像，构建阶段通过 uv sync 预装并锁定 Python 依赖
 FROM ghcr.io/astral-sh/uv:python3.12-alpine
 
+# 只安装运行时库。编译器不能单独成层：扫描会检查每一层，
+# build-base 带进来的 C++ 头文件版本号会被误判成内网 IP。
 RUN apk --update --no-cache add ca-certificates bash vim curl \
-    # Install runtime libraries for lxml (needed at runtime)
-    libxml2 libxslt \
-    # Install build dependencies for Python packages (needed for compiling lxml)
-    build-base python3-dev libxml2-dev libxslt-dev
+    libxml2 libxslt
 
 COPY build/bk-bscp/bk-bscp-ui/bk-bscp-ui /bk-bscp/
 COPY build/bk-bscp/bk-bscp-apiserver/bk-bscp-apiserver /bk-bscp/
@@ -26,11 +25,17 @@ COPY scripts/bkai-syncing/package /bk-bscp/bkai
 COPY .agents/skills/bkbscp-kv-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-kv-config/SKILL.md
 COPY .agents/skills/bkbscp-file-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-file-config/SKILL.md
 COPY .agents/skills/bkbscp-process-config/SKILL.md /bk-bscp/bkai/skills/bkbscp-process-config/SKILL.md
-# 复制 Python 模块到镜像中
+# 复制 Python 模块到镜像中。tests 与本地 .venv 由 .dockerignore 排除。
 COPY render/python /bk-bscp/render/python
 WORKDIR /bk-bscp/render/python
-RUN uv sync --frozen
-RUN .venv/bin/python3 -c "import mako, lxml"
+# 编译 lxml 需要编译器。安装、同步、删除必须在同一次 RUN 里完成，
+# 否则编译头文件和 uv 缓存会留在中间层，被敏感信息扫描扫到。
+ENV UV_NO_CACHE=1
+RUN apk add --no-cache --virtual .build-deps build-base python3-dev libxml2-dev libxslt-dev \
+    && uv sync --frozen \
+    && .venv/bin/python3 -c "import mako, lxml" \
+    && apk del .build-deps \
+    && rm -rf /root/.cache
 WORKDIR /bk-bscp
 ENV BSCP_PYTHON_RENDER_PATH=/bk-bscp/render/python
 ENTRYPOINT ["/bk-bscp/bk-bscp-ui"]
