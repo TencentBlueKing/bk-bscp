@@ -3,6 +3,7 @@
 import builtins
 import posix
 import sys
+import tempfile
 import unittest
 from importlib import import_module
 from pathlib import Path
@@ -14,7 +15,7 @@ if str(PYTHON_ROOT) not in sys.path:
 from mako_render import mako_render
 from mako_render.context import MakoSandbox
 from mako_render.exceptions import ForbiddenMakoTemplateException
-from mako_render.patch import default_black_list, patch
+from mako_render.patch import default_black_list, patch, preload_template_modules
 
 
 def _snapshot_blacklist():
@@ -87,6 +88,30 @@ ${datetime.datetime.now()}
             self.assertIn('"n": 2.0', result)
             self.assertIn("20", result)
         finally:
+            _restore_blacklist(saved)
+
+    def test_preloaded_strptime_renders_without_pyc_cache(self):
+        saved = _snapshot_blacklist()
+        saved_prefix = sys.pycache_prefix
+        saved_strptime = sys.modules.pop("_strptime", None)
+        template = """<%
+from datetime import datetime
+def get_opentime(r):
+    datetime.strptime(r, "%Y-%m-%d %H:%M:%S")
+    return r
+%>ServerOpenTime=${get_opentime("2026-11-18 10:00:00")}"""
+        try:
+            with tempfile.TemporaryDirectory() as prefix:
+                # 空缓存目录让 _strptime 必须重新编译并写 .pyc，复现生产镜像的首次导入
+                sys.pycache_prefix = prefix
+                preload_template_modules()
+                patch(default_black_list)
+                result = mako_render(template, {})
+            self.assertEqual("ServerOpenTime=2026-11-18 10:00:00", result)
+        finally:
+            sys.pycache_prefix = saved_prefix
+            if saved_strptime is not None:
+                sys.modules["_strptime"] = saved_strptime
             _restore_blacklist(saved)
 
 
