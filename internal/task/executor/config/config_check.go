@@ -204,7 +204,7 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 		)
 	}
 
-	actualMD5 := strings.TrimSpace(r.Screen)
+	actualMD5 := normalizeMD5Screen(r.Screen)
 
 	// 2. 查询历史下发记录
 	configInstance, err := e.Dao.ConfigInstance().GetConfigInstance(
@@ -400,6 +400,13 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 
 	// 这是 配置内容不一致 的业务错误
 	return fmt.Errorf("config content inconsistent")
+}
+
+// normalizeMD5Screen 把 MD5 脚本上报的 screen 转成与下发记录一致的连续小写十六进制。
+// Windows Server 2012 R2 及更早版本的 certutil 按字节空格分隔输出（如 "d5 87 db ..."），
+// 不去掉中间空白会让内容相同的文件也被判为不一致。
+func normalizeMD5Screen(screen string) string {
+	return strings.ToLower(strings.Join(strings.Fields(screen), ""))
 }
 
 // catOutputToConfigContent 把读取脚本上报的 screen 转成可展示的配置内容。

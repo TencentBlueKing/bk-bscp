@@ -232,3 +232,25 @@ func TestBuildWindowsCatScriptEscapesBatchSpecialChars(t *testing.T) {
 	// 继承的延迟展开会把路径里的 ! 吃掉，必须显式关闭
 	assert.Contains(t, script, "setlocal DisableDelayedExpansion")
 }
+
+// 现网误报「配置内容不一致」的回归用例：Windows Server 2012 R2 及更早版本的 certutil
+// 按字节空格分隔输出 MD5，与下发时存储的连续小写 MD5 逐字符比较永远不相等。
+func TestNormalizeMD5Screen(t *testing.T) {
+	const want = "d587dbc9a67c7b06ea746b2c6b62b83a"
+
+	tests := []struct {
+		name   string
+		screen string
+	}{
+		{name: "legacy certutil space separated", screen: "d5 87 db c9 a6 7c 7b 06 ea 74 6b 2c 6b 62 b8 3a\r\n"},
+		{name: "modern certutil contiguous", screen: "d587dbc9a67c7b06ea746b2c6b62b83a\r\n"},
+		{name: "uppercase hex", screen: "D5 87 DB C9 A6 7C 7B 06 EA 74 6B 2C 6B 62 B8 3A"},
+		{name: "linux md5sum", screen: "d587dbc9a67c7b06ea746b2c6b62b83a\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, want, normalizeMD5Screen(tt.screen))
+		})
+	}
+}
