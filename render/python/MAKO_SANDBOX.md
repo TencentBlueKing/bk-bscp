@@ -55,6 +55,7 @@ with MakoSandbox():
 - 运行时只拦截 `builtins.open` 和 `io.open`，且仅在 `MakoSandbox` 线程内生效
 - **不拦截** `builtins.compile`、`builtins.exec`、`builtins.__import__`：Mako 编译模板，以及模板中的 `import json` 等白名单导入，都依赖这些入口
 - `eval`、`exec`、`__import__` 等其余危险内置名称仍由编译时检查（`visitor.py`）拒绝
+- 打补丁前必须先调用 `preload_template_modules()`，导入白名单模块及 `_strptime` 等懒加载依赖。沙箱内首次导入模块时，importlib 会调用被拦截的 `posix.open`/`mkdir`/`listdir` 写 `.pyc`，导致 `datetime.strptime` 这类合法调用报 `I am watching you!`
 
 ### 3. AST 语法树检查（编译时检查）
 

@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from types import SimpleNamespace
 from lxml import etree
 from mako_render import mako_render
-from mako_render.patch import patch, default_black_list
+from mako_render.patch import patch, default_black_list, preload_template_modules
 
 # HELP_TEMPLATE 用于生成帮助文档，显示所有可用的变量和对象
 # 参考 Python 代码：config_version.py 第 37-141 行
@@ -361,6 +361,7 @@ def main():
     """
     # 应用运行时补丁，拦截黑名单中的危险函数调用（常驻模式下也只需应用一次）
     # 参考原项目：bk-process-config-manager/apps/utils/mako_utils/patch.py
+    preload_template_modules()
     patch(default_black_list)
     parser = argparse.ArgumentParser(
         description='Render Mako templates with given context'

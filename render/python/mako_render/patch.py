@@ -11,6 +11,21 @@ from importlib import import_module
 
 from .context import get_thread_id, is_thread_id_in_list
 from .exceptions import ForbiddenMakoTemplateException
+from .visitor import MakoNodeVisitor
+
+# 白名单函数在首次调用时才导入的标准库模块，例如 datetime.strptime 依赖 _strptime
+LAZY_IMPORTED_MODULES = ("_strptime",)
+
+
+def preload_template_modules():
+    """
+    在 patch 之前导入模板可用的模块
+
+    沙箱内首次导入模块时，importlib 会调用 posix.open/mkdir/listdir 写 .pyc 或刷新目录缓存，
+    这些函数已被 patch 拦截，会让合法模板报 "I am watching you!"。
+    """
+    for module_name in sorted(MakoNodeVisitor.WHITE_LIST_MODULES) + list(LAZY_IMPORTED_MODULES):
+        import_module(module_name)
 
 
 def patch(black_list):
