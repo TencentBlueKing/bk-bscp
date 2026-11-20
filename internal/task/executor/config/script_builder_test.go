@@ -23,7 +23,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -92,6 +91,9 @@ func TestBuildLinuxPushScriptAtomicOrder(t *testing.T) {
 	assert.Contains(t, script, `chmod 444 -- "$TMP_PATH"`)
 	assert.Contains(t, script, `chown "$OWNER_UID:$GROUP_GID" -- "$TMP_PATH"`)
 	assert.Contains(t, script, `chown "$OWNER_UID:$GROUP_GID" -- "$BACKUP_PATH"`)
+	assert.Contains(t, script, `LOCK_FILE="${TARGET_DIR}/${TARGET_NAME}.bscp.lock"`)
+	assert.Contains(t, script, `flock -w 60 9`)
+	assert.Contains(t, script, `BACKUP_PATH="${TARGET_DIR}/${TARGET_NAME}.${TIMESTAMP}.$$.${RANDOM}.bak"`)
 	assert.Contains(t, script, `mv -f -- "$TMP_PATH" "$TARGET_PATH"`)
 	assert.Contains(t, script, `trap 'rm -f -- "$TMP_PATH"' EXIT`)
 
@@ -105,6 +107,8 @@ func TestBuildLinuxPushScriptAtomicOrder(t *testing.T) {
 	}
 	assert.Less(t, orderOf("readlink -f"), orderOf("BACKUP_PATH="))
 	assert.Less(t, orderOf(`trap 'rm -f`), orderOf("BACKUP_PATH="))
+	assert.Less(t, orderOf("flock -w 60"), orderOf("BACKUP_PATH="))
+	assert.Less(t, orderOf("mv -f --"), orderOf("exec 9>&-"))
 	assert.Less(t, orderOf("base64 -d"), orderOf("chmod 444"))
 	assert.Less(t, orderOf("chmod 444"), orderOf(`chown "$OWNER_UID:$GROUP_GID" -- "$TMP_PATH"`))
 	assert.Less(t, orderOf(`chown "$OWNER_UID:$GROUP_GID" -- "$TMP_PATH"`), orderOf("mv -f --"))
@@ -435,10 +439,6 @@ func TestLinuxPushScriptKeepsMaxBackups(t *testing.T) {
 
 	const maxBackups = 2
 	for i := range maxBackups + 2 {
-		if i > 0 {
-			// 备份文件名按秒取时间戳，同一秒内的多次下发会复用同一个文件名
-			time.Sleep(1100 * time.Millisecond)
-		}
 		out, err := runPushScript(t, target, "v"+strconv.Itoa(i+1), "644", maxBackups)
 		require.NoError(t, err, "script output: %s", out)
 	}
@@ -446,6 +446,78 @@ func TestLinuxPushScriptKeepsMaxBackups(t *testing.T) {
 	backups, err := filepath.Glob(filepath.Join(dir, "app.conf.*.bak"))
 	require.NoError(t, err)
 	assert.Len(t, backups, maxBackups)
+}
+
+// TestLinuxPushScriptSameSecondBackupsDoNotCollide 同一秒内连续下发必须各自留下备份。
+// 备份名如果只有秒级时间戳，后一次 cp 会撞上已存在的 .bak：GNU cp 对新建文件使用 O_EXCL，
+// 并发时直接报 File exists，整个下发失败。
+func TestLinuxPushScriptSameSecondBackupsDoNotCollide(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "tss_sdk_conf.xml")
+	require.NoError(t, os.WriteFile(target, []byte("v0"), 0o644))
+
+	for i := 1; i <= 2; i++ {
+		out, err := runPushScript(t, target, "v"+strconv.Itoa(i), "644", 5)
+		require.NoError(t, err, "script output: %s", out)
+	}
+
+	backups, err := filepath.Glob(filepath.Join(dir, "tss_sdk_conf.xml.*.bak"))
+	require.NoError(t, err)
+	assert.Len(t, backups, 2, "同一秒内的两次下发应各留一份备份，而不是复用同一个 .bak")
+}
+
+// TestLinuxPushScriptConcurrentSameFile 同一目标被多个进程实例同时下发时，每一份脚本都要成功，
+// 正式文件最终是其中一份内容，备份份数不超过上限。
+func TestLinuxPushScriptConcurrentSameFile(t *testing.T) {
+	if _, err := exec.LookPath("flock"); err != nil {
+		t.Skip("flock not available")
+	}
+
+	dir := t.TempDir()
+	target := filepath.Join(dir, "tss_sdk_conf.xml")
+	require.NoError(t, os.WriteFile(target, []byte("v0"), 0o644))
+
+	const workers = 8
+	const maxBackups = 5
+	owner, group := currentOwner(t)
+	builder := &ScriptBuilder{FileMode: table.Unix, MaxBackups: maxBackups}
+	scripts := make([]string, workers)
+	contents := make([]string, workers)
+	for i := range workers {
+		contents[i] = "concurrent-" + strconv.Itoa(i)
+		script, err := builder.BuildConfigPushScript(
+			base64.StdEncoding.EncodeToString([]byte(contents[i])), target, "644", owner, group)
+		require.NoError(t, err)
+		scriptPath := filepath.Join(t.TempDir(), "push-"+strconv.Itoa(i)+".sh")
+		require.NoError(t, os.WriteFile(scriptPath, []byte(script), 0o700))
+		scripts[i] = scriptPath
+	}
+
+	errs := make([]error, workers)
+	outs := make([]string, workers)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := range workers {
+		go func(i int) {
+			defer wg.Done()
+			out, err := exec.Command("bash", scripts[i]).CombinedOutput()
+			outs[i], errs[i] = string(out), err
+		}(i)
+	}
+	wg.Wait()
+
+	for i := range workers {
+		require.NoError(t, errs[i], "worker %d output: %s", i, outs[i])
+	}
+
+	got, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Contains(t, contents, string(got))
+
+	backups, err := filepath.Glob(filepath.Join(dir, "tss_sdk_conf.xml.*.bak"))
+	require.NoError(t, err)
+	assert.LessOrEqual(t, len(backups), maxBackups)
+	assertNoTempLeftover(t, dir)
 }
 
 // TestLinuxPushScriptKeepsTargetIntactOnChownFailure 属主无法解析时，已存在的目标文件必须

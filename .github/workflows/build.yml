@@ -49,7 +49,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # 编译项目
+      # 只构建新 UI。旧 UI 不再发布，不在这里执行 ui_old 的 npm 构建。
       - name: build ui project
         run: |
-          make build_frontend
+          make build_frontend_new
