@@ -158,7 +158,7 @@ clean:
 	@rm -rf ${PRO_DIR}/build
 
 .PHONY: build_bscp
-build_bscp:
+build_bscp: ensure_old_frontend_placeholder
 	@cd ${PRO_DIR}/cmd && make all
 
 .PHONY: build_feed
@@ -175,19 +175,29 @@ build_frontend_new:
 	@echo "tips: ensure you have installed Node.js 22.23.4 and npm"
 	cd ui; npm install --legacy-peer-deps; npm run build
 
-# 旧 UI（ui_old）产出 ui_old/dist，供 embed.go 编译期嵌入
+# 旧 UI 已不再随镜像发布。需要本地静态资源时再单独执行本目标。
 .PHONY: build_frontend_old
 build_frontend_old:
 	@echo "tips: ensure you have installed Node.js 22.23.4 and npm"
 	cd ui_old; npm install --legacy-peer-deps; npm run build
 
-# embed.go 编译期同时嵌入 ui/dist 与 ui_old/dist，故默认前端构建必须产出新旧两套，
-# 避免调用方漏构建其一导致 build_bscp 报 go:embed 找不到文件
+# 默认前端构建只产出新 UI。镜像构建走这条路径，不再执行 ui_old 的 npm install / build。
 .PHONY: build_frontend
-build_frontend: build_frontend_new build_frontend_old
+build_frontend: build_frontend_new
+
+# go:embed 仍引用 ui_old/dist。目录里已有构建产物时保持不动；没有则写占位文件，让编译通过。
+.PHONY: ensure_old_frontend_placeholder
+ensure_old_frontend_placeholder:
+	@if [ ! -f ui_old/dist/index.html ]; then \
+		mkdir -p ui_old/dist; \
+		printf '%s\n' '{}' > ui_old/dist/config.json; \
+		: > ui_old/dist/index.html; \
+		: > ui_old/dist/403.html; \
+		echo "skip old UI build; wrote ui_old/dist placeholders for go:embed"; \
+	fi
 
 .PHONY: build_ui
-build_ui: 
+build_ui: ensure_old_frontend_placeholder
 	@echo -e "\e[34;1mTips: ensure you have execute 'make build_frontend' first\033[0m"
 	${GOBUILD} -ldflags ${LDVersionFLAG} -o ${OUTPUT_DIR}/bk-bscp-ui/bk-bscp-ui ./cmd/ui
 
@@ -242,7 +252,7 @@ docs: api_docs bkapigw_docs markdown_docs
 .PHONY: push-image
 push-image: 
 	@if [ "${SKIP_FRONTEND_BUILD}" != "true" ]; then \
-		echo -e "\e[34;1mBuilding frontend (new + old)...\033[0m"; \
+		echo -e "\e[34;1mBuilding frontend...\033[0m"; \
 		$(MAKE) build_frontend; \
 	else \
 		echo -e "\e[33;1mSkipping frontend build as SKIP_FRONTEND_BUILD=true\033[0m"; \
