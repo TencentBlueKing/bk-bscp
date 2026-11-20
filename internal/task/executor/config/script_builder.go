@@ -179,10 +179,24 @@ done
 TMP_PATH="${TARGET_PATH}.tmp.$$.${RANDOM}"
 trap 'rm -f -- "$TMP_PATH"' EXIT
 
+# 4.1 同一目标的并发下发串行执行。
+#
+#    同一台机器上的多个进程实例会同时写同一个配置文件。
+#    备份名如果只有秒级时间戳，GNU cp 创建 .bak 时使用 O_EXCL，
+#    后到的脚本报 File exists，整次下发失败。
+#    flock 在进程退出（含被杀死）时由内核释放，不会留下把后续下发卡死的锁目录。
+LOCK_FILE="${TARGET_DIR}/${TARGET_NAME}.bscp.lock"
+exec 9>"$LOCK_FILE"
+if ! flock -w 60 9; then
+    echo "LOCK_TIMEOUT: $LOCK_FILE"
+    exit 1
+fi
+
 # 5. 备份原文件（如果存在），并让备份文件归属与目标文件保持一致。
+#    PID 与 RANDOM 让同一秒内的备份名互不相同，避免后一次覆盖前一次的备份。
 if [ -f "$TARGET_PATH" ]; then
     TIMESTAMP="$(date +%%s)"
-    BACKUP_PATH="${TARGET_DIR}/${TARGET_NAME}.${TIMESTAMP}.bak"
+    BACKUP_PATH="${TARGET_DIR}/${TARGET_NAME}.${TIMESTAMP}.$$.${RANDOM}.bak"
 
     cp -- "$TARGET_PATH" "$BACKUP_PATH"
     chown "$OWNER_UID:$GROUP_GID" -- "$BACKUP_PATH"
@@ -223,8 +237,9 @@ if [ -e "$TARGET_PATH" ] && command -v chcon >/dev/null 2>&1; then
     chcon --reference="$TARGET_PATH" -- "$TMP_PATH" 2>/dev/null || true
 fi
 
-# 10. 原子替换目标文件
+# 10. 原子替换目标文件，然后释放锁。校验不再占着锁。
 mv -f -- "$TMP_PATH" "$TARGET_PATH"
+exec 9>&-
 
 # 11. 校验（不影响主流程）
 set +e
