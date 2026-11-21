@@ -66,6 +66,8 @@ func (t *PushConfigTask) FinalizeTask(task *types.Task) error {
 func (t *PushConfigTask) Steps() ([]*types.Step, error) {
 	// 构建配置下发的步骤
 	steps := []*types.Step{
+		// 0. 同主机错峰延迟（间隔秒数由下发侧按下发序号填充，0 则直接通过）
+		configStep.StaggerDelayPushConfig(),
 		// 1. 验证步骤
 		configStep.ValidatePushConfig(
 			t.tenantID,
