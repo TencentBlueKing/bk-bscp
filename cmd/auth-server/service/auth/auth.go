@@ -85,15 +85,21 @@ type Auth struct {
 	appScopes gcache.Cache
 	// defaultScopes 缓存按业务解析出的默认项目/环境，用于归属为 0 的历史服务
 	defaultScopes gcache.Cache
-	// projectEnvAuth 是否启用项目/环境维度校验，关闭时项目/环境资源本身不参与鉴权，
-	// 服务等服务级资源仍然逐实例校验，资源路径层级只声明业务一级。
+	// projectEnvAuth 是配置里的项目/环境维度开关，只作用于 V3：关闭时项目/环境资源本身不参与鉴权，
+	// 服务等服务级资源仍然逐实例校验，资源路径层级只声明业务一级。读取一律走 projectEnvEnabled。
 	projectEnvAuth bool
+}
+
+// projectEnvEnabled 返回当前是否按项目/环境模型鉴权。
+// V4 固定按「业务 → 项目 → 环境 → 服务」模型，服务创建只有环境级，不受开关影响；V3 由开关决定。
+func (a *Auth) projectEnvEnabled() bool {
+	return a.projectEnvAuth || a.useV4()
 }
 
 // Option 定义 Auth 的可选配置。
 type Option func(*Auth)
 
-// WithProjectEnvironmentAuth 设置是否启用项目与环境维度的权限校验。
+// WithProjectEnvironmentAuth 设置是否启用项目与环境维度的权限校验，只对 V3 生效。
 func WithProjectEnvironmentAuth(enabled bool) Option {
 	return func(a *Auth) {
 		a.projectEnvAuth = enabled
@@ -102,7 +108,7 @@ func WithProjectEnvironmentAuth(enabled bool) Option {
 
 // authOptions 返回当前生效的权限维度选项。
 func (a *Auth) authOptions() PermissionOptions {
-	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvAuth}
+	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvEnabled()}
 }
 
 // v4Gateway 是本包用到的 V4 网关能力。
@@ -152,10 +158,6 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 
 // WithIAMV4 启用权限中心 V4：鉴权、申请链接与创建者授权改走 V4 实现。
 func (a *Auth) WithIAMV4(cli *clientv4.Client, cfg authv4.Config) error {
-	// 权限维度开关以 Auth 上的取值为准，
-	// 避免调用方与鉴权器各持一份导致 V3/V4 行为不一致；资源拓扑由该开关推导。
-	cfg.IgnoreProjectEnvironment = !a.projectEnvAuth
-
 	authorizer, err := authv4.NewAuthorizer(cli, cfg)
 	if err != nil {
 		return err
@@ -427,10 +429,8 @@ func (a *Auth) genApplyURLV4(kt *kit.Kit, resources []*meta.ResourceAttribute) (
 	permissions := make([]clientv4.ApplyPermission, 0, len(resources))
 
 	for _, res := range resources {
-		// 申请链接的祖先链与鉴权路径同源，都由项目/环境维度开关推导。
-		mapped, err := adaptorv4.AdaptWithOptions(res, adaptorv4.Options{
-			ProjectEnvironmentAuth: a.projectEnvAuth,
-		})
+		// 申请链接的祖先链与鉴权路径同源，V4 固定为项目/环境三级模型。
+		mapped, err := adaptorv4.Adapt(res)
 		if err != nil {
 			return "", err
 		}
@@ -681,9 +681,9 @@ func (a *Auth) GrantResourceCreatorAction(ctx context.Context,
 
 	kt := kit.FromGrpcContext(ctx)
 
-	// 只有关闭项目/环境维度校验时才必须跳过：权限中心里没有项目/环境资源类型，
-	// 项目/环境维度的授权请求一定失败，只会刷错误日志。
-	if opts != nil && !a.projectEnvAuth &&
+	// 只有 V3 关闭项目/环境维度校验时才必须跳过：权限中心里没有项目/环境资源类型，
+	// 项目/环境维度的授权请求一定失败，只会刷错误日志。V4 固定有项目/环境模型，始终授予。
+	if opts != nil && !a.projectEnvEnabled() &&
 		(opts.Type == sys.Project || opts.Type == sys.Environment) {
 		logs.Infof("skip granting %s creator action, project/environment auth is disabled, id: %s, rid: %s",
 			opts.Type, opts.ID, kt.Rid)

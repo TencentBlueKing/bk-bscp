@@ -532,22 +532,16 @@ func (s *Service) initLogicModule() error {
 		}
 	}
 
-	// 项目/环境维度校验是否启用由配置开关决定，V3 与 V4 共用同一份取值。
-	// 这一项同时决定资源鉴权路径的层级：开启表示权限中心已注册项目/环境模型（三级路径），
-	// 关闭时只有业务一级。
+	// 项目/环境维度开关只作用于 V3：决定项目/环境资源是否鉴权、服务创建按业务还是按环境，
+	// 以及资源路径的层级。V4 固定按项目/环境模型（服务创建只有环境级），不读取该开关。
 	projectEnvAuth := s.iamSettings.ProjectEnvAuthEnabled()
-	logs.Infof("iam project/environment auth: %s", enabledText(projectEnvAuth))
-
-	// V4 关闭开关时按业务维度鉴权：app_create 以 biz 实例下发、服务路径只到业务一级，
-	// 这要求权限中心线上模型仍是业务维度的旧拓扑（服务祖先链为 [biz]）。
-	// 线上模型由 migrate 同步、常驻进程探测不到，所以这里不拦启动，但必须以 Error 级别显著提示：
-	// 模型已是新拓扑却关着开关时，服务级鉴权会全部失败，而且只表现为 403，很难和权限配置问题区分。
-	if s.iamSettings.IsV4() && !projectEnvAuth {
-		logs.Errorf("iam v4 is running with project/environment auth disabled: app_create is authorized at biz " +
-			"dimension and app paths only declare biz. This works only when the online v4 model still keeps " +
-			"the app ancestors as [biz]; if migrate init-iam-v4 has already been executed, set " +
-			"iam.project_environment_auth.enabled=true, otherwise every app-level authorization will be denied. " +
-			"Check the online model with migrate diff-iam-v4")
+	if s.iamSettings.IsV4() {
+		logs.Infof("iam project/environment auth: always enabled for iam v4, the switch only applies to v3")
+		if !projectEnvAuth {
+			logs.Warnf("iam.project_environment_auth.enabled=false is ignored by iam v4")
+		}
+	} else {
+		logs.Infof("iam project/environment auth: %s", enabledText(projectEnvAuth))
 	}
 
 	s.auth, err = auth.NewAuth(s.client.auth, s.client.DS, s.disableAuth, func(tenantID string) *bkiam.IAM {

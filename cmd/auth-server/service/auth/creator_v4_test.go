@@ -334,22 +334,21 @@ func TestGrantCreatorActionV4Environment(t *testing.T) {
 	require.Equal(t, model.RoleEnvironmentOperator, bizScoped.RoleID)
 }
 
-// 申请链接的祖先链必须与鉴权路径同源：旧拓扑（开关关闭）下服务只声明业务一层，
-// 漏传开关会让链接带上权限中心并不存在的 project/environment 节点而被拒绝。
-func TestGenApplyURLV4FollowsProjectEnvAuth(t *testing.T) {
+// 申请链接的祖先链必须与鉴权路径同源：V4 固定为「业务 → 项目 → 环境」三级，
+// 不随项目/环境维度开关变化（该开关只作用于 V3）。
+func TestGenApplyURLV4AlwaysUsesThreeLevelAncestors(t *testing.T) {
+	want := []clientv4.ResourceRef{
+		{Type: model.ResourceTypeBiz, ID: "100001"},
+		{Type: model.ResourceTypeProject, ID: "40001"},
+		{Type: model.ResourceTypeEnvironment, ID: "50001"},
+	}
 	cases := []struct {
 		name           string
 		projectEnvAuth bool
 		want           []clientv4.ResourceRef
 	}{
-		{"legacy", false, []clientv4.ResourceRef{
-			{Type: model.ResourceTypeBiz, ID: "100001"},
-		}},
-		{"hierarchical", true, []clientv4.ResourceRef{
-			{Type: model.ResourceTypeBiz, ID: "100001"},
-			{Type: model.ResourceTypeProject, ID: "40001"},
-			{Type: model.ResourceTypeEnvironment, ID: "50001"},
-		}},
+		{"switch-off", false, want},
+		{"switch-on", true, want},
 	}
 
 	for _, c := range cases {

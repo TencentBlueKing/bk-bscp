@@ -87,9 +87,9 @@ func creatorGrantOption(resourceType client.TypeID, id string) *client.GrantReso
 	}
 }
 
-// 旧拓扑（项目/环境维度校验关闭）下权限中心没有项目/环境资源类型，也没有对应的创建者角色，
-// 授权请求一定失败，因此必须跳过。V3、V4 表现一致。
-func TestGrantCreatorActionSkipsProjectAndEnvironmentWhenAuthDisabled(t *testing.T) {
+// V3 关闭项目/环境维度校验时权限中心没有项目/环境资源类型，授权请求一定失败，必须跳过；
+// V4 固定有项目/环境模型，不受开关影响，照常授予创建者。
+func TestGrantCreatorActionSkipsProjectAndEnvironmentOnlyForV3WhenAuthDisabled(t *testing.T) {
 	ctx := creatorContext("alice")
 
 	for _, resourceType := range []client.TypeID{sys.Project, sys.Environment} {
@@ -99,7 +99,7 @@ func TestGrantCreatorActionSkipsProjectAndEnvironmentWhenAuthDisabled(t *testing
 
 			require.NoError(t, v4Auth.GrantResourceCreatorAction(
 				ctx, creatorGrantOption(resourceType, "40001")))
-			require.Zero(t, gw.calls, "v4 should skip %s creator grant", resourceType)
+			require.Equal(t, 1, gw.calls, "v4 should still grant %s creator action", resourceType)
 
 			v3 := new(fakeV3CreatorAuthorizer)
 			v3Auth := &Auth{auth: v3, projectEnvAuth: false}

@@ -67,9 +67,7 @@ func newSwitchAuth(t *testing.T, projectEnvAuth bool, gw *fakeAuthzV4Gateway, ds
 		defaultScopes:   newDefaultScopeCache(),
 	}
 
-	authorizer, err := authv4.NewAuthorizer(gw, authv4.Config{
-		IgnoreProjectEnvironment: !projectEnvAuth,
-	})
+	authorizer, err := authv4.NewAuthorizer(gw, authv4.Config{})
 	require.NoError(t, err)
 	a.v4 = authorizer
 
@@ -93,39 +91,41 @@ func appViewAndProjectViewReq() *pbas.AuthorizeBatchReq {
 	}
 }
 
-// 关闭项目/环境维度后，项目资源直接放行且不请求权限中心，
-// 服务仍按服务实例鉴权，但路径按旧模型缩为业务一级（拓扑由开关推导）。
-func TestAuthorizeBatchDisabledSkipsProjectAndEnvironment(t *testing.T) {
-	gw := &fakeAuthzV4Gateway{allow: map[string]bool{"app_view|30001": true}}
+// V4 不读取项目/环境维度开关：即使配置关闭，项目仍按实例鉴权，服务路径仍为三级。
+func TestAuthorizeBatchV4IgnoresDisabledSwitch(t *testing.T) {
+	gw := &fakeAuthzV4Gateway{allow: map[string]bool{
+		"app_view|30001":     true,
+		"project_view|40001": true,
+	}}
 	ds := &fakeAppDS{apps: map[uint32]*pbapp.App{
 		30001: {Id: 30001, BizId: 100001, ProjectId: 40001, EnvId: 50001},
+	}, projectInfos: map[uint32]*pbds.InstanceInfo{
+		40001: {Id: "40001", Path: []string{"/biz,100001/"}},
 	}}
 	a := newSwitchAuth(t, false, gw, ds)
 
 	resp, err := a.AuthorizeBatch(authBatchCtx("tester"), appViewAndProjectViewReq())
 	require.NoError(t, err)
 	require.Len(t, resp.Decisions, 2)
-
-	// 项目资源不进入权限中心，直接放行。
 	require.True(t, resp.Decisions[0].Authorized)
 	require.True(t, resp.Decisions[1].Authorized)
 
-	// 只对服务发起一次鉴权，关闭开关即旧模型，路径只有业务一级。
-	require.Equal(t, 1, gw.calls)
-	require.Equal(t, model.ActionAppView, gw.actionIDs[0])
-	require.Len(t, gw.resources[0], 1)
-	require.Equal(t, "/biz,100001/",
-		gw.resources[0][0].Attributes[clientv4.IAMPathAttrKey])
+	// 项目与服务各自向权限中心发问，项目没有被跳过。
+	require.Equal(t, 2, gw.calls)
+	require.Contains(t, gw.actionIDs, model.ActionProjectView)
 
-	// 服务归属仍需回查以归一化业务，环境的父级不需要解析。
-	require.Equal(t, 1, ds.calls)
-	require.Zero(t, ds.environmentCalls)
+	for i, actionID := range gw.actionIDs {
+		if actionID == model.ActionAppView {
+			require.Equal(t, "/biz,100001/project,40001/environment,50001/",
+				gw.resources[i][0].Attributes[clientv4.IAMPathAttrKey])
+		}
+	}
 }
 
-// 关闭项目/环境维度校验时没有项目/环境模型，服务创建只按业务维度授权：
-// 不解析、不回查目标环境，业务就是请求声明的业务。
-func TestAuthorizeBatchDisabledAppCreateChecksBusinessOnly(t *testing.T) {
-	gw := &fakeAuthzV4Gateway{allow: map[string]bool{"app_create|100001": true}}
+// V4 只有环境级的服务创建：即使配置关闭开关，也按目标环境实例发问，
+// 项目祖先取自目标环境的真实路径。
+func TestAuthorizeBatchV4AppCreateAlwaysOnEnvironment(t *testing.T) {
+	gw := &fakeAuthzV4Gateway{allow: map[string]bool{"app_create|50002": true}}
 	ds := &fakeAppDS{environmentInfos: map[uint32]*pbds.InstanceInfo{
 		50002: {Id: "50002", Path: []string{"/biz,100001/project,40002/"}},
 	}}
@@ -145,12 +145,11 @@ func TestAuthorizeBatchDisabledAppCreateChecksBusinessOnly(t *testing.T) {
 	require.Len(t, resp.Decisions, 1)
 	require.True(t, resp.Decisions[0].Authorized)
 
-	require.Zero(t, ds.environmentCalls, "关闭态没有项目/环境模型，不回查环境")
+	require.Equal(t, 1, ds.environmentCalls, "目标环境的父级必须回查")
 	require.Equal(t, 1, gw.calls)
 	require.Equal(t, model.ActionAppCreate, gw.actionIDs[0])
-	// 业务是拓扑根节点，不带路径。
-	require.Equal(t, "100001", gw.resources[0][0].ID)
-	require.Empty(t, gw.resources[0][0].Attributes)
+	require.Equal(t, "50002", gw.resources[0][0].ID)
+	require.Equal(t, "/biz,100001/project,40002/", gw.resources[0][0].Attributes[clientv4.IAMPathAttrKey])
 }
 
 // 资源项缺少 basic 时按参数错误返回，而不是落到 nil pointer panic。

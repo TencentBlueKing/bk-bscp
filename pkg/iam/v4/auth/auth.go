@@ -47,18 +47,13 @@ type Config struct {
 	CacheTTL time.Duration
 	// Concurrency 批量鉴权切批后的并发度，非正数时取 defaultConcurrency
 	Concurrency int
-	// IgnoreProjectEnvironment 为 true 时不校验项目与环境维度：
-	// 这两类资源直接放行，服务等服务级资源仍然逐实例校验，资源路径只声明业务一层。
-	// 零值为 false，即默认按项目/环境维度校验。
-	IgnoreProjectEnvironment bool
 }
 
 // Authorizer 基于 IAM V4 做远程鉴权。
 type Authorizer struct {
-	gw                       gateway
-	cache                    *decisionCache
-	concurrency              int
-	ignoreProjectEnvironment bool
+	gw          gateway
+	cache       *decisionCache
+	concurrency int
 }
 
 // NewAuthorizer 构造 IAM V4 鉴权器。
@@ -73,10 +68,9 @@ func NewAuthorizer(gw gateway, cfg Config) (*Authorizer, error) {
 	}
 
 	return &Authorizer{
-		gw:                       gw,
-		cache:                    newDecisionCache(cfg.CacheSize, cfg.CacheTTL),
-		concurrency:              concurrency,
-		ignoreProjectEnvironment: cfg.IgnoreProjectEnvironment,
+		gw:          gw,
+		cache:       newDecisionCache(cfg.CacheSize, cfg.CacheTTL),
+		concurrency: concurrency,
 	}, nil
 }
 
@@ -102,9 +96,7 @@ func (a *Authorizer) AuthorizeBatch(kt *kit.Kit, user string, resources ...*meta
 	// 遍历资源，做资源类型、操作类型的转换，通过缓存做初步鉴权
 	for i, res := range resources {
 		// 将 BSCP 自定义的资源和操作映射为 IAMV4 注册的资源和操作
-		m, err := adaptor.AdaptWithOptions(res, adaptor.Options{
-			ProjectEnvironmentAuth: !a.ignoreProjectEnvironment,
-		})
+		m, err := adaptor.Adapt(res)
 		if err != nil {
 			return nil, err
 		}
