@@ -483,9 +483,10 @@ func (a *Auth) getPermissionToApply(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	for actionID, permissionTypeMap := range permissionMap {
+		id, name := a.applyAction(actionID)
 		action := &meta.IamAction{
-			ID:                   string(actionID),
-			Name:                 sys.ActionIDNameMap[actionID],
+			ID:                   id,
+			Name:                 name,
 			RelatedResourceTypes: make([]*meta.IamResourceType, 0),
 		}
 
@@ -499,6 +500,27 @@ func (a *Auth) getPermissionToApply(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	return permission, nil
+}
+
+// applyAction 返回申请信息里展示的操作 ID 与名称。
+// V4 只有一种服务创建（app_create），不能沿用 V3 区分业务级/环境级的操作与名称，
+// 否则前端提示与权限中心里的操作对不上。
+func (a *Auth) applyAction(actionID client.ActionID) (string, string) {
+	if a.useV4() && actionID == sys.EnvironmentAppCreate {
+		return model.ActionAppCreate, v4ActionName(model.ActionAppCreate)
+	}
+
+	return string(actionID), sys.ActionIDNameMap[actionID]
+}
+
+func v4ActionName(actionID string) string {
+	for _, action := range model.Actions() {
+		if action.ID == actionID {
+			return action.Name
+		}
+	}
+
+	return actionID
 }
 
 // assignInstanceNames 把资源实例名称回填到申请信息里。
