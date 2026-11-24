@@ -24,13 +24,17 @@
           </div>
         </template>
       </EnvSelector>
-      <ServiceSelector :value="appId" :env-id="localEnvId" @change="handleAppChange">
+      <ServiceSelector
+        :value="appId"
+        :env-id="localEnvId"
+        @change="handleAppChange"
+        @loaded="emits('loaded', $event)">
         <template #trigger>
           <div class="selector-trigger">
             <bk-overflow-title v-if="localApp.name" class="app-name" type="tips">
               {{ localApp?.name }}
             </bk-overflow-title>
-            <span v-else class="no-app">{{ $t('暂无服务') }}</span>
+            <span v-else class="no-app">{{ $t('请选择服务') }}</span>
             <AngleUpFill class="arrow-icon arrow-fill" />
           </div>
         </template>
@@ -76,7 +80,7 @@
     appId: number;
   }>();
 
-  const emits = defineEmits(['search']);
+  const emits = defineEmits(['search', 'loaded']);
 
   const route = useRoute();
   const router = useRouter();
@@ -123,7 +127,9 @@
       name: service?.spec?.name,
       id: service?.id,
     };
-    setLastAccessedService();
+    if (service?.id) {
+      setLastAccessedService();
+    }
     await router.push({ name: route.name!, params: routeParams.value });
     heartbeatTime.value = 1;
     handleHeartbeatTimeChange(1);

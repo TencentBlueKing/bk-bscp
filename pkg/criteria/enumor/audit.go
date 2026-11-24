@@ -35,7 +35,7 @@ const (
 	Group AuditResourceType = "group"
 	// Template 模版
 	Template AuditResourceType = "template"
-	// Credential 客户端秘钥
+	// Credential 客户端密钥
 	Credential AuditResourceType = "credential"
 	// Instance 客户端实例
 	Instance AuditResourceType = "instance"

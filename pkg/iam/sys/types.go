@@ -159,8 +159,8 @@ var ActionIDNameMap = map[client.ActionID]string{
 
 	TaskHistoryView: "任务历史",
 
-	CredentialView:   "服务秘钥查看",
-	CredentialManage: "服务秘钥管理",
+	CredentialView:   "服务密钥查看",
+	CredentialManage: "服务密钥管理",
 	AuditView:        "操作记录查看",
 
 	ProjectCreate: "项目创建",

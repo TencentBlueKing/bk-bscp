@@ -1,6 +1,9 @@
 <template>
-  <bk-exception class="exception-wrap-item" type="empty" :description="$t('暂无服务')">
-    <div class="exception-actions">
+  <bk-exception
+    class="exception-wrap-item"
+    type="empty"
+    :description="hasService ? $t('请选择服务') : $t('暂无服务')">
+    <div v-if="!hasService" class="exception-actions">
       <bk-button text theme="primary" @click="handleGoToCreateServiceClick">
         {{ $t('前往创建') }}
       </bk-button>
@@ -10,6 +13,9 @@
 
 <script lang="ts" setup>
   import { useRouter } from 'vue-router';
+
+  withDefaults(defineProps<{ hasService?: boolean }>(), { hasService: true });
+
   const router = useRouter();
   const handleGoToCreateServiceClick = () => {
     router.push({
