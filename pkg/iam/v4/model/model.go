@@ -34,18 +34,13 @@ func ResourceTypes() []client.ResourceType {
 	}
 }
 
-// Actions 返回 BSCP 在 IAM V4 中注册的操作
+// Actions 返回 BSCP 在 IAM V4 中注册的操作。
+// 顺序按拓扑从根到叶（业务 → 项目 → 环境 → 服务）：权限中心角色详情页按各资源类型的操作
+// 首次注册的先后排列分组，打乱会让分组显示成「业务、服务、项目、环境」。
+// 已注册的操作不会因本地顺序调整而重排，只对新部署生效。
 func Actions() []client.Action {
 	return []client.Action{
 		{ID: ActionFindBusinessResource, Name: "业务访问", ResourceTypeID: ResourceTypeBiz},
-		// 服务创建按环境授权：创建时尚无服务实例，授权维度只能落在服务将要归属的环境上，
-		// 授权页面因此需要先选项目、再选环境；业务/项目维度的授权经拓扑路径继承覆盖。
-		{ID: ActionAppCreate, Name: "服务创建", ResourceTypeID: ResourceTypeEnvironment},
-		{ID: ActionAppView, Name: "服务查看", ResourceTypeID: ResourceTypeApp},
-		{ID: ActionAppEdit, Name: "服务编辑", ResourceTypeID: ResourceTypeApp},
-		{ID: ActionAppDelete, Name: "服务删除", ResourceTypeID: ResourceTypeApp},
-		{ID: ActionReleaseGenerate, Name: "生成版本", ResourceTypeID: ResourceTypeApp},
-		{ID: ActionReleasePublish, Name: "上线版本", ResourceTypeID: ResourceTypeApp},
 		{ID: ActionAppCredentialView, Name: "服务密钥查看", ResourceTypeID: ResourceTypeBiz},
 		{ID: ActionAppCredentialManage, Name: "服务密钥管理", ResourceTypeID: ResourceTypeBiz},
 		{ID: ActionAuditView, Name: "操作记录查看", ResourceTypeID: ResourceTypeBiz},
@@ -64,6 +59,14 @@ func Actions() []client.Action {
 		{ID: ActionEnvironmentView, Name: "环境查看", ResourceTypeID: ResourceTypeEnvironment},
 		{ID: ActionEnvironmentEdit, Name: "环境编辑", ResourceTypeID: ResourceTypeEnvironment},
 		{ID: ActionEnvironmentDelete, Name: "环境删除", ResourceTypeID: ResourceTypeEnvironment},
+		// 服务创建按环境授权：创建时尚无服务实例，授权维度只能落在服务将要归属的环境上，
+		// 授权页面因此需要先选项目、再选环境；业务/项目维度的授权经拓扑路径继承覆盖。
+		{ID: ActionAppCreate, Name: "服务创建", ResourceTypeID: ResourceTypeEnvironment},
+		{ID: ActionAppView, Name: "服务查看", ResourceTypeID: ResourceTypeApp},
+		{ID: ActionAppEdit, Name: "服务编辑", ResourceTypeID: ResourceTypeApp},
+		{ID: ActionAppDelete, Name: "服务删除", ResourceTypeID: ResourceTypeApp},
+		{ID: ActionReleaseGenerate, Name: "生成版本", ResourceTypeID: ResourceTypeApp},
+		{ID: ActionReleasePublish, Name: "上线版本", ResourceTypeID: ResourceTypeApp},
 	}
 }
 
@@ -105,6 +108,26 @@ func Roles() []client.Role {
 			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
 				projectScoped(ActionProjectView), environmentScoped(ActionEnvironmentView),
 				environmentScoped(ActionAppCreate)),
+		},
+		{
+			ID:   RoleProjectCreator,
+			Name: "项目创建者",
+			// project_create 注册在业务上（创建时尚无项目实例），只能按业务授权。
+			// 刻意不含 project_view：业务维度的项目查看会放开业务下全部项目，
+			// 自己建的项目由创建者自动授权（project_operator）覆盖。
+			Description: "在业务下创建项目；创建后自动获得该项目的项目运维权限，访问他人创建的项目需另行申请",
+			Actions:     bizScoped(ActionFindBusinessResource, ActionProjectCreate),
+		},
+		{
+			ID:   RoleEnvironmentCreator,
+			Name: "环境创建者",
+			// environment_create 注册在项目上，按项目授权即"可在该项目下新建环境"。
+			// 创建接口同时要求项目查看，因此带上被授权项目的 project_view；
+			// 不含 environment_view，自己建的环境由创建者自动授权（environment_operator）覆盖。
+			Description: "在指定项目下创建环境，并查看该项目；创建后自动获得该环境的环境运维权限，" +
+				"访问他人创建的环境需另行申请",
+			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
+				projectScoped(ActionProjectView, ActionEnvironmentCreate)),
 		},
 		{
 			ID:   RoleCredentialManager,
@@ -161,16 +184,14 @@ func Roles() []client.Role {
 		{
 			ID:   RoleProjectOperator,
 			Name: "项目运维",
-			// 服务写操作（app_edit/app_delete/release_*）只能在服务维度授予：
-			// 一旦放到项目维度，就是"该项目下全部服务都可写"，无法做到只授权特定服务。
-			// 列表与详情仍按 app_view 继承放行，保证能看见服务、点了引导申请。
-			// environment_create 关联的资源类型就是项目，按项目授权即"可在该项目下新建环境"，
-			// 否则除业务运维外没有角色能创建环境。
-			Description: "管理指定项目及其全部环境，可在项目下创建环境；服务可查看，写操作需在服务维度单独授权",
+			// 项目范围的管理员：项目、其下环境与服务的全部操作都按项目授予，含建环境、建服务。
+			// 不含项目创建：它注册在业务上，放进来就是"在整个业务下建项目"，由项目创建者负责。
+			Description: "管理指定项目及其下全部环境与服务，可在项目下创建环境和服务",
 			Actions: append(bizScoped(ActionFindBusinessResource),
 				projectScoped(ActionProjectView, ActionProjectEdit, ActionProjectDelete,
-					ActionEnvironmentCreate, ActionEnvironmentView, ActionEnvironmentEdit,
-					ActionEnvironmentDelete, ActionAppView)...),
+					ActionEnvironmentCreate, ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete,
+					ActionAppCreate, ActionAppView, ActionAppEdit, ActionAppDelete,
+					ActionReleaseGenerate, ActionReleasePublish)...),
 		},
 		{
 			ID:          RoleProjectViewer,
@@ -182,13 +203,15 @@ func Roles() []client.Role {
 		{
 			ID:   RoleEnvironmentOperator,
 			Name: "环境运维",
-			// 同项目运维：服务写操作只在服务维度授予，环境维度只继承 app_view，
-			// 避免"授了环境运维就能改该环境下所有服务"。
-			Description: "管理指定环境，并查看该环境所属的项目；服务可查看，写操作需在服务维度单独授权",
+			// 环境范围的管理员：环境及其下服务的全部操作都按环境授予，含建服务。
+			// 不含环境创建：它属于所属项目，由环境创建者或项目运维负责。
+			// 服务内资源接口要求项目查看，环境维度的授权不会覆盖它，因此按所属项目单独带上。
+			Description: "管理指定环境及其下全部服务，可在环境下创建服务，并查看该环境所属的项目",
 			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
 				projectScoped(ActionProjectView),
-				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit,
-					ActionEnvironmentDelete, ActionAppView)),
+				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete,
+					ActionAppCreate, ActionAppView, ActionAppEdit, ActionAppDelete,
+					ActionReleaseGenerate, ActionReleasePublish)),
 		},
 		{
 			ID:   RoleEnvironmentViewer,
@@ -201,39 +224,7 @@ func Roles() []client.Role {
 		},
 	}
 
-	return append(roles, creatorRoles()...)
-}
-
-// creatorRoles 返回「创建后自动授予」的角色，与 V3 的 ResourceCreatorActions 对齐。
-func creatorRoles() []client.Role {
-	return []client.Role{
-		{
-			ID: RoleProjectCreator,
-			// 只用于创建项目后的自动授权，与 V3 的 ResourceCreatorActions 对齐：
-			// 授予该项目的查看/编辑/删除与在项目下创建环境。若复用 project_operator，创建者会额外获得
-			// 项目维度的环境查看/编辑/删除与服务查看，等于能看到该项目下的全部环境与服务，比 V3 授权范围更大。
-			Name: "项目负责人（创建后自动授予）",
-			Description: "创建项目后自动授予创建人；包含该项目的查看、编辑、删除与在项目下创建环境，" +
-				"项目下的环境、服务需单独授权",
-			Actions: append(bizScoped(ActionFindBusinessResource),
-				projectScoped(ActionProjectView, ActionProjectEdit, ActionProjectDelete,
-					ActionEnvironmentCreate)...),
-		},
-		{
-			ID: RoleEnvironmentCreator,
-			// 不叫"环境创建者"：该角色不含 environment_create，叫创建者会被误当成"申请后可建环境"，
-			// 与 app_creator（含 app_create）的语义相反。建环境的权限在项目运维里。
-			Name: "环境负责人（创建后自动授予）",
-			// 只用于创建环境后的自动授权，与 V3 的 ResourceCreatorActions 对齐：
-			// 只授予该环境的查看/编辑/删除。若复用 environment_operator，创建者会额外获得
-			// 环境维度的 app_view，等于能看到该环境下的全部服务，比 V3 授权范围更大。
-			Description: "创建环境后自动授予创建人；包含该环境的查看、编辑、删除与所属项目的查看，" +
-				"环境下的服务需单独授权",
-			Actions: mergeActions(bizScoped(ActionFindBusinessResource),
-				projectScoped(ActionProjectView),
-				environmentScoped(ActionEnvironmentView, ActionEnvironmentEdit, ActionEnvironmentDelete)),
-		},
-	}
+	return roles
 }
 
 // bizScoped 把一组操作全部声明为按业务维度授权。

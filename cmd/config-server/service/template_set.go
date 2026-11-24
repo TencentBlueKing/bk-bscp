@@ -42,7 +42,7 @@ func (s *Service) CreateTemplateSet(ctx context.Context, req *pbcs.CreateTemplat
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (s *Service) DeleteTemplateSet(ctx context.Context, req *pbcs.DeleteTemplat
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (s *Service) UpdateTemplateSet(ctx context.Context, req *pbcs.UpdateTemplat
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err

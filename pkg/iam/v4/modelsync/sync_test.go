@@ -533,6 +533,19 @@ func (f *fakeGateway) withLegacyAppCreate(appCreatorBinding bool) *fakeGateway {
 	}
 
 	for i := range f.roles {
+		// 旧模型里 app_create 关联业务，只可能按业务绑定（biz_operator、app_creator），
+		// 按项目/环境绑定它的角色（项目运维、环境运维）在旧模型下不存在这条绑定。
+		if f.roles[i].ID != model.RoleAppCreator && f.roles[i].ID != model.RoleBizOperator {
+			kept := f.roles[i].Actions[:0]
+			for _, ra := range f.roles[i].Actions {
+				if ra.ID != model.ActionAppCreate {
+					kept = append(kept, ra)
+				}
+			}
+			f.roles[i].Actions = kept
+
+			continue
+		}
 		if f.roles[i].ID != model.RoleAppCreator {
 			continue
 		}

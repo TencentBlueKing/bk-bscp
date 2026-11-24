@@ -38,7 +38,7 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 
 ### 3. 授予角色权限 `add_authorization`
 
-服务创建成功后把 `app_operator` 角色授予创建者，有效期 365 天，`X-Bkiam-Operator` 头填创建者本人。
+服务、项目、环境创建成功后分别把 `app_operator`、`project_operator`、`environment_operator` 角色授予创建者，有效期 365 天（网关允许的上限），`X-Bkiam-Operator` 头填创建者本人。
 
 一次创建会按授权维度发送多条授权记录，不能合并：一次 `add_authorization` 只授予 `related_resource_type_id` 指定的单一授权维度，若只授 `app` 维度，角色内按 `biz` 维度授权的 `find_business_resource` 不会生效；BSCP 每个业务接口都有业务访问前置校验，该操作缺失时创建者对自己新建的服务也会被全部拒绝。服务创建后授的是 `app_operator`，该角色还含 `project_view`（项目维度）与 `environment_view`（环境维度）——配置项、KV、版本、上线要求业务访问、项目查看、环境查看与服务动作四项同时通过——因此创建者还会按服务所属的项目、环境各授一次；调用方未声明这两级归属时跳过，不做猜测授权。
 
@@ -50,7 +50,7 @@ BSCP 唯一的鉴权入口，所有权限判定都汇聚到这里。请求前先
 
 ## 二、模型同步接口（19 个）
 
-仅由 `auth-server migrate init-iam-v4` / `diff-iam-v4` / `prune-iam-v4` / `delete-iam-v4` 调用，常驻服务不涉及。同步内容为 4 个资源类型（`biz` → `project` → `environment` → `app`）、25 个操作、14 个角色，定义在 `pkg/iam/v4/model/model.go`。
+仅由 `auth-server migrate init-iam-v4` / `diff-iam-v4` / `prune-iam-v4` / `delete-iam-v4` 调用，常驻服务不涉及。同步内容为 4 个资源类型（`biz` → `project` → `environment` → `app`）、25 个操作、15 个角色，定义在 `pkg/iam/v4/model/model.go`。
 
 资源类型的祖先链（`ancestors`）走 `update_resource_type` 原地更新（请求体字段为空即不改），`init-iam-v4` 在更新后回读校验。这样把服务的祖先链从 `[biz]` 调整为 `[biz, project, environment]` 时，不需要删模型。若权限中心忽略该字段（更新返回成功但状态未变），命令会失败并提示改走 `delete-iam-v4` 重建，不会静默按旧拓扑鉴权。
 

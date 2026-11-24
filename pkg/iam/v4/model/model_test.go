@@ -57,6 +57,21 @@ func TestModelCounts(t *testing.T) {
 	require.Len(t, Roles(), 15)
 }
 
+// 权限中心角色详情页按各资源类型操作的首次注册先后排列分组，
+// 操作必须按拓扑从根到叶注册，分组才会显示为「业务、项目、环境、服务」。
+func TestActionsOrderedByTopology(t *testing.T) {
+	rank := map[string]int{
+		ResourceTypeBiz: 0, ResourceTypeProject: 1, ResourceTypeEnvironment: 2, ResourceTypeApp: 3,
+	}
+
+	last := 0
+	for _, a := range Actions() {
+		require.GreaterOrEqual(t, rank[a.ResourceTypeID], last,
+			"action %s (%s) is registered after a deeper resource type", a.ID, a.ResourceTypeID)
+		last = rank[a.ResourceTypeID]
+	}
+}
+
 func TestIDsAreUnique(t *testing.T) {
 	seen := make(map[string]bool)
 	for _, a := range Actions() {
@@ -252,9 +267,9 @@ func TestProjectAndEnvironmentRolesKeepBizScopeOnlyForBusinessAccess(t *testing.
 	}
 }
 
-// 项目运维必须能在自己的项目下创建环境，否则只有业务运维能建环境，
+// 项目运维与环境创建者都必须按项目授予环境创建，否则只有业务运维能建环境，
 // 用户为了建环境只能申请整个业务的权限。
-// 环境负责人（创建后自动授予）则不含环境创建：它只管已创建的那个环境。
+// 环境运维不含环境创建：它只管被授权的那个环境。
 func TestEnvironmentCreateGrantedOnProject(t *testing.T) {
 	scopes := make(map[string]string)
 	for _, role := range Roles() {
@@ -267,45 +282,115 @@ func TestEnvironmentCreateGrantedOnProject(t *testing.T) {
 
 	require.Equal(t, ResourceTypeProject, scopes[RoleProjectOperator],
 		"project operator should create environments on project scope")
-	require.Equal(t, ResourceTypeProject, scopes[RoleProjectCreator],
-		"project creator should create environments on project scope")
-	require.NotContains(t, scopes, RoleEnvironmentCreator)
+	require.Equal(t, ResourceTypeProject, scopes[RoleEnvironmentCreator],
+		"environment creator should create environments on project scope")
+	require.NotContains(t, scopes, RoleEnvironmentOperator)
 	require.NotContains(t, scopes, RoleProjectViewer)
 }
 
-// 服务挂在环境下：项目/环境维度角色只继承「查看」，不得继承写操作。
-//
-// 写操作一旦声明在项目或环境维度，语义就是"该项目/环境下全部服务都可写"，
-// 与"只授权特定服务"的诉求冲突（列表仍可看，未授权的服务靠逐项权限置灰并引导申请）。
-func TestProjectAndEnvironmentOperatorsOnlyInheritAppView(t *testing.T) {
-	wantScope := map[string]string{
-		RoleProjectOperator:     ResourceTypeProject,
-		RoleEnvironmentOperator: ResourceTypeEnvironment,
+// 项目、环境、服务的创建动作都要有一个可申请的「创建者」角色：
+// 否则想建资源的用户只能申请业务运维，等于为了建一个项目拿到整个业务的全部权限。
+func TestEveryCreateActionHasApplicableCreatorRole(t *testing.T) {
+	want := map[string]string{
+		ActionProjectCreate:     RoleProjectCreator,
+		ActionEnvironmentCreate: RoleEnvironmentCreator,
+		ActionAppCreate:         RoleAppCreator,
 	}
-	found := make(map[string]bool, len(wantScope))
+
+	for actionID, roleID := range want {
+		var found bool
+		for _, role := range Roles() {
+			if role.ID != roleID {
+				continue
+			}
+			for _, ra := range role.Actions {
+				if ra.ID == actionID {
+					found = true
+				}
+			}
+		}
+		require.True(t, found, "role %s should grant %s", roleID, actionID)
+	}
+}
+
+// 项目创建者只放行"在业务下建项目"：建好的项目由创建者自动授权（project_operator）覆盖，
+// 不能顺带看到业务下其他人的项目。
+func TestProjectCreatorScopesCreationOnly(t *testing.T) {
+	actions := roleActionScopes(t, RoleProjectCreator)
+
+	require.Equal(t, ResourceTypeBiz, actions[ActionProjectCreate],
+		"project_create is registered on biz, the project does not exist yet")
+	require.Equal(t, ResourceTypeBiz, actions[ActionFindBusinessResource])
+	require.NotContains(t, actions, ActionProjectView,
+		"project_view on biz would leak every project under the business")
+	require.Len(t, actions, 2, "keep this role minimal")
+}
+
+// 环境创建者只放行"在指定项目下建环境"，并带上该项目的查看：
+// 环境创建接口要求项目查看，看不见项目的人不应往里加环境。
+// 刻意不含 environment_view：建好的环境由创建者自动授权（environment_operator）覆盖，
+// 在项目维度给 environment_view 等于放开该项目下全部环境。
+func TestEnvironmentCreatorScopesCreationOnly(t *testing.T) {
+	actions := roleActionScopes(t, RoleEnvironmentCreator)
+
+	require.Equal(t, ResourceTypeProject, actions[ActionEnvironmentCreate])
+	require.Equal(t, ResourceTypeProject, actions[ActionProjectView],
+		"creating an environment requires project_view on its project")
+	require.Equal(t, ResourceTypeBiz, actions[ActionFindBusinessResource])
+	require.NotContains(t, actions, ActionEnvironmentView,
+		"environment_view on project would leak every environment in the project")
+	require.Len(t, actions, 3, "keep this role minimal")
+}
+
+// roleActionScopes 返回角色内每个操作的授权维度，角色不存在时直接失败。
+func roleActionScopes(t *testing.T, roleID string) map[string]string {
+	t.Helper()
 
 	for _, role := range Roles() {
-		scope, ok := wantScope[role.ID]
-		if !ok {
+		if role.ID != roleID {
 			continue
 		}
 
+		actions := make(map[string]string, len(role.Actions))
 		for _, ra := range role.Actions {
-			switch ra.ID {
-			case ActionAppView:
-				require.Equal(t, scope, ra.ResourceTypeID,
-					"role %s should inherit app_view on %s", role.ID, scope)
-				found[role.ID] = true
-			case ActionAppEdit, ActionAppDelete, ActionReleaseGenerate, ActionReleasePublish:
-				t.Fatalf("role %s must not inherit %s on %s: 服务写操作只能在服务维度授予",
-					role.ID, ra.ID, scope)
+			actions[ra.ID] = ra.ResourceTypeID
+		}
+
+		return actions
+	}
+
+	t.Fatalf("role %s not found", roleID)
+
+	return nil
+}
+
+// 项目运维、环境运维是各自范围的管理员：范围内（自身及下级资源）的全部操作都在该维度授予，
+// 包括下级资源的创建（项目运维建环境、环境运维建服务）；但不含同级资源的创建——
+// 项目创建属于业务，由项目创建者负责；环境创建属于项目，由环境创建者或项目运维负责。
+func TestScopeOperatorsManageEverythingInScope(t *testing.T) {
+	cases := []struct {
+		roleID  string
+		scope   string
+		covered map[string]bool
+	}{
+		{RoleProjectOperator, ResourceTypeProject, map[string]bool{
+			ResourceTypeProject: true, ResourceTypeEnvironment: true, ResourceTypeApp: true}},
+		{RoleEnvironmentOperator, ResourceTypeEnvironment, map[string]bool{
+			ResourceTypeEnvironment: true, ResourceTypeApp: true}},
+	}
+
+	for _, c := range cases {
+		actions := roleActionScopes(t, c.roleID)
+		for _, a := range Actions() {
+			if !c.covered[a.ResourceTypeID] {
+				continue
 			}
+			require.Equal(t, c.scope, actions[a.ID], "role %s should grant %s on %s", c.roleID, a.ID, c.scope)
 		}
 	}
 
-	for roleID := range wantScope {
-		require.True(t, found[roleID], "role %s should inherit app_view", roleID)
-	}
+	require.NotContains(t, roleActionScopes(t, RoleProjectOperator), ActionProjectCreate)
+	require.NotContains(t, roleActionScopes(t, RoleEnvironmentOperator), ActionEnvironmentCreate)
 }
 
 // 服务挂在环境下：app 的祖先链必须是「业务 → 项目 → 环境」，
@@ -385,67 +470,20 @@ func TestAppScopedRolesAreCrossDimension(t *testing.T) {
 	}
 }
 
-// 环境创建者的自动授权必须与 V3 的 ResourceCreatorActions 完全一致：
-// 只有该环境的查看/编辑/删除，环境下的服务要单独授权。
-// 复用 environment_operator 会额外带入环境维度的 app_view，等于创建者能看该环境全部服务。
-func TestEnvironmentCreatorScopesEnvironmentOnly(t *testing.T) {
-	var actions map[string]string
-	for _, role := range Roles() {
-		if role.ID != RoleEnvironmentCreator {
-			continue
-		}
-
-		actions = make(map[string]string, len(role.Actions))
-		for _, ra := range role.Actions {
-			actions[ra.ID] = ra.ResourceTypeID
-		}
-	}
-	require.NotNil(t, actions, "role %s not found", RoleEnvironmentCreator)
-
-	require.Equal(t, ResourceTypeEnvironment, actions[ActionEnvironmentView])
-	require.Equal(t, ResourceTypeEnvironment, actions[ActionEnvironmentEdit])
-	require.Equal(t, ResourceTypeEnvironment, actions[ActionEnvironmentDelete])
-	require.Equal(t, ResourceTypeProject, actions[ActionProjectView],
-		"service-scoped apis require project_view, environment scope does not cover it")
-	require.Equal(t, ResourceTypeBiz, actions[ActionFindBusinessResource],
-		"creator still needs business access for the pre-check of every api")
-
-	require.NotContains(t, actions, ActionAppView,
-		"environment creator must not see every app in the environment")
-	require.Len(t, actions, 5, "keep this role minimal")
-}
-
-// 项目创建者的自动授权必须与 V3 的 ResourceCreatorActions 完全一致：
-// 只有该项目的查看/编辑/删除与在项目下创建环境，项目下的环境、服务要单独授权。
-// 复用 project_operator 会额外带入项目维度的环境查看/编辑/删除与服务查看，
-// 等于创建者能看该项目下全部环境与服务，超出 V3 授权范围。
-func TestProjectCreatorScopesProjectOnly(t *testing.T) {
-	var actions map[string]string
-	for _, role := range Roles() {
-		if role.ID != RoleProjectCreator {
-			continue
-		}
-
-		actions = make(map[string]string, len(role.Actions))
-		for _, ra := range role.Actions {
-			actions[ra.ID] = ra.ResourceTypeID
+// 创建项目、环境、服务后自动授予的分别是项目运维、环境运维、服务运维。
+// 创建者授权会写一条业务维度的记录，这些角色在业务维度只能有业务访问：
+// 多出任何业务维度的操作（例如 project_create），每个建过资源的人都会在整个业务下获得该权限。
+func TestCreatorGrantRolesOnlyGrantBusinessAccessOnBiz(t *testing.T) {
+	for _, roleID := range []string{RoleProjectOperator, RoleEnvironmentOperator, RoleAppOperator} {
+		for actionID, scope := range roleActionScopes(t, roleID) {
+			if scope != ResourceTypeBiz {
+				continue
+			}
+			require.Equal(t, ActionFindBusinessResource, actionID,
+				"role %s is granted to creators with a biz-scoped record, %s on biz would cover the whole business",
+				roleID, actionID)
 		}
 	}
-	require.NotNil(t, actions, "role %s not found", RoleProjectCreator)
-
-	require.Equal(t, ResourceTypeProject, actions[ActionProjectView])
-	require.Equal(t, ResourceTypeProject, actions[ActionProjectEdit])
-	require.Equal(t, ResourceTypeProject, actions[ActionProjectDelete])
-	require.Equal(t, ResourceTypeProject, actions[ActionEnvironmentCreate],
-		"project creator should create environments on project scope")
-	require.Equal(t, ResourceTypeBiz, actions[ActionFindBusinessResource],
-		"creator still needs business access for the pre-check of every api")
-
-	require.NotContains(t, actions, ActionEnvironmentView,
-		"project creator must not see every environment in the project")
-	require.NotContains(t, actions, ActionAppView,
-		"project creator must not see every app in the project")
-	require.Len(t, actions, 5, "keep this role minimal")
 }
 
 // 配置项、KV、版本、上线这些服务内资源的接口都要求
@@ -487,11 +525,6 @@ func TestRolesCoverServiceScopedAuthDimensions(t *testing.T) {
 			ActionProjectView:          ResourceTypeProject,
 			ActionEnvironmentView:      ResourceTypeEnvironment,
 			ActionAppView:              ResourceTypeEnvironment,
-		},
-		RoleEnvironmentCreator: {
-			ActionFindBusinessResource: ResourceTypeBiz,
-			ActionProjectView:          ResourceTypeProject,
-			ActionEnvironmentView:      ResourceTypeEnvironment,
 		},
 		RoleCredentialManager: {
 			ActionFindBusinessResource: ResourceTypeBiz,

@@ -16,6 +16,7 @@
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../../../store/global';
   import { permissionCheck } from '../../../../api/index';
+  import { getCreateServicePermResources } from '../../../../utils/permission';
   import { IEnvItem } from '../../../../../types/env';
 
   import ServiceListContent from './components/service-list-content.vue';
@@ -66,27 +67,25 @@
   });
 
   const checkCreateServicePerm = async () => {
-    // 项目或环境 ID 未就绪时不发起请求，避免携带无效维度（+id > 0 同时排除空串、NaN、0、负数）
-    if (!(+projectId.value > 0) || !(+envId.value > 0)) {
+    // 项目 ID 未就绪时不发起请求，避免携带无效维度（+id > 0 同时排除空串、NaN、0、负数）
+    // 没有可见环境时 envId 为空，仍按项目判权，由后端补齐该项目的默认环境
+    if (!(+projectId.value > 0)) {
       hasCreateServicePerm.value = false;
       return;
     }
     permCheckLoading.value = true;
-    const res = await permissionCheck({
-      resources: [
-        {
-          biz_id: spaceId.value,
-          basic: {
-            type: 'app',
-            action: 'create',
-          },
-          ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
-          ...(+envId.value > 0 ? { environment_id: +envId.value } : {}),
-        },
-      ],
-    });
-    hasCreateServicePerm.value = res.is_allowed;
-    permCheckLoading.value = false;
+    try {
+      const res = await permissionCheck({
+        resources: getCreateServicePermResources(spaceId.value, projectId.value, envId.value),
+      });
+      // 没有可选环境时即使有权限也无法创建，按无权限处理并引导申请
+      hasCreateServicePerm.value = res.is_allowed && +envId.value > 0;
+    } catch (e) {
+      console.error(e);
+      hasCreateServicePerm.value = false;
+    } finally {
+      permCheckLoading.value = false;
+    }
   };
 </script>
 

@@ -69,7 +69,7 @@ iam:
 | 业务访问 | `find_business_resource` | 业务 |
 | 项目创建 / 项目列表 | `project_create` / `find_business_resource` | 业务 |
 | 项目查看 / 编辑 / 删除 | `project_view` / `project_edit` / `project_delete` | 项目 |
-| 环境创建 | `environment_create` | 项目 |
+| 环境创建 | `environment_create` + `project_view` | 项目 |
 | 环境查看 / 编辑 / 删除 | `environment_view` / `environment_edit` / `environment_delete` | 环境 |
 | 服务创建 | 开启：V3 `environment_app_create` / V4 `app_create` + `project_view` / `environment_view`；关闭：`app_create` | 开启：环境 + 项目/环境查看；关闭：业务 |
 | 服务克隆 | 同服务创建 | 同服务创建（克隆即新建服务，请求不带源服务实例，不校验源服务的 `app_edit`） |
@@ -144,19 +144,81 @@ V4 的 `app_creator` 角色已包含这两项，已上线的环境升级后需�
 | 服务列表 | 业务访问 + 项目查看（声明环境时再加环境查看）；项目/环境资源被跳过时退回业务访问 | 业务访问 + 项目查看（声明环境时再加环境查看） |
 | 业务访问 | 业务维度校验，不变 | 业务维度校验，不变 |
 | 项目/环境列表权限注解 | 全部返回有权限 | 按实例返回 |
-| 项目/环境创建者授权 | 跳过：旧模型没有资源类型与 `project_creator` / `environment_creator` 角色 | 按实例授予创建者 |
+| 项目/环境创建者授权 | 跳过：旧模型没有项目/环境资源类型 | 按实例授予创建者 |
 | 服务密钥、操作记录 | 业务访问 + 模块动作，与项目/环境维度引入前一致 | 追加项目查看校验，缺项目查看权限即拒绝 |
 | 无权限申请链接 | 旧模型祖先链（服务只到业务一层，服务创建按业务） | 新模型祖先链（三级，服务创建按环境） |
 
 服务内资源的四项校验要求角色自带对应维度：`app_viewer`、`app_publisher`、`environment_viewer`、
-`environment_creator` 含 `project_view` 与 `environment_view`，`credential_manager`、`audit_viewer` 含
+`environment_operator` 含 `project_view` 与 `environment_view`，`credential_manager`、`audit_viewer` 含
 `project_view`。新增角色若需触达这些接口必须同步补齐，`pkg/iam/v4/model` 的用例会校验这条约束。
 
-创建项目时会自动生成一条默认环境。项目与环境在 IAM 中是相互独立的资源实例，项目维度的授权不会传递到
-环境实例，因此 config-server 在项目创建成功后会按环境实例再补授一次创建者权限（V3 走
-`resource_creator_action`，V4 走 `add_authorization`），创建者由此获得默认环境的查看/编辑/删除。
-`enabled: true` 时照常写入；`enabled: false`（旧模型）下权限中心没有对应的资源类型与
-`project_creator` / `environment_creator` 角色，auth-server 直接跳过，避免无效授权请求刷错误日志。
+### 创建者角色与创建后自动授权（V4）
+
+项目、环境、服务的创建都遵循同一模式：申请只放行创建动作的「创建者」角色，创建成功后由 BSCP
+自动授予对应的「运维」角色管理该实例。V4 的授权单位是角色，`add_authorization` 必须引用角色，
+因此自动授权复用已有的运维角色，不再单独注册"创建后自动授予"的角色。
+
+| 资源 | 申请的创建者角色 | 创建后自动授予 |
+| --- | --- | --- |
+| 项目 | `project_creator`：业务维度 `find_business_resource`、`project_create` | `project_operator` |
+| 环境 | `environment_creator`：业务维度 `find_business_resource`；项目维度 `project_view`、`environment_create` | `environment_operator` |
+| 服务 | `app_creator`：业务维度 `find_business_resource`；项目维度 `project_view`；环境维度 `environment_view`、`app_create` | `app_operator` |
+
+创建者角色都不含被创建资源的查看权限（如项目创建者不含 `project_view`）：业务或项目维度的查看会放开
+该范围内他人的全部资源，自己建的资源由自动授权覆盖。自动授权按角色内的每个维度各写一条：
+项目运维写项目、业务两条，环境运维写环境、业务、所属项目三条，服务运维写服务、业务、项目、环境四条。
+因为每次都会写一条业务维度的记录，被自动授予的角色在业务维度只能有 `find_business_resource`
+（`pkg/iam/v4/model` 的用例校验），否则每个建过资源的人都会在整个业务下获得额外权限；
+同理创建者角色不能被用于自动授权。
+
+### 运维角色是各自范围的管理员（V4）
+
+| 角色 | 授权维度 | 范围内的操作 | 不含 |
+| --- | --- | --- | --- |
+| `biz_operator` 业务运维 | 业务 | 全部操作 | — |
+| `project_operator` 项目运维 | 项目 | 项目查看/编辑/删除；环境创建/查看/编辑/删除；服务创建/查看/编辑/删除/生成版本/上线 | 项目创建 |
+| `environment_operator` 环境运维 | 环境（另带所属项目的 `project_view`） | 环境查看/编辑/删除；服务创建/查看/编辑/删除/生成版本/上线 | 环境创建 |
+| `app_operator` 服务运维 | 服务（另带所属项目/环境的查看） | 服务查看/编辑/删除/生成版本/上线 | 服务创建 |
+
+运维角色管理自己范围内的一切，包括创建下级资源（项目运维建环境、环境运维建服务）与管理范围内他人建的服务；
+不含同级资源的创建，它属于上一级范围，由对应的创建者角色负责。范围内新建的服务经路径继承自动覆盖。
+职责分离（如生产配置发布）依赖服务自身的上线审批，审批流程不受角色影响。
+
+授权范围因此比 V3 的 `ResourceCreatorActions` 宽：创建项目/环境的人自动成为该范围的运维，
+可管理之后他人在该范围内建的服务。按业务注册的操作（服务密钥、操作记录、进程配置）无法按项目授予，
+项目运维不含这些操作。
+
+### 项目内共享资源的写操作要求项目编辑
+
+模板空间、模板、模板版本、模板套餐、模板变量、分组、脚本及脚本版本属于项目而非某个服务：
+被多个服务引用，脚本还会在客户端执行。它们的新增、编辑、删除、发布（共 35 个接口，见 config-server 的
+`template*.go`、`group.go`、`hook*.go`）校验 `meta.ProjectEditResource`（`project_edit`），
+只有项目运维与业务运维持有；读取仍校验 `project_view`。服务内资源（配置项、KV、服务绑定的模板版本与变量）
+的写操作不变，仍由服务维度的动作把关。无权限时前端统一走 403 无权限页与申请链接。
+
+V4 的授权有效期上限为 365 天（网关拒绝更长的 `expired_at`），创建者授权目前固定为 365 天且没有续期或回收逻辑，
+到期后创建人需在权限中心续期。
+
+环境创建与服务创建同一条规则：接口同时要求所属项目的 `project_view`，看不见的项目里不能建环境。
+项目运维、环境创建者与业务运维都已包含该项；服务创建同理，项目运维、环境运维、服务创建者与业务运维都已包含
+所需的项目与环境查看。
+
+权限查询只声明项目、未声明环境时（例如当前项目下没有可见环境时点击「新建服务」），
+auth-server 按该项目的默认环境补齐服务创建与环境查看的实例，申请链接随之指向该项目的默认环境；
+项目没有默认环境时判为无权限。不会退回业务默认环境：业务默认环境属于另一个项目，拼出的
+「项目 A + 项目 B 的环境」会让在 B 有权限的用户在 A 上被判为有权限。
+
+**从旧角色 ID 升级**：早期版本中 `project_creator` / `environment_creator` 是自动授予的角色。
+升级后同一 ID 变为可申请的创建者，若直接执行 `init-iam-v4`，存量的项目创建人会经业务维度那条授权获得
+`project_create`（在整个业务下建项目）。因此已部署过旧版本的环境需先清理这两个角色的存量授权，
+或执行 `delete-iam-v4` 后重新 `init-iam-v4`（会清空 BSCP 在权限中心的全部授权，需提前导出重放）。
+
+创建项目时会自动生成一条默认环境。V3 的项目创建者权限只落在项目实例上、不会传递到环境实例，
+因此 config-server 在项目创建成功后会按环境实例再补授一次创建者权限（V3 走 `resource_creator_action`，
+V4 走 `add_authorization`），创建者由此获得默认环境的查看/编辑/删除。V4 的 `project_operator`
+已在项目维度覆盖其下全部环境，这次补授对 V4 冗余但无害。
+`enabled: true` 时照常写入；`enabled: false`（旧模型）下权限中心没有项目/环境资源类型，
+auth-server 直接跳过，避免无效授权请求刷错误日志。
 授权失败只记录日志，不影响项目创建。
 
 关闭期间创建的项目与环境不会写入创建者策略：开关打开后，这批创建者对自己的项目与默认环境没有权限，

@@ -682,7 +682,7 @@ func (a *Auth) GrantResourceCreatorAction(ctx context.Context,
 	kt := kit.FromGrpcContext(ctx)
 
 	// 只有关闭项目/环境维度校验时才必须跳过：权限中心里没有项目/环境资源类型，
-	// 也没有 project_creator / environment_creator 角色，授权请求一定失败，只会刷错误日志。
+	// 项目/环境维度的授权请求一定失败，只会刷错误日志。
 	if opts != nil && !a.projectEnvAuth &&
 		(opts.Type == sys.Project || opts.Type == sys.Environment) {
 		logs.Infof("skip granting %s creator action, project/environment auth is disabled, id: %s, rid: %s",
@@ -708,19 +708,20 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		return errf.New(errf.InvalidParameter, "creator action option is nil")
 	}
 
-	// 目前服务、项目和环境需要创建者授权，与 V3 注册的 ResourceCreatorAction 范围一致：
-	// 服务创建者拿到该服务的运维权限，项目创建者拿到该项目的查看/编辑/删除与在项目下创建环境，
-	// 环境创建者只拿到该环境的查看/编辑/删除。
-	// 项目不能复用 project_operator、环境不能复用 environment_operator，那些角色还含项目/环境维度
-	// 继承的子资源查看权限，会让创建者额外看到该项目/环境下不属于自己的全部资源，比 V3 授权范围更大。
+	// V4 的授权单位是角色，创建者授权复用对应资源的运维角色：
+	// 服务创建者拿到 app_operator，项目创建者拿到 project_operator，环境创建者拿到 environment_operator。
+	// 项目/环境运维含项目/环境维度继承的子资源查看，创建者能只读地看到该项目/环境下他人的环境与服务，
+	// 比 V3 的 ResourceCreatorActions 宽；服务写操作仍只在服务维度授予，他人的服务改不了。
+	// 不能用 project_creator / environment_creator：它们是可申请的创建者角色，
+	// 授给创建人等于让他在整个业务（或所属项目）下继续创建资源。
 	var roleID, resourceTypeID string
 	switch opts.Type {
 	case sys.Application:
 		roleID, resourceTypeID = model.RoleAppOperator, model.ResourceTypeApp
 	case sys.Project:
-		roleID, resourceTypeID = model.RoleProjectCreator, model.ResourceTypeProject
+		roleID, resourceTypeID = model.RoleProjectOperator, model.ResourceTypeProject
 	case sys.Environment:
-		roleID, resourceTypeID = model.RoleEnvironmentCreator, model.ResourceTypeEnvironment
+		roleID, resourceTypeID = model.RoleEnvironmentOperator, model.ResourceTypeEnvironment
 	default:
 		return errf.New(errf.InvalidParameter,
 			fmt.Sprintf("unsupported resource type for creator grant: %s", opts.Type))
@@ -765,30 +766,23 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 	// app_operator 同时含项目查看与环境查看：服务内资源（配置项、KV、版本、上线）的接口
 	// 要求业务访问 + 项目查看 + 环境查看 + 服务动作四项同时通过，而角色内不同维度的操作
 	// 只能按对应维度各授一次。缺这两条时创建者对自己新建的服务改不了配置项与 KV。
-	if opts.Type == sys.Application {
-		for _, ancestor := range []struct {
-			resourceType string
-			ancestorType client.TypeID
-		}{
-			{model.ResourceTypeProject, sys.Project},
-			{model.ResourceTypeEnvironment, sys.Environment},
-		} {
-			id := ancestorID(opts.Ancestors, ancestor.ancestorType)
-			if id == "" {
-				// 调用方未声明归属时不额外授权，交由运维按实际项目/环境单独授予。
-				continue
-			}
-
-			items = append(items, clientv4.Authorization{
-				Subject:               subject,
-				RoleID:                roleID,
-				RelatedResourceTypeID: ancestor.resourceType,
-				Resources: []clientv4.ResourceRef{
-					{Type: ancestor.resourceType, ID: id},
-				},
-				ExpiredAt: expiredAt,
-			})
+	// environment_operator 同理含所属项目的查看，缺项目那一条时创建人看不见自己环境所在的项目。
+	for _, ancestor := range creatorAncestorScopes(opts.Type) {
+		id := ancestorID(opts.Ancestors, ancestor.ancestorType)
+		if id == "" {
+			// 调用方未声明归属时不额外授权，交由运维按实际项目/环境单独授予。
+			continue
 		}
+
+		items = append(items, clientv4.Authorization{
+			Subject:               subject,
+			RoleID:                roleID,
+			RelatedResourceTypeID: ancestor.resourceType,
+			Resources: []clientv4.ResourceRef{
+				{Type: ancestor.resourceType, ID: id},
+			},
+			ExpiredAt: expiredAt,
+		})
 	}
 
 	// 操作人取创建者：该授权由创建资源的行为直接触发，并非管理员代为授权。
@@ -802,6 +796,27 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		roleID, opts.Creator, resourceTypeID, opts.ID, bizID, kt.Rid)
 
 	return nil
+}
+
+// creatorAncestorScope 是创建者角色在祖先资源上需要额外授予的维度。
+type creatorAncestorScope struct {
+	resourceType string
+	ancestorType client.TypeID
+}
+
+// creatorAncestorScopes 返回创建者角色除资源自身与业务外，还需按祖先授予的维度。
+func creatorAncestorScopes(resourceType client.TypeID) []creatorAncestorScope {
+	switch resourceType {
+	case sys.Application:
+		return []creatorAncestorScope{
+			{model.ResourceTypeProject, sys.Project},
+			{model.ResourceTypeEnvironment, sys.Environment},
+		}
+	case sys.Environment:
+		return []creatorAncestorScope{{model.ResourceTypeProject, sys.Project}}
+	default:
+		return nil
+	}
 }
 
 // bizIDFromAncestors 从祖先列表里取业务 ID。

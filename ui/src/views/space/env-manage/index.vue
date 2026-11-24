@@ -124,6 +124,7 @@
   import useBizProjectText from '../../../utils/hooks/use-biz-project-text';
   import { getEnvList, deleteEnv } from '../../../api/env';
   import { permissionCheck } from '../../../api';
+  import { getCreateEnvPermResources } from '../../../utils/permission';
   import { IEnvItem, EnvType, EnvFieldType } from '../../../../types/env';
   import { ResourcePermMap } from '../../../../types/index';
   import { ENV_TYPE_OPTIONS } from '../../../constants/env';
@@ -198,16 +199,7 @@
     createPermLoading.value = true;
     try {
       const res = await permissionCheck({
-        resources: [
-          {
-            biz_id: spaceId.value,
-            basic: {
-              type: 'environment',
-              action: 'create',
-            },
-            project_id: +projectId.value,
-          },
-        ],
+        resources: getCreateEnvPermResources(spaceId.value, projectId.value),
       });
       hasCreateEnvPerm.value = res.is_allowed;
     } catch (e) {
@@ -291,7 +283,10 @@
   // 创建环境
   const handleCreateEnv = () => {
     if (!hasCreateEnvPerm.value) {
-      openPermDialog('create');
+      permissionQuery.value = {
+        resources: getCreateEnvPermResources(spaceId.value, projectId.value),
+      };
+      showApplyPermDialog.value = true;
       return;
     }
     editingItem.value = {};

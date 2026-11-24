@@ -51,7 +51,7 @@ func (s *Service) CreateProject(ctx context.Context, req *pbcs.CreateProjectReq)
 		return nil, err
 	}
 
-	// 项目创建者自动获得该项目的管理权限：项目查看/编辑/删除与在项目下创建环境，
+	// 项目创建者自动获得该项目的管理权限（V4 为 project_operator），
 	// 避免出现"创建成功但无法管理"的情况。授权失败只记录日志，不阻塞创建流程。
 	if err := s.authorizer.GrantResourceCreatorAction(grpcKit, &client.GrantResourceCreatorActionOption{
 		System:  sys.SystemIDBSCP,
@@ -70,7 +70,7 @@ func (s *Service) CreateProject(ctx context.Context, req *pbcs.CreateProjectReq)
 		logs.Errorf("grant project creator action failed, err: %v, rid: %s", err, grpcKit.Rid)
 	}
 
-	// 项目与环境在 IAM 中是相互独立的资源实例，项目维度的授权不会传递给环境。
+	// V3 的项目创建者权限只落在项目实例上，不会传递给环境。
 	// 默认环境由创建项目时自动生成、没有走 CreateEnvironment，因此需要在这里
 	// 单独按环境实例补授创建者权限，避免出现"能管理项目却打不开默认环境"。
 	s.grantDefaultEnvCreatorAction(grpcKit, req.GetBizId(), resp.GetId())
@@ -82,9 +82,10 @@ func (s *Service) CreateProject(ctx context.Context, req *pbcs.CreateProjectReq)
 
 // grantDefaultEnvCreatorAction 为项目下自动创建的默认环境补授创建者权限。
 //
-// 环境与项目分别授权：项目创建者只拿到项目实例上的查看/编辑/删除与新建环境，
+// V3 中环境与项目分别授权：项目创建者只拿到项目实例上的查看/编辑/删除与新建环境，
 // 环境实例上的查看/编辑/删除需要在环境创建时授予。默认环境不是通过环境创建接口
 // 产生的，若不在这里补授，创建者在开启项目/环境维度校验后就无法操作该环境。
+// V4 的 project_operator 已在项目维度覆盖其下全部环境，这次补授对 V4 冗余但无害。
 // 回查或授权失败只记录日志，不阻塞项目创建，避免 IAM 抖动导致项目创建整体失败。
 func (s *Service) grantDefaultEnvCreatorAction(kt *kit.Kit, bizID, projectID uint32) {
 	if projectID == 0 {

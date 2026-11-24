@@ -43,7 +43,7 @@ func (s *Service) CreateTemplateVariable(ctx context.Context, req *pbcs.CreateTe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (s *Service) DeleteTemplateVariable(ctx context.Context, req *pbcs.DeleteTe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (s *Service) BatchDeleteTemplateVariable(ctx context.Context, req *pbcs.Bat
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -196,7 +196,7 @@ func (s *Service) UpdateTemplateVariable(ctx context.Context, req *pbcs.UpdateTe
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -265,7 +265,7 @@ func (s *Service) ImportTemplateVariables(ctx context.Context, req *pbcs.ImportT
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -343,7 +343,7 @@ func (s *Service) ImportOtherFormatTemplateVariables(ctx context.Context,
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, kit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, kit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(kit, res...); err != nil {
 		return nil, err

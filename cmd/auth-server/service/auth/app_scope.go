@@ -209,6 +209,9 @@ func (a *Auth) fillEnvironmentScope(kt *kit.Kit, resources []*meta.ResourceAttri
 
 	resolveAppCreateTargetEnv(kt, resources)
 	resolveEnvironmentInstance(kt, resources)
+	if err := a.resolveDeclaredProjectDefaultEnv(kt, resources); err != nil {
+		return err
+	}
 
 	envScopes, err := a.lookupEnvironmentScopes(kt, resources)
 	if err != nil {
@@ -287,6 +290,77 @@ func resolveEnvironmentInstance(kt *kit.Kit, resources []*meta.ResourceAttribute
 	}
 }
 
+// resolveDeclaredProjectDefaultEnv 为只声明了项目、没有环境实例的资源补上该项目的默认环境。
+//
+// 前端在项目下没有可见环境时（例如新建服务、切换项目）只带 project_id 查询权限。
+// 若交给 fillMissingEnvironmentScope 按业务默认环境补齐，业务默认环境属于另一个项目，
+// 拼出「声明的项目 + 别的项目的环境」：用户在业务默认环境有权限时会在声明的项目上被判为有权限，
+// 申请信息与申请链接随之为空。补上的环境仍会经 lookupEnvironmentScopes 回查真实父级，
+// 请求里的项目只用来定位默认环境，不直接进入鉴权路径。
+// 声明的项目查不到默认环境时清空归属，鉴权退化为无权限，不再兜底到业务默认环境。
+func (a *Auth) resolveDeclaredProjectDefaultEnv(kt *kit.Kit, resources []*meta.ResourceAttribute) error {
+	for _, res := range resources {
+		if !a.needsEnvironmentScope(res) || res.ResourceID != 0 || res.ProjectID == 0 || res.BizID == 0 {
+			continue
+		}
+		// 创建环境时资源实例是所属项目，不需要环境实例。
+		if res.Type == meta.Environment && res.Action == meta.Create {
+			continue
+		}
+
+		envID, err := a.projectDefaultEnvOf(kt, res.BizID, res.ProjectID)
+		if err != nil {
+			return err
+		}
+
+		if envID == 0 {
+			logs.Warnf("project %d of biz %d has no default environment, %s/%s will be denied, rid: %s",
+				res.ProjectID, res.BizID, res.Type, res.Action, kt.Rid)
+			res.BizID = 0
+			res.ProjectID = 0
+
+			continue
+		}
+
+		res.ResourceID = envID
+	}
+
+	return nil
+}
+
+// projectDefaultEnvOf 返回项目的默认环境 ID，结果带缓存；查不到时返回 0 且不缓存。
+// 与 defaultScopeOf 同理只读，不补建默认环境：biz_id / project_id 都由调用方提交。
+func (a *Auth) projectDefaultEnvOf(kt *kit.Kit, bizID, projectID uint32) (uint32, error) {
+	key := kt.TenantID + "|" + strconv.FormatUint(uint64(bizID), 10) + "|project|" +
+		strconv.FormatUint(uint64(projectID), 10)
+
+	if a.defaultScopes != nil {
+		if val, err := a.defaultScopes.GetIFPresent(key); err == nil {
+			if scope, ok := val.(appScope); ok {
+				return scope.envID, nil
+			}
+		}
+	}
+
+	resp, err := a.ds.GetDefaultEnvironment(kt.RpcCtx(), &pbds.GetDefaultEnvironmentReq{
+		BizId:     bizID,
+		ProjectId: projectID,
+	})
+	if err != nil {
+		logs.Errorf("get default environment of project %d in biz %d failed, err: %v, rid: %s",
+			projectID, bizID, err, kt.Rid)
+
+		return 0, err
+	}
+
+	envID := resp.GetId()
+	if a.defaultScopes != nil && envID != 0 {
+		_ = a.defaultScopes.Set(key, appScope{bizID: bizID, projectID: projectID, envID: envID})
+	}
+
+	return envID, nil
+}
+
 // applyEnvironmentParent 用回查到的真实父级覆盖请求声明的业务与项目。
 //
 // 权限中心不反查拓扑，鉴权路径完全由这里给出的祖先决定，沿用请求里的 project_id
@@ -318,8 +392,8 @@ func applyEnvironmentParent(kt *kit.Kit, res *meta.ResourceAttribute, envScopes 
 }
 
 // fillMissingEnvironmentScope 处理没有可回查实例的情况：创建环境时资源实例就是所属项目，
-// 项目或环境缺失时按业务默认归属补齐。没有业务 ID 就查不到默认归属，保持为空，
-// 由鉴权路径缺失退化为无权限。
+// 连项目也没声明时按业务默认归属补齐（声明了项目的已由 resolveDeclaredProjectDefaultEnv 处理）。
+// 没有业务 ID 就查不到默认归属，保持为空，由鉴权路径缺失退化为无权限。
 func (a *Auth) fillMissingEnvironmentScope(kt *kit.Kit, res *meta.ResourceAttribute) error {
 	isEnvCreate := res.Type == meta.Environment && res.Action == meta.Create
 	// 创建环境时尚无环境实例，资源实例就是所属项目，两个字段互为等价

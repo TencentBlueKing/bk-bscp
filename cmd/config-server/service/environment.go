@@ -34,15 +34,8 @@ import (
 func (s *Service) CreateEnvironment(ctx context.Context, req *pbcs.CreateEnvironmentReq) (*pbcs.CreateEnvironmentResp, error) {
 	grpcKit := kit.FromGrpcContext(ctx)
 
-	res := []*meta.ResourceAttribute{
-		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		{
-			Basic:     meta.Basic{Type: meta.Environment, Action: meta.Create, ResourceID: req.ProjectId},
-			BizID:     req.BizId,
-			ProjectID: req.ProjectId,
-		},
-	}
-	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
+	if err := s.authorizer.Authorize(grpcKit,
+		meta.EnvironmentCreateAuthResources(req.BizId, req.ProjectId)...); err != nil {
 		return nil, err
 	}
 
@@ -58,8 +51,8 @@ func (s *Service) CreateEnvironment(ctx context.Context, req *pbcs.CreateEnviron
 		return nil, err
 	}
 
-	// 环境创建者自动获得该环境的运维权限：环境仍需按项目/环境维度分别授权，
-	// 因此这里同样拆成环境与业务两条，业务维度用于放行所有业务接口的前置校验。
+	// 环境创建者自动获得该环境的环境运维权限（含所属项目查看），
+	// 祖先里的项目用于授予项目查看，业务用于放行所有业务接口的前置校验。
 	if err := s.authorizer.GrantResourceCreatorAction(grpcKit, &client.GrantResourceCreatorActionOption{
 		System:  sys.SystemIDBSCP,
 		Type:    sys.Environment,

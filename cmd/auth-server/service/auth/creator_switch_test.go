@@ -116,6 +116,9 @@ func TestGrantCreatorActionSkipsProjectAndEnvironmentWhenAuthDisabled(t *testing
 func TestGrantCreatorActionWritesProjectAndEnvironmentWhenAuthEnabled(t *testing.T) {
 	ctx := creatorContext("alice")
 
+	// 项目：项目 + 业务两条；环境：环境 + 业务 + 所属项目三条（环境运维含项目查看）。
+	wantItems := map[client.TypeID]int{sys.Project: 2, sys.Environment: 3}
+
 	for _, resourceType := range []client.TypeID{sys.Project, sys.Environment} {
 		t.Run(string(resourceType), func(t *testing.T) {
 			gw := new(fakeV4Gateway)
@@ -124,7 +127,7 @@ func TestGrantCreatorActionWritesProjectAndEnvironmentWhenAuthEnabled(t *testing
 			require.NoError(t, v4Auth.GrantResourceCreatorAction(
 				ctx, creatorGrantOption(resourceType, "40001")))
 			require.Equal(t, 1, gw.calls, "v4 should grant %s creator action", resourceType)
-			require.Len(t, gw.items, 2)
+			require.Len(t, gw.items, wantItems[resourceType])
 
 			v3 := new(fakeV3CreatorAuthorizer)
 			v3Auth := &Auth{auth: v3, projectEnvAuth: true}
@@ -147,8 +150,9 @@ func TestGrantCreatorActionKeepsProjectAndEnvironmentWhenEnabled(t *testing.T) {
 	require.NoError(t, v4Auth.GrantResourceCreatorAction(
 		ctx, creatorGrantOption(sys.Environment, "50001")))
 	require.Equal(t, 1, gw.calls)
-	// 环境维度 + 业务维度两条，缺业务维度时业务访问前置校验会拦住后续操作。
-	require.Len(t, gw.items, 2)
+	// 环境、业务、所属项目三条：缺业务维度时业务访问前置校验会拦住后续操作，
+	// 缺项目维度时创建人看不见环境所在的项目。
+	require.Len(t, gw.items, 3)
 	require.Equal(t, "alice", gw.operator)
 
 	scopes := make(map[string]string, len(gw.items))
@@ -157,6 +161,7 @@ func TestGrantCreatorActionKeepsProjectAndEnvironmentWhenEnabled(t *testing.T) {
 	}
 	require.Equal(t, "50001", scopes["environment"])
 	require.Equal(t, "2", scopes["biz"])
+	require.Equal(t, "40001", scopes["project"])
 }
 
 // 服务创建者授权与项目/环境维度开关无关：app_operator 里的
