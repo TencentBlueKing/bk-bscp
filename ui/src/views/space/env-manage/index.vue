@@ -80,7 +80,7 @@
                       <div class="card-desc" v-overflow-title >{{ item.spec.memo }}</div>
                       <div class="card-meta">
                           <i class="bk-bscp-icon icon-yonghu-2 meta-icon"></i>
-                          {{ item.revision.creator }}
+                          <user-name :name="item.revision.creator" />
                           <i class="bk-bscp-icon icon-time-2 meta-icon"></i>
                           {{ datetimeFormat(item.revision.create_at) }}
                       </div>
@@ -120,6 +120,7 @@
   import useGlobalStore from '../../../store/global';
   import EnvFormDialog from './components/env-form-dialog.vue';
   import SearchSelector from '../../../components/search-selector.vue';
+  import UserName from '../../../components/user-name.vue';
   import tableEmpty from '../../../components/table/table-empty.vue';
   import useBizProjectText from '../../../utils/hooks/use-biz-project-text';
   import { getEnvList, deleteEnv } from '../../../api/env';
