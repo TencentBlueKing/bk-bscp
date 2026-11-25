@@ -26,6 +26,7 @@ export default defineStore('service', () => {
   });
   const permCheckLoading = ref(false);
   const hasEditServicePerm = ref(false);
+  const hasViewServicePerm = ref(false);
 
   const isFileType = computed(() => appData.value.spec.config_type === 'file');
 
@@ -65,6 +66,7 @@ export default defineStore('service', () => {
     appData,
     permCheckLoading,
     hasEditServicePerm,
+    hasViewServicePerm,
     checkPermBeforeOperate,
     lastCreatePermission,
     topIds,

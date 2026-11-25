@@ -75,19 +75,15 @@
                                 <template v-if="group.id === 0">
                                   <div
                                     v-if="isUnNamedVersion"
-                                    v-cursor="{ active: !hasEditServicePerm }"
+                                    v-cursor="{ active: !hasViewServicePerm }"
                                     :class="[
                                       'file-name-btn',
                                       {
-                                        'bk-text-with-no-perm': !hasEditServicePerm,
-                                        disabled: !hasEditServicePerm || item.file_state === 'DELETE',
+                                        'bk-text-with-no-perm': !hasViewServicePerm,
+                                        disabled: item.file_state === 'DELETE',
                                       },
                                     ]"
-                                    @click="
-                                      () => {
-                                        hasEditServicePerm && item.file_state !== 'DELETE' && handleViewConfig(item.id);
-                                      }
-                                    ">
+                                    @click="handleFileNameClick(item)">
                                     {{ fileAP(item) }}
                                   </div>
                                   <div
@@ -131,7 +127,6 @@
                                         text
                                         theme="primary"
                                         :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                                        :disabled="!hasEditServicePerm"
                                         @click="handleEditOpen(item, itemIndex)">
                                         {{ t('编辑') }}
                                       </bk-button>
@@ -140,8 +135,7 @@
                                           v-cursor="{ active: !hasEditServicePerm }"
                                           text
                                           theme="primary"
-                                          :disabled="!hasEditServicePerm"
-                                          @click="handleConfigDiff(group.id, item)">
+                                          @click="handleConfigDiffWithPerm(group.id, item)">
                                           {{ t('对比') }}
                                         </bk-button>
                                         <bk-button
@@ -149,7 +143,6 @@
                                           text
                                           theme="primary"
                                           :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                                          :disabled="!hasEditServicePerm"
                                           @click="handleUnModify(item, itemIndex)">
                                           {{ t('撤销') }}
                                         </bk-button>
@@ -166,7 +159,6 @@
                                         text
                                         theme="primary"
                                         :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                                        :disabled="!hasEditServicePerm"
                                         @click="handleDel(item, itemIndex)">
                                         {{ t('删除') }}
                                       </bk-button>
@@ -177,7 +169,6 @@
                                       text
                                       theme="primary"
                                       :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                                      :disabled="!hasEditServicePerm"
                                       @click="handleUnDelete(item, itemIndex)">
                                       {{ t('恢复') }}
                                     </bk-button>
@@ -393,7 +384,7 @@
   const serviceStore = useServiceStore();
   const { versionData, allConfigCount, onlyViewConflict } = storeToRefs(configStore);
   const { checkPermBeforeOperate } = serviceStore;
-  const { permCheckLoading, hasEditServicePerm, topIds } = storeToRefs(serviceStore);
+  const { permCheckLoading, hasEditServicePerm, hasViewServicePerm, topIds } = storeToRefs(serviceStore);
 
   const props = defineProps<{
     bkBizId: string;
@@ -802,6 +793,13 @@
     };
   };
 
+  // 未命名版本下点击配置文件名：无查看权限时静默拦截
+  const handleFileNameClick = (config: IConfigTableItem) => {
+    if (config.file_state === 'DELETE') return;
+    if (permCheckLoading.value || !hasViewServicePerm.value) return;
+    handleViewConfig(config.id);
+  };
+
   // 查看配置模板版本
   const handleViewTemplateConfig = (config: IConfigTableItem, group: IConfigsGroupData) => {
     const { id, versionName, is_latest } = config;
@@ -882,6 +880,12 @@
       permission: config.permission,
     };
     isDiffPanelShow.value = true;
+  };
+
+  // 未命名版本下对比配置：无编辑权限时弹出权限申请弹窗
+  const handleConfigDiffWithPerm = (groupId: number, config: IConfigTableItem) => {
+    if (permCheckLoading.value || !checkPermBeforeOperate('update')) return;
+    handleConfigDiff(groupId, config);
   };
 
   // 删除配置文件

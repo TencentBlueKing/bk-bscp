@@ -204,8 +204,9 @@
     },
   );
 
+  // 切换服务时 appId 会变化，权限校验依赖该入参
   watch(
-    () => props.bkBizId,
+    () => props.appId,
     () => {
       getVersionPerms();
     },

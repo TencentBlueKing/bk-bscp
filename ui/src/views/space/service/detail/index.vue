@@ -98,21 +98,40 @@
 
   const getPermData = async () => {
     permCheckLoading.value = true;
-    const res = await permissionCheck({
-      resources: [
-        {
-          biz_id: bkBizId.value,
-          basic: {
-            type: 'app',
-            action: 'update',
-            resource_id: appId.value,
+    const [viewRes, updateRes] = await Promise.all([
+      permissionCheck({
+        resources: [
+          {
+            biz_id: bkBizId.value,
+            basic: {
+              type: 'app',
+              action: 'view',
+              resource_id: appId.value,
+            },
+            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+            ...(+envId.value > 0 ? { environment_id: +envId.value } : {}),
           },
-          ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
-          ...(+envId.value > 0 ? { environment_id: +envId.value } : {}),
-        },
-      ],
+        ],
+      }),
+      permissionCheck({
+        resources: [
+          {
+            biz_id: bkBizId.value,
+            basic: {
+              type: 'app',
+              action: 'update',
+              resource_id: appId.value,
+            },
+            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
+            ...(+envId.value > 0 ? { environment_id: +envId.value } : {}),
+          },
+        ],
+      }),
+    ]);
+    serviceStore.$patch((state) => {
+      state.hasViewServicePerm = viewRes.is_allowed;
     });
-    hasEditServicePerm.value = res.is_allowed;
+    hasEditServicePerm.value = updateRes.is_allowed;
     permCheckLoading.value = false;
   };
 
