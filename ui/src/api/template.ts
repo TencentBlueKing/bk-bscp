@@ -620,12 +620,17 @@ export const getTemplateVersionList = (
 /**
  * 根据模板版本id列表查询对应模板版本详情
  * @param biz_id 业务ID
- * @param projectId 项目ID
+ * @param projectId 项目ID（可选，无项目概念时传空字符串，自动使用无项目路径）
  * @param ids 模板版本ID列表
  * @returns
  */
-export const getTemplateVersionsDetailByIds = (biz_id: string, projectId: string, ids: number[]) =>
-  http.post(`/config/biz/${biz_id}/projects/${projectId}/template_revisions/list_by_ids`, { ids }).then((res) => res.data);
+export const getTemplateVersionsDetailByIds = (biz_id: string, projectId: string, ids: number[]) => {
+  // 兼容处理：若 projectId 为空，使用无项目路径（配置模板场景）
+  const path = projectId
+    ? `/config/biz/${biz_id}/projects/${projectId}/template_revisions/list_by_ids`
+    : `/config/biz/${biz_id}/template_revisions/list_by_ids`;
+  return http.post(path, { ids }).then((res) => res.data);
+};
 
 /**
  *
