@@ -22,7 +22,8 @@
         {{ t('批量修改权限') }}
       </div>
       <div
-        :class="['operation-item', { disabled: selectedExistCount === 0 }]"
+        v-cursor="{ active: !hasEditServicePerm }"
+        :class="['operation-item', { disabled: selectedExistCount === 0 || !hasEditServicePerm }]"
         @click="handleBatchOperation('delete')">
         {{ t('批量删除') }}
       </div>
@@ -87,8 +88,13 @@
   import DeleteConfirmDialog from '../../../../../../../components/delete-confirm-dialog.vue';
   import EditPermissionDialog from '../../../../../templates/list/package-detail/operations/edit-permission/edit-permission-dialog.vue';
   import { IConfigItem } from '../../../../../../../../types/config';
+  import useServiceStore from '../../../../../../../store/service';
+  import { storeToRefs } from 'pinia';
 
   const { t } = useI18n();
+  const serviceStore = useServiceStore();
+  const { checkPermBeforeOperate } = serviceStore;
+  const { hasEditServicePerm } = storeToRefs(serviceStore);
 
   interface IPermissionType {
     privilege: string;
@@ -195,6 +201,11 @@
   const handleBatchOperation = (type: string) => {
     if (type === 'delete') {
       if (props.selectedExistCount === 0) return;
+      // 无服务 update 权限时先收起下拉，再弹权限申请弹窗，避免菜单浮在弹窗之上
+      if (!checkPermBeforeOperate('update')) {
+        buttonRef.value.hide();
+        return;
+      }
       isBatchDeleteDialogShow.value = true;
     } else if (type === 'edit') {
       if (props.selectedExistCount === 0) return;

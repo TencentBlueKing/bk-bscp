@@ -7,7 +7,7 @@
     }"
     :class="{ 'bk-button-with-no-perm': !hasEditServicePerm }"
     @click="handleOpenSlider"
-    :disabled="variableList.length === 0">
+    :disabled="hasEditServicePerm && variableList.length === 0">
     {{ t('设置变量') }}
   </bk-button>
   <bk-sideslider

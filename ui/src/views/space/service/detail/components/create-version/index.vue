@@ -93,7 +93,7 @@
   ]);
 
   const createBtnDisabled = computed(() => {
-    const commonCondition = !props.hasPerm || allExistConfigCount.value === 0 || props.permCheckLoading;
+    const commonCondition = allExistConfigCount.value === 0 || props.permCheckLoading;
     if (appData.value.spec.config_type === 'file') {
       return conflictFileCount.value > 0 || commonCondition;
     }
@@ -101,6 +101,12 @@
   });
 
   const handleBtnClick = () => {
+    // 权限判断前置：无权限时直接弹申请弹窗，避免被证书确认弹窗等前置流程拦截
+    if (!props.hasPerm) {
+      permissionQuery.value = { resources: permissionQueryResource.value };
+      showApplyPermDialog.value = true;
+      return;
+    }
     if (unExpiredCertList.value.length > 0) {
       isCertDialogShow.value = true;
     } else {

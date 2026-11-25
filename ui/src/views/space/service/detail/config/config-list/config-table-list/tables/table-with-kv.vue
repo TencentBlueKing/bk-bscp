@@ -102,7 +102,6 @@
               v-if="row.kv_state === 'DELETE'"
               v-cursor="{ active: !hasEditServicePerm }"
               :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-              :disabled="!hasEditServicePerm"
               text
               theme="primary"
               @click="handleUndelete(row, index)">
@@ -112,7 +111,6 @@
               <bk-button
                 v-cursor="{ active: versionData.id === 0 && !hasEditServicePerm }"
                 :class="{ 'bk-text-with-no-perm': versionData.id === 0 && !hasEditServicePerm }"
-                :disabled="versionData.id === 0 && !hasEditServicePerm"
                 text
                 theme="primary"
                 @click="handleEditOrView(row, index)">
@@ -131,7 +129,6 @@
                   v-cursor="{ active: !hasEditServicePerm }"
                   v-if="row.kv_state === 'REVISE'"
                   :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                  :disabled="!hasEditServicePerm"
                   text
                   theme="primary"
                   @click="handleUnModify(row, index)">
@@ -149,7 +146,6 @@
                 v-cursor="{ active: !hasEditServicePerm }"
                 v-if="versionData.id === 0"
                 :class="{ 'bk-text-with-no-perm': !hasEditServicePerm }"
-                :disabled="!hasEditServicePerm"
                 text
                 theme="primary"
                 @click="handleDel(row, index)">
