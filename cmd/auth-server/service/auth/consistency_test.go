@@ -66,9 +66,7 @@ func TestV3V4AuthMappingConsistency(t *testing.T) {
 		require.NoError(t, err, c.name)
 		require.Len(t, v3Resources, 1, c.name)
 
-		v4Mapped, err := adaptorv4.AdaptWithOptions(c.attr, adaptorv4.Options{
-			ProjectEnvironmentAuth: true,
-		})
+		v4Mapped, err := adaptorv4.Adapt(c.attr)
 		require.NoError(t, err, c.name)
 
 		require.Equal(t, string(v3Action), v4Mapped.ActionID, "%s action", c.name)
@@ -85,30 +83,9 @@ func TestV3V4AuthMappingConsistency(t *testing.T) {
 	}
 }
 
-// 关闭开关后 V3/V4 都按旧模型单级路径，服务实例仍是鉴权主体。
-func TestV3V4DisabledPathConsistency(t *testing.T) {
-	attr := &meta.ResourceAttribute{
-		Basic:         meta.Basic{Type: meta.App, Action: meta.View, ResourceID: 30001},
-		BizID:         100001,
-		ProjectID:     40001,
-		EnvironmentID: 50001,
-	}
-
-	v3Action, v3Resources, err := AdaptAuthOptionsWithOptions(attr, PermissionOptions{
-		ProjectEnvironmentAuth: false,
-	})
-	require.NoError(t, err)
-	require.Equal(t, sys.AppView, v3Action)
-	require.Len(t, v3Resources, 1)
-	require.Equal(t, []string{"/biz,100001/"}, v3Resources[0].Attribute[client.IamPathKey])
-
-	v4Mapped, err := adaptorv4.AdaptWithOptions(attr, adaptorv4.Options{ProjectEnvironmentAuth: false})
-	require.NoError(t, err)
-	require.Equal(t, string(sys.AppView), v4Mapped.ActionID)
-	require.Equal(t, "/biz,100001/", v4Mapped.AuthResource().Attributes[clientv4.IAMPathAttrKey])
-}
-
-// 服务创建的授权维度与路径层级只由项目/环境维度开关决定，V3/V4 保持一致。
+// 服务创建：V3 开关关闭时按业务（app_create），开启时按目标环境（environment_app_create）；
+// V4 只有环境级的服务创建，与 V3 开启开关时的实例一致。
+// V3 的 app_create 带着按业务授予的存量策略无法改关联资源，按环境创建使用独立操作；V4 是新系统，沿用 app_create。
 func TestV3V4AppCreateConsistency(t *testing.T) {
 	attr := &meta.ResourceAttribute{
 		Basic:         meta.Basic{Type: meta.App, Action: meta.Create, ResourceID: 50001},
@@ -117,7 +94,6 @@ func TestV3V4AppCreateConsistency(t *testing.T) {
 		EnvironmentID: 50001,
 	}
 
-	// 关闭开关：两边都按业务维度发起。
 	v3Action, v3Resources, err := AdaptAuthOptionsWithOptions(attr, PermissionOptions{
 		ProjectEnvironmentAuth: false,
 	})
@@ -127,14 +103,6 @@ func TestV3V4AppCreateConsistency(t *testing.T) {
 	require.Equal(t, string(sys.Business), string(v3Resources[0].Type))
 	require.Equal(t, "100001", v3Resources[0].ID)
 
-	v4Mapped, err := adaptorv4.AdaptWithOptions(attr, adaptorv4.Options{ProjectEnvironmentAuth: false})
-	require.NoError(t, err)
-	require.Equal(t, string(v3Action), v4Mapped.ActionID)
-	require.Equal(t, "biz", v4Mapped.ResourceType)
-	require.Equal(t, "100001", v4Mapped.ResourceID)
-
-	// 开启开关：两边都按目标环境发起。V3 的 app_create 带着按业务授予的存量策略无法改关联资源，
-	// 按环境创建使用独立操作；V4 是新系统，沿用 app_create。
 	v3Action, v3Resources, err = AdaptAuthOptionsWithOptions(attr, PermissionOptions{
 		ProjectEnvironmentAuth: true,
 	})
@@ -144,7 +112,7 @@ func TestV3V4AppCreateConsistency(t *testing.T) {
 	require.Equal(t, "environment", string(v3Resources[0].Type))
 	require.Equal(t, "50001", v3Resources[0].ID)
 
-	v4Mapped, err = adaptorv4.AdaptWithOptions(attr, adaptorv4.Options{ProjectEnvironmentAuth: true})
+	v4Mapped, err := adaptorv4.Adapt(attr)
 	require.NoError(t, err)
 	require.Equal(t, string(sys.AppCreate), v4Mapped.ActionID)
 	require.Equal(t, "environment", v4Mapped.ResourceType)

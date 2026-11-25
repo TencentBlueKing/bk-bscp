@@ -42,7 +42,7 @@ func (s *Service) CreateHook(ctx context.Context, req *pbcs.CreateHookReq) (*pbc
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	// Authorize authorize if user has permission to the resources.
 	// If user is unauthorized, assign apply url and resources into error.
@@ -85,7 +85,7 @@ func (s *Service) DeleteHook(ctx context.Context, req *pbcs.DeleteHookReq) (*pbc
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (s *Service) BatchDeleteHook(ctx context.Context, req *pbcs.BatchDeleteHook
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func (s *Service) UpdateHook(ctx context.Context, req *pbcs.UpdateHookReq) (*pbc
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err

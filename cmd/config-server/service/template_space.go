@@ -34,7 +34,7 @@ func (s *Service) CreateTemplateSpace(ctx context.Context, req *pbcs.CreateTempl
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (s *Service) DeleteTemplateSpace(ctx context.Context, req *pbcs.DeleteTempl
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (s *Service) UpdateTemplateSpace(ctx context.Context, req *pbcs.UpdateTempl
 
 	res := []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: req.BizId},
-		meta.ProjectViewResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
+		meta.ProjectEditResource(req.BizId, grpcKit.ResolvedProjectID(req.ProjectId)),
 	}
 	if err := s.authorizer.Authorize(grpcKit, res...); err != nil {
 		return nil, err

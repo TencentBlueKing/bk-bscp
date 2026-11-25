@@ -70,7 +70,7 @@
     },
   );
 
-  const emits = defineEmits(['change', 'clear']);
+  const emits = defineEmits(['change', 'clear', 'loaded']);
 
   const serviceList = ref<IAppItem[]>([]);
   const loading = ref(false);
@@ -123,6 +123,7 @@
       };
       const resp = await getAppList(bizId, projectId.value, props.envId, query);
       serviceList.value = resp.details;
+      emits('loaded', serviceList.value);
     } catch (e) {
       console.error(e);
     } finally {
@@ -135,6 +136,7 @@
       initService();
     } else {
       serviceList.value = [];
+      emits('loaded', serviceList.value);
     }
   }, {
     immediate: true

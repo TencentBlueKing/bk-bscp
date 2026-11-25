@@ -44,7 +44,7 @@
     </div>
     <template #footer>
       <div class="button-group">
-        <bk-button theme="primary" :disabled="loading" @click="handleSubmitClick">
+        <bk-button theme="primary" :disabled="loading || (!clicked && !url)" @click="handleSubmitClick">
           {{ clicked ? t('已申请') : t('去申请') }}
         </bk-button>
         <bk-button @click="handleClose">{{ t('取消') }}</bk-button>
@@ -58,6 +58,7 @@
   import { storeToRefs } from 'pinia';
   import useGlobalStore from '../../store/global';
   import { IPermissionResource } from '../../../types/index';
+  import Message from 'bkui-vue/lib/message';
   import { permissionCheck } from '../../api/index';
   import LockIcon from '../../assets/lock-radius.svg';
 
@@ -84,12 +85,24 @@
 
   const getPermUrl = async () => {
     loading.value = true;
-    const res = await permissionCheck(permissionQuery.value);
-    resources.value = res.resources;
-    url.value = res.apply_url;
-    loading.value = false;
+    resources.value = [];
+    url.value = '';
+    try {
+      const res = await permissionCheck(permissionQuery.value);
+      // 页面上的权限状态可能已过期（例如刚在权限中心审批通过），此时没有需要申请的权限
+      if (res.is_allowed) {
+        Message({ theme: 'success', message: t('您已拥有该操作权限，请刷新页面后重试') });
+        handleClose();
+        return;
+      }
+      resources.value = res.resources || [];
+      url.value = res.apply_url || '';
+    } finally {
+      loading.value = false;
+    }
   };
   const goToIAM = () => {
+    if (!url.value) return;
     window.open(url.value, '__blank');
     clicked.value = true;
   };

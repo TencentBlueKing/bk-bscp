@@ -329,7 +329,7 @@ func (a authorizer) Authorize(kt *kit.Kit, resources ...*meta.ResourceAttribute)
 		return nil
 	}
 
-	// 只申请本次校验未通过的资源：接口通常一次校验多个资源（如业务查看 + 秘钥查看），
+	// 只申请本次校验未通过的资源：接口通常一次校验多个资源（如业务查看 + 密钥查看），
 	// 已拥有权限的资源若一并提交，会重复出现在前端提示和申请链接里。
 	missingResources := unauthorizedResources(decisions, resources)
 	if len(missingResources) == 0 {

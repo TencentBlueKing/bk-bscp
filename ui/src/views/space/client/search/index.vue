@@ -1,7 +1,11 @@
 <template>
   <section class="client-search-page">
     <div class="header">
-      <ClientHeader :title="t('客户端查询')" :app-id="appId" @search="loadList" />
+      <ClientHeader
+        :title="t('客户端查询')"
+        :app-id="appId"
+        @search="loadList"
+        @loaded="hasService = $event.length > 0" />
     </div>
     <div v-if="appId" class="content">
       <div class="operation-btns">
@@ -256,7 +260,7 @@
         </bk-table>
       </bk-loading>
     </div>
-    <Exception v-else />
+    <Exception v-else :has-service="hasService" />
   </section>
   <PullRecord
     :bk-biz-id="bkBizId"
@@ -310,6 +314,7 @@
   const projectId = ref(String(route.params.projectId));
   const envId = ref(String(route.params.envId));
   const appId = ref(Number(route.params.appId));
+  const hasService = ref(true);
   const viewPullRecordClientId = ref(0);
   const viewPullRecordClientUid = ref('');
   const listLoading = ref(false);
@@ -385,11 +390,13 @@
   watch(
     () => route.params.appId,
     (val) => {
+      appId.value = Number(val);
       if (val) {
-        appId.value = Number(val);
         bkBizId.value = String(route.params.spaceId);
         projectId.value = String(route.params.projectId);
         envId.value = String(route.params.envId || '');
+      } else {
+        tableData.value = [];
       }
     },
   );

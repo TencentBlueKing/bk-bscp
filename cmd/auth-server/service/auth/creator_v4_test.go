@@ -246,8 +246,9 @@ func TestUseV4Gating(t *testing.T) {
 	require.False(t, new(Auth).useV4())
 }
 
-// 项目创建者授权使用 project_creator 角色，按项目与业务两个维度拆分，
-// 项目维度授予 project_view/edit/delete 与 environment_create。
+// 项目创建者授权使用 project_operator 角色，按项目与业务两个维度拆分。
+// 不能用 project_creator：它是可申请的「项目创建者」，业务维度那一条授权会让创建人
+// 获得在整个业务下继续建项目的权限。
 func TestGrantCreatorActionV4Project(t *testing.T) {
 	gw := new(fakeV4Gateway)
 	a := newV4Auth(gw)
@@ -277,33 +278,77 @@ func TestGrantCreatorActionV4Project(t *testing.T) {
 
 	projectScoped, ok := byScope[model.ResourceTypeProject]
 	require.True(t, ok, "project scoped authorization is missing")
-	require.Equal(t, model.RoleProjectCreator, projectScoped.RoleID)
+	require.Equal(t, model.RoleProjectOperator, projectScoped.RoleID)
 	require.Equal(t, []clientv4.ResourceRef{{Type: model.ResourceTypeProject, ID: "40001"}},
 		projectScoped.Resources)
 
 	bizScoped, ok := byScope[model.ResourceTypeBiz]
 	require.True(t, ok, "biz scoped authorization is missing")
-	require.Equal(t, model.RoleProjectCreator, bizScoped.RoleID)
+	require.Equal(t, model.RoleProjectOperator, bizScoped.RoleID)
 	require.Equal(t, []clientv4.ResourceRef{{Type: model.ResourceTypeBiz, ID: "2"}},
 		bizScoped.Resources)
 }
 
-// 申请链接的祖先链必须与鉴权路径同源：旧拓扑（开关关闭）下服务只声明业务一层，
-// 漏传开关会让链接带上权限中心并不存在的 project/environment 节点而被拒绝。
-func TestGenApplyURLV4FollowsProjectEnvAuth(t *testing.T) {
+// 环境创建者授权使用 environment_operator 角色：environment_creator 是可申请的「环境创建者」，
+// 授给创建人会让他在所属项目下获得继续建环境的权限。
+func TestGrantCreatorActionV4Environment(t *testing.T) {
+	gw := new(fakeV4Gateway)
+	a := newV4Auth(gw)
+
+	opt := &client.GrantResourceCreatorActionOption{
+		System:  sys.SystemIDBSCP,
+		Type:    sys.Environment,
+		ID:      "50001",
+		Name:    "demo-env",
+		Creator: "alice",
+		Ancestors: []client.GrantResourceCreatorActionAncestor{
+			{System: sys.SystemIDCMDB, Type: sys.Business, ID: "2"},
+			{System: sys.SystemIDBSCP, Type: sys.Project, ID: "40001"},
+		},
+	}
+
+	require.NoError(t, a.grantResourceCreatorActionV4(testKit(), opt))
+	require.Len(t, gw.items, 3)
+
+	byScope := make(map[string]clientv4.Authorization, 3)
+	for _, item := range gw.items {
+		byScope[item.RelatedResourceTypeID] = item
+	}
+
+	// 环境运维含所属项目的 project_view，角色内不同维度的操作只能按对应维度各授一次，
+	// 缺这一条时创建人看不见自己环境所在的项目。
+	projectScoped, ok := byScope[model.ResourceTypeProject]
+	require.True(t, ok, "project scoped authorization is missing")
+	require.Equal(t, model.RoleEnvironmentOperator, projectScoped.RoleID)
+	require.Equal(t, []clientv4.ResourceRef{{Type: model.ResourceTypeProject, ID: "40001"}},
+		projectScoped.Resources)
+
+	envScoped, ok := byScope[model.ResourceTypeEnvironment]
+	require.True(t, ok, "environment scoped authorization is missing")
+	require.Equal(t, model.RoleEnvironmentOperator, envScoped.RoleID)
+	require.Equal(t, []clientv4.ResourceRef{{Type: model.ResourceTypeEnvironment, ID: "50001"}},
+		envScoped.Resources)
+
+	bizScoped, ok := byScope[model.ResourceTypeBiz]
+	require.True(t, ok, "biz scoped authorization is missing")
+	require.Equal(t, model.RoleEnvironmentOperator, bizScoped.RoleID)
+}
+
+// 申请链接的祖先链必须与鉴权路径同源：V4 固定为「业务 → 项目 → 环境」三级，
+// 不随项目/环境维度开关变化（该开关只作用于 V3）。
+func TestGenApplyURLV4AlwaysUsesThreeLevelAncestors(t *testing.T) {
+	want := []clientv4.ResourceRef{
+		{Type: model.ResourceTypeBiz, ID: "100001"},
+		{Type: model.ResourceTypeProject, ID: "40001"},
+		{Type: model.ResourceTypeEnvironment, ID: "50001"},
+	}
 	cases := []struct {
 		name           string
 		projectEnvAuth bool
 		want           []clientv4.ResourceRef
 	}{
-		{"legacy", false, []clientv4.ResourceRef{
-			{Type: model.ResourceTypeBiz, ID: "100001"},
-		}},
-		{"hierarchical", true, []clientv4.ResourceRef{
-			{Type: model.ResourceTypeBiz, ID: "100001"},
-			{Type: model.ResourceTypeProject, ID: "40001"},
-			{Type: model.ResourceTypeEnvironment, ID: "50001"},
-		}},
+		{"switch-off", false, want},
+		{"switch-on", true, want},
 	}
 
 	for _, c := range cases {

@@ -1176,6 +1176,7 @@ export default {
   无数据: 'no data',
   已申请: 'Already applied',
   去申请: 'Go apply',
+  '您已拥有该操作权限，请刷新页面后重试': 'You already have this permission, please refresh the page and try again',
   产品功能特性: 'Product features',
   技术支持: 'Technical Support',
   社区论坛: 'Community forum',

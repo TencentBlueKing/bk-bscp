@@ -85,15 +85,21 @@ type Auth struct {
 	appScopes gcache.Cache
 	// defaultScopes 缓存按业务解析出的默认项目/环境，用于归属为 0 的历史服务
 	defaultScopes gcache.Cache
-	// projectEnvAuth 是否启用项目/环境维度校验，关闭时项目/环境资源本身不参与鉴权，
-	// 服务等服务级资源仍然逐实例校验，资源路径层级只声明业务一级。
+	// projectEnvAuth 是配置里的项目/环境维度开关，只作用于 V3：关闭时项目/环境资源本身不参与鉴权，
+	// 服务等服务级资源仍然逐实例校验，资源路径层级只声明业务一级。读取一律走 projectEnvEnabled。
 	projectEnvAuth bool
+}
+
+// projectEnvEnabled 返回当前是否按项目/环境模型鉴权。
+// V4 固定按「业务 → 项目 → 环境 → 服务」模型，服务创建只有环境级，不受开关影响；V3 由开关决定。
+func (a *Auth) projectEnvEnabled() bool {
+	return a.projectEnvAuth || a.useV4()
 }
 
 // Option 定义 Auth 的可选配置。
 type Option func(*Auth)
 
-// WithProjectEnvironmentAuth 设置是否启用项目与环境维度的权限校验。
+// WithProjectEnvironmentAuth 设置是否启用项目与环境维度的权限校验，只对 V3 生效。
 func WithProjectEnvironmentAuth(enabled bool) Option {
 	return func(a *Auth) {
 		a.projectEnvAuth = enabled
@@ -102,7 +108,7 @@ func WithProjectEnvironmentAuth(enabled bool) Option {
 
 // authOptions 返回当前生效的权限维度选项。
 func (a *Auth) authOptions() PermissionOptions {
-	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvAuth}
+	return PermissionOptions{ProjectEnvironmentAuth: a.projectEnvEnabled()}
 }
 
 // v4Gateway 是本包用到的 V4 网关能力。
@@ -152,10 +158,6 @@ func NewAuth(auth auth.Authorizer, ds pbds.DataClient, disableAuth bool, iamCli 
 
 // WithIAMV4 启用权限中心 V4：鉴权、申请链接与创建者授权改走 V4 实现。
 func (a *Auth) WithIAMV4(cli *clientv4.Client, cfg authv4.Config) error {
-	// 权限维度开关以 Auth 上的取值为准，
-	// 避免调用方与鉴权器各持一份导致 V3/V4 行为不一致；资源拓扑由该开关推导。
-	cfg.IgnoreProjectEnvironment = !a.projectEnvAuth
-
 	authorizer, err := authv4.NewAuthorizer(cli, cfg)
 	if err != nil {
 		return err
@@ -427,10 +429,8 @@ func (a *Auth) genApplyURLV4(kt *kit.Kit, resources []*meta.ResourceAttribute) (
 	permissions := make([]clientv4.ApplyPermission, 0, len(resources))
 
 	for _, res := range resources {
-		// 申请链接的祖先链与鉴权路径同源，都由项目/环境维度开关推导。
-		mapped, err := adaptorv4.AdaptWithOptions(res, adaptorv4.Options{
-			ProjectEnvironmentAuth: a.projectEnvAuth,
-		})
+		// 申请链接的祖先链与鉴权路径同源，V4 固定为项目/环境三级模型。
+		mapped, err := adaptorv4.Adapt(res)
 		if err != nil {
 			return "", err
 		}
@@ -483,9 +483,10 @@ func (a *Auth) getPermissionToApply(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	for actionID, permissionTypeMap := range permissionMap {
+		id, name := a.applyAction(actionID)
 		action := &meta.IamAction{
-			ID:                   string(actionID),
-			Name:                 sys.ActionIDNameMap[actionID],
+			ID:                   id,
+			Name:                 name,
 			RelatedResourceTypes: make([]*meta.IamResourceType, 0),
 		}
 
@@ -499,6 +500,27 @@ func (a *Auth) getPermissionToApply(kt *kit.Kit, resources []*meta.ResourceAttri
 	}
 
 	return permission, nil
+}
+
+// applyAction 返回申请信息里展示的操作 ID 与名称。
+// V4 只有一种服务创建（app_create），不能沿用 V3 区分业务级/环境级的操作与名称，
+// 否则前端提示与权限中心里的操作对不上。
+func (a *Auth) applyAction(actionID client.ActionID) (string, string) {
+	if a.useV4() && actionID == sys.EnvironmentAppCreate {
+		return model.ActionAppCreate, v4ActionName(model.ActionAppCreate)
+	}
+
+	return string(actionID), sys.ActionIDNameMap[actionID]
+}
+
+func v4ActionName(actionID string) string {
+	for _, action := range model.Actions() {
+		if action.ID == actionID {
+			return action.Name
+		}
+	}
+
+	return actionID
 }
 
 // assignInstanceNames 把资源实例名称回填到申请信息里。
@@ -681,9 +703,9 @@ func (a *Auth) GrantResourceCreatorAction(ctx context.Context,
 
 	kt := kit.FromGrpcContext(ctx)
 
-	// 只有关闭项目/环境维度校验时才必须跳过：权限中心里没有项目/环境资源类型，
-	// 也没有 project_creator / environment_creator 角色，授权请求一定失败，只会刷错误日志。
-	if opts != nil && !a.projectEnvAuth &&
+	// 只有 V3 关闭项目/环境维度校验时才必须跳过：权限中心里没有项目/环境资源类型，
+	// 项目/环境维度的授权请求一定失败，只会刷错误日志。V4 固定有项目/环境模型，始终授予。
+	if opts != nil && !a.projectEnvEnabled() &&
 		(opts.Type == sys.Project || opts.Type == sys.Environment) {
 		logs.Infof("skip granting %s creator action, project/environment auth is disabled, id: %s, rid: %s",
 			opts.Type, opts.ID, kt.Rid)
@@ -708,19 +730,20 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		return errf.New(errf.InvalidParameter, "creator action option is nil")
 	}
 
-	// 目前服务、项目和环境需要创建者授权，与 V3 注册的 ResourceCreatorAction 范围一致：
-	// 服务创建者拿到该服务的运维权限，项目创建者拿到该项目的查看/编辑/删除与在项目下创建环境，
-	// 环境创建者只拿到该环境的查看/编辑/删除。
-	// 项目不能复用 project_operator、环境不能复用 environment_operator，那些角色还含项目/环境维度
-	// 继承的子资源查看权限，会让创建者额外看到该项目/环境下不属于自己的全部资源，比 V3 授权范围更大。
+	// V4 的授权单位是角色，创建者授权复用对应资源的运维角色：
+	// 服务创建者拿到 app_operator，项目创建者拿到 project_operator，环境创建者拿到 environment_operator。
+	// 项目/环境运维含项目/环境维度继承的子资源查看，创建者能只读地看到该项目/环境下他人的环境与服务，
+	// 比 V3 的 ResourceCreatorActions 宽；服务写操作仍只在服务维度授予，他人的服务改不了。
+	// 不能用 project_creator / environment_creator：它们是可申请的创建者角色，
+	// 授给创建人等于让他在整个业务（或所属项目）下继续创建资源。
 	var roleID, resourceTypeID string
 	switch opts.Type {
 	case sys.Application:
 		roleID, resourceTypeID = model.RoleAppOperator, model.ResourceTypeApp
 	case sys.Project:
-		roleID, resourceTypeID = model.RoleProjectCreator, model.ResourceTypeProject
+		roleID, resourceTypeID = model.RoleProjectOperator, model.ResourceTypeProject
 	case sys.Environment:
-		roleID, resourceTypeID = model.RoleEnvironmentCreator, model.ResourceTypeEnvironment
+		roleID, resourceTypeID = model.RoleEnvironmentOperator, model.ResourceTypeEnvironment
 	default:
 		return errf.New(errf.InvalidParameter,
 			fmt.Sprintf("unsupported resource type for creator grant: %s", opts.Type))
@@ -765,30 +788,23 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 	// app_operator 同时含项目查看与环境查看：服务内资源（配置项、KV、版本、上线）的接口
 	// 要求业务访问 + 项目查看 + 环境查看 + 服务动作四项同时通过，而角色内不同维度的操作
 	// 只能按对应维度各授一次。缺这两条时创建者对自己新建的服务改不了配置项与 KV。
-	if opts.Type == sys.Application {
-		for _, ancestor := range []struct {
-			resourceType string
-			ancestorType client.TypeID
-		}{
-			{model.ResourceTypeProject, sys.Project},
-			{model.ResourceTypeEnvironment, sys.Environment},
-		} {
-			id := ancestorID(opts.Ancestors, ancestor.ancestorType)
-			if id == "" {
-				// 调用方未声明归属时不额外授权，交由运维按实际项目/环境单独授予。
-				continue
-			}
-
-			items = append(items, clientv4.Authorization{
-				Subject:               subject,
-				RoleID:                roleID,
-				RelatedResourceTypeID: ancestor.resourceType,
-				Resources: []clientv4.ResourceRef{
-					{Type: ancestor.resourceType, ID: id},
-				},
-				ExpiredAt: expiredAt,
-			})
+	// environment_operator 同理含所属项目的查看，缺项目那一条时创建人看不见自己环境所在的项目。
+	for _, ancestor := range creatorAncestorScopes(opts.Type) {
+		id := ancestorID(opts.Ancestors, ancestor.ancestorType)
+		if id == "" {
+			// 调用方未声明归属时不额外授权，交由运维按实际项目/环境单独授予。
+			continue
 		}
+
+		items = append(items, clientv4.Authorization{
+			Subject:               subject,
+			RoleID:                roleID,
+			RelatedResourceTypeID: ancestor.resourceType,
+			Resources: []clientv4.ResourceRef{
+				{Type: ancestor.resourceType, ID: id},
+			},
+			ExpiredAt: expiredAt,
+		})
 	}
 
 	// 操作人取创建者：该授权由创建资源的行为直接触发，并非管理员代为授权。
@@ -802,6 +818,27 @@ func (a *Auth) grantResourceCreatorActionV4(kt *kit.Kit,
 		roleID, opts.Creator, resourceTypeID, opts.ID, bizID, kt.Rid)
 
 	return nil
+}
+
+// creatorAncestorScope 是创建者角色在祖先资源上需要额外授予的维度。
+type creatorAncestorScope struct {
+	resourceType string
+	ancestorType client.TypeID
+}
+
+// creatorAncestorScopes 返回创建者角色除资源自身与业务外，还需按祖先授予的维度。
+func creatorAncestorScopes(resourceType client.TypeID) []creatorAncestorScope {
+	switch resourceType {
+	case sys.Application:
+		return []creatorAncestorScope{
+			{model.ResourceTypeProject, sys.Project},
+			{model.ResourceTypeEnvironment, sys.Environment},
+		}
+	case sys.Environment:
+		return []creatorAncestorScope{{model.ResourceTypeProject, sys.Project}}
+	default:
+		return nil
+	}
 }
 
 // bizIDFromAncestors 从祖先列表里取业务 ID。

@@ -1,7 +1,7 @@
 <template>
   <section class="client-statistics-page">
     <div class="header">
-      <ClientHeader :app-id="appId" :title="$t('客户端统计')" />
+      <ClientHeader :app-id="appId" :title="$t('客户端统计')" @loaded="hasService = $event.length > 0" />
     </div>
     <div v-if="appId" class="management-data-container">
       <VersionRelease :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
@@ -9,7 +9,7 @@
       <LabelAndAnnotations :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
       <ComponentInfo :bk-biz-id="bkBizId" :project-id="projectId" :env-id="envId" :app-id="appId" />
     </div>
-    <Exception v-else />
+    <Exception v-else :has-service="hasService" />
   </section>
 </template>
 
@@ -28,11 +28,12 @@
   const appId = ref(Number(route.params.appId));
   const projectId = ref(String(route.params.projectId));
   const envId = ref(String(route.params.envId));
+  const hasService = ref(true);
   watch(
     () => route.params.appId,
     (val) => {
+      appId.value = Number(val);
       if (val) {
-        appId.value = Number(val);
         bkBizId.value = String(route.params.spaceId);
         projectId.value = String(route.params.projectId);
         envId.value = String(route.params.envId);

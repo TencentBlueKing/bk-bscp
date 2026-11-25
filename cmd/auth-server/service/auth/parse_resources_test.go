@@ -20,6 +20,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/client"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/meta"
 	"github.com/TencentBlueKing/bk-bscp/pkg/iam/sys"
+	"github.com/TencentBlueKing/bk-bscp/pkg/iam/v4/model"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
 )
@@ -39,6 +40,25 @@ func TestParseResourcesDoesNotReintroduceBiz(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, permissionMap, sys.CredentialView)
 	require.NotContains(t, permissionMap, sys.BusinessViewResource)
+}
+
+// V4 只有一种服务创建：申请信息必须与权限中心的 app_create「服务创建」一致，
+// 不能沿用 V3 区分业务级/环境级的 environment_app_create「服务创建（环境级）」。
+func TestApplyActionUsesV4AppCreate(t *testing.T) {
+	v4Auth := newCreatorGrantAuth(t, false, nil)
+
+	id, name := v4Auth.applyAction(sys.EnvironmentAppCreate)
+	require.Equal(t, model.ActionAppCreate, id)
+	require.Equal(t, "服务创建", name)
+
+	id, name = v4Auth.applyAction(sys.AppView)
+	require.Equal(t, string(sys.AppView), id)
+	require.Equal(t, sys.ActionIDNameMap[sys.AppView], name)
+
+	v3Auth := &Auth{projectEnvAuth: true}
+	id, name = v3Auth.applyAction(sys.EnvironmentAppCreate)
+	require.Equal(t, string(sys.EnvironmentAppCreate), id)
+	require.Equal(t, sys.ActionIDNameMap[sys.EnvironmentAppCreate], name)
 }
 
 // 项目和环境的名称不在 CMDB 里，必须由 data-service 按实例 ID 回查，

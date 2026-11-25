@@ -369,7 +369,7 @@ type IAM struct {
 	TLS       TLSConfig `yaml:"tls"`
 	// V4 权限中心 V4 的配置，仅当 Version 为 v4 时生效
 	V4 IAMV4 `yaml:"v4"`
-	// ProjectEnvironmentAuth 项目/环境维度权限校验开关，V3、V4 共用
+	// ProjectEnvironmentAuth 项目/环境维度权限校验开关，只作用于 V3；V4 固定按项目/环境模型鉴权，忽略该开关
 	ProjectEnvironmentAuth IAMProjectEnvironmentAuth `yaml:"project_environment_auth"`
 }
 

@@ -166,6 +166,7 @@
   import useUserStore from '../../../../../store/user';
   import { getAppList, getAppsConfigData, deleteApp } from '../../../../../api/index';
   import { IAppItem, IAppListQuery } from '../../../../../../types/app';
+  import { getCreateServicePermResources } from '../../../../../utils/permission';
   import Card from './card.vue';
   import CreateService from './create-service.vue';
   import EditService from './edit-service.vue';
@@ -326,17 +327,7 @@
       isCreateServiceOpen.value = true;
     } else {
       permissionQuery.value = {
-        resources: [
-          {
-            biz_id: props.spaceId,
-            basic: {
-              type: 'app',
-              action: 'create',
-            },
-            ...(+projectId.value > 0 ? { project_id: +projectId.value } : {}),
-            ...(+props.envId > 0 ? { environment_id: +props.envId } : {}),
-          },
-        ],
+        resources: getCreateServicePermResources(props.spaceId, projectId.value, props.envId),
       };
       showApplyPermDialog.value = true;
     }

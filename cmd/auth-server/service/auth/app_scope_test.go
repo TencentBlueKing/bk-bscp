@@ -45,6 +45,17 @@ type fakeAppDS struct {
 	// defaults 是业务 ID 到默认项目/环境的映射
 	defaults     map[uint32]*pbds.GetDefaultProjectEnvResp
 	defaultCalls int
+
+	// projectDefaultEnvs 是项目 ID 到该项目默认环境 ID 的映射
+	projectDefaultEnvs     map[uint32]uint32
+	projectDefaultEnvCalls int
+}
+
+func (f *fakeAppDS) GetDefaultEnvironment(_ context.Context, in *pbds.GetDefaultEnvironmentReq,
+	_ ...grpc.CallOption) (*pbds.GetDefaultEnvironmentResp, error) {
+
+	f.projectDefaultEnvCalls++
+	return &pbds.GetDefaultEnvironmentResp{Id: f.projectDefaultEnvs[in.GetProjectId()]}, nil
 }
 
 func (f *fakeAppDS) GetDefaultProjectEnv(_ context.Context, in *pbds.GetDefaultProjectEnvReq,
@@ -622,6 +633,67 @@ func TestFillResourceScopeAppCreateUsesDefaultEnvironment(t *testing.T) {
 	require.Equal(t, uint32(40000), res.ProjectID)
 	require.Equal(t, uint32(50000), res.ResourceID)
 	require.Equal(t, uint32(50000), res.EnvironmentID)
+}
+
+// 只声明项目、没声明环境时取该项目的默认环境，不能退回业务默认环境：
+// 业务默认环境属于另一个项目，拼出来的「项目 A + 项目 B 的环境」会让在 B 有权限的用户
+// 在 A 上被判为有权限（新建服务按钮放行、申请弹窗无数据、申请链接为空）。
+func TestFillResourceScopeUsesDeclaredProjectDefaultEnvironment(t *testing.T) {
+	for _, action := range []struct {
+		name string
+		res  func() *meta.ResourceAttribute
+	}{
+		{"app create", func() *meta.ResourceAttribute {
+			return &meta.ResourceAttribute{
+				Basic: meta.Basic{Type: meta.App, Action: meta.Create}, BizID: 100001, ProjectID: 40001}
+		}},
+		{"environment view", func() *meta.ResourceAttribute {
+			return &meta.ResourceAttribute{
+				Basic: meta.Basic{Type: meta.Environment, Action: meta.View}, BizID: 100001, ProjectID: 40001}
+		}},
+	} {
+		t.Run(action.name, func(t *testing.T) {
+			ds := &fakeAppDS{
+				environmentInfos: map[uint32]*pbds.InstanceInfo{
+					50011: {Id: "50011", Path: []string{"/biz,100001/project,40001/"}},
+				},
+				defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+					100001: {ProjectId: 40000, EnvId: 50000},
+				},
+				projectDefaultEnvs: map[uint32]uint32{40001: 50011},
+			}
+			a := newAppScopeAuth(ds)
+
+			res := action.res()
+			require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+			require.Equal(t, uint32(50011), res.ResourceID, "目标环境是声明项目的默认环境")
+			require.Equal(t, uint32(40001), res.ProjectID)
+			require.Equal(t, uint32(100001), res.BizID)
+			require.Zero(t, ds.defaultCalls, "不得回退到业务默认环境")
+		})
+	}
+}
+
+// 声明的项目查不到默认环境时判为无权限，同样不能换成业务默认环境。
+func TestFillResourceScopeDropsScopeWhenDeclaredProjectHasNoDefaultEnvironment(t *testing.T) {
+	ds := &fakeAppDS{defaults: map[uint32]*pbds.GetDefaultProjectEnvResp{
+		100001: {ProjectId: 40000, EnvId: 50000},
+	}}
+	a := newAppScopeAuth(ds)
+
+	res := &meta.ResourceAttribute{
+		Basic:     meta.Basic{Type: meta.App, Action: meta.Create},
+		BizID:     100001,
+		ProjectID: 40001,
+	}
+	require.NoError(t, a.fillResourceScope(testKit(), []*meta.ResourceAttribute{res}))
+
+	require.Equal(t, 1, ds.projectDefaultEnvCalls)
+	require.Zero(t, res.ResourceID)
+	require.Zero(t, res.ProjectID)
+	require.Zero(t, res.BizID)
+	require.Zero(t, ds.defaultCalls)
 }
 
 // 项目按实例授权：project_id 与 resource_id 互补，都为空时取默认项目。

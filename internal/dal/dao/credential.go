@@ -339,7 +339,7 @@ func (dao *credentialDao) Update(kit *kit.Kit, g *table.Credential) error {
 	}
 	eDecorator := dao.event.Eventf(kit)
 	resInstance := fmt.Sprintf(constant.CredentialEnableName, g.Spec.Name)
-	// 禁用秘钥
+	// 禁用密钥
 	if !g.Spec.Enable {
 		resInstance = fmt.Sprintf(constant.CredentialUnableName, g.Spec.Name)
 	}

@@ -60,6 +60,45 @@ func TestAppCreateAuthResourcesCoverAllDimensions(t *testing.T) {
 	require.Equal(t, envID, byType[App].EnvironmentID)
 }
 
+// 项目内共享资源的写操作校验项目编辑，实例即项目本身。
+func TestProjectEditResource(t *testing.T) {
+	res := ProjectEditResource(100001, 40001)
+	require.Equal(t, Project, res.Type)
+	require.Equal(t, Update, res.Action)
+	require.Equal(t, uint32(40001), res.ResourceID)
+	require.Equal(t, uint32(40001), res.ProjectID)
+	require.Equal(t, uint32(100001), res.BizID)
+}
+
+// 建环境与建服务同一条规则：看不见的项目里不能建环境。
+func TestEnvironmentCreateAuthResourcesRequireProjectView(t *testing.T) {
+	const (
+		bizID     = uint32(100001)
+		projectID = uint32(40001)
+	)
+
+	res := EnvironmentCreateAuthResources(bizID, projectID)
+	require.Len(t, res, 3)
+
+	byType := make(map[ResourceType]*ResourceAttribute, len(res))
+	for _, r := range res {
+		require.Equal(t, bizID, r.BizID, "every resource should carry biz id")
+		byType[r.Type] = r
+	}
+
+	require.Equal(t, FindBusinessResource, byType[Biz].Action)
+
+	require.NotNil(t, byType[Project], "project view is missing")
+	require.Equal(t, View, byType[Project].Action)
+	require.Equal(t, projectID, byType[Project].ResourceID)
+
+	// 创建时尚无环境实例，环境创建落在所属项目上。
+	require.NotNil(t, byType[Environment], "environment create is missing")
+	require.Equal(t, Create, byType[Environment].Action)
+	require.Equal(t, projectID, byType[Environment].ResourceID)
+	require.Equal(t, projectID, byType[Environment].ProjectID)
+}
+
 func TestAppAuthResourcesCoverAllDimensions(t *testing.T) {
 	const (
 		bizID     = uint32(100001)

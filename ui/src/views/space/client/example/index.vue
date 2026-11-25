@@ -24,13 +24,18 @@
         </template>
       </EnvSelector>
       <!-- 选择服务 -->
-      <ServiceSelector class="sel-service" :value="appId" :env-id="localEnvId" @change="selectService">
+      <ServiceSelector
+        class="sel-service"
+        :value="appId"
+        :env-id="localEnvId"
+        @change="selectService"
+        @loaded="hasService = $event.length > 0">
         <template #trigger>
           <div class="selector-trigger">
             <bk-overflow-title v-if="serviceName" class="app-name" type="tips">
               {{ serviceName }}
             </bk-overflow-title>
-            <span v-else class="no-app">{{ $t('暂无服务') }}</span>
+            <span v-else class="no-app">{{ $t('请选择服务') }}</span>
             <AngleUpFill class="arrow-icon arrow-fill" />
           </div>
         </template>
@@ -53,7 +58,9 @@
       </bk-alert>
       <div class="content-wrap">
         <bk-loading style="height: 100%" :loading="loading">
+          <Exception v-if="currentTemplate === Exception" :has-service="hasService" />
           <component
+            v-else
             :is="currentTemplate"
             :template-name="renderComponent"
             :content-scroll-top="contentScrollTop"
@@ -119,6 +126,7 @@
   const renderComponent = ref(''); // 渲染的示例组件
   const serviceName = ref('');
   const serviceType = ref('');
+  const hasService = ref(true);
   const projectId = ref(String(route.params.projectId));
   const localEnvId = ref(String(route.params.envId || ''));
   // 当前选中的环境名称，传递给客户端示例用于 env_name 占位符渲染
@@ -176,7 +184,9 @@
       envId: localEnvId.value,
       appId: service?.id };
     await router.push({ name: route.name!, params: routeParams });
-    localStorage.setItem('lastAccessedServiceDetail', JSON.stringify(routeParams));
+    if (service?.id) {
+      localStorage.setItem('lastAccessedServiceDetail', JSON.stringify(routeParams));
+    }
     loading.value = false;
     if (serviceName.value !== service?.spec?.name || serviceType.value !== service?.spec?.config_type) {
       loading.value = true;

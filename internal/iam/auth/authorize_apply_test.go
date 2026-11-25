@@ -61,7 +61,7 @@ func (f *fakeApplyClient) GetPermissionToApply(_ context.Context, req *pbas.GetP
 	}, nil
 }
 
-// credentialListResources 模拟秘钥列表接口同时校验业务查看与秘钥查看两个资源。
+// credentialListResources 模拟密钥列表接口同时校验业务查看与密钥查看两个资源。
 func credentialListResources() []*meta.ResourceAttribute {
 	return []*meta.ResourceAttribute{
 		{Basic: meta.Basic{Type: meta.Biz, Action: meta.FindBusinessResource}, BizID: 1},
@@ -69,7 +69,7 @@ func credentialListResources() []*meta.ResourceAttribute {
 	}
 }
 
-// 已有业务查看权限、缺少秘钥查看权限时，申请信息只应包含秘钥查看资源。
+// 已有业务查看权限、缺少密钥查看权限时，申请信息只应包含密钥查看资源。
 func TestAuthorizeAppliesOnlyMissingResources(t *testing.T) {
 	client := &fakeApplyClient{decisions: []bool{true, false}}
 	a := authorizer{authClient: client}
@@ -146,7 +146,7 @@ func TestAuthorizeAppliesOnlyMissingResourceInHierarchy(t *testing.T) {
 	}
 }
 
-// 业务查看与秘钥查看都缺失时，两个资源都应进入申请信息。
+// 业务查看与密钥查看都缺失时，两个资源都应进入申请信息。
 func TestAuthorizeAppliesAllResourcesWhenAllMissing(t *testing.T) {
 	client := &fakeApplyClient{decisions: []bool{false, false}}
 	a := authorizer{authClient: client}

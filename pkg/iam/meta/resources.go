@@ -16,12 +16,25 @@ package meta
 //
 // 项目/环境维度引入后，分组、脚本、模板、变量、配置项等下游资源都归属于某个项目，
 // 对其操作需要同时校验项目查看权限，避免仅凭业务访问或服务权限即可越级操作。
-// 子资源的新增、编辑、删除一律只校验所属项目的查看权限，不再要求项目编辑/删除权限；
-// 项目的编辑/删除权限只在项目本身的管理操作上校验。
+// 项目内共享资源（模板、变量、分组、脚本）的写操作改用 ProjectEditResource；
+// 服务内资源的写操作仍校验项目查看，写权限由服务维度的动作把关。
 // 关闭项目/环境维度校验时，该资源会被 auth-server 跳过，保持原有的业务维度校验逻辑。
 func ProjectViewResource(bizID, projectID uint32) *ResourceAttribute {
 	return &ResourceAttribute{
 		Basic:     Basic{Type: Project, Action: View, ResourceID: projectID},
+		BizID:     bizID,
+		ProjectID: projectID,
+	}
+}
+
+// ProjectEditResource 构造项目维度的编辑权限校验资源，用于项目内共享资源的写操作。
+//
+// 模板、模板套餐、模板变量、分组、脚本属于项目而非某个服务：被多个服务引用，
+// 脚本还会在客户端执行，因此写操作要求项目编辑（项目运维、业务运维持有），
+// 只能查看项目的角色（如服务查看者）只能读取。读取仍校验 ProjectViewResource。
+func ProjectEditResource(bizID, projectID uint32) *ResourceAttribute {
+	return &ResourceAttribute{
+		Basic:     Basic{Type: Project, Action: Update, ResourceID: projectID},
 		BizID:     bizID,
 		ProjectID: projectID,
 	}
@@ -54,6 +67,22 @@ func AppCreateAuthResources(bizID, projectID, envID uint32) []*ResourceAttribute
 			BizID:         bizID,
 			ProjectID:     projectID,
 			EnvironmentID: envID,
+		},
+	}
+}
+
+// EnvironmentCreateAuthResources 构造创建环境的鉴权资源：业务访问 + 项目查看 + 所属项目上的环境创建。
+//
+// 创建时尚无环境实例，环境创建落在所属项目上（ResourceID 即项目 ID）。
+// 与服务创建同一条规则：只能在自己看得见的项目里建环境，项目查看在关闭项目/环境维度校验时由 auth-server 跳过。
+func EnvironmentCreateAuthResources(bizID, projectID uint32) []*ResourceAttribute {
+	return []*ResourceAttribute{
+		{Basic: Basic{Type: Biz, Action: FindBusinessResource}, BizID: bizID},
+		ProjectViewResource(bizID, projectID),
+		{
+			Basic:     Basic{Type: Environment, Action: Create, ResourceID: projectID},
+			BizID:     bizID,
+			ProjectID: projectID,
 		},
 	}
 }
