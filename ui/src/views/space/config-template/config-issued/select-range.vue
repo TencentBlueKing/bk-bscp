@@ -17,6 +17,7 @@
         multiple-mode="tag"
         filterable
         multiple
+        collapse-tags
         @select="handleSelectTemplate"
         @deselect="handleRemoveTemplate"
         @tag-remove="handleRemoveTemplate"
