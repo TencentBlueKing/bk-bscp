@@ -143,12 +143,18 @@ func TestBuildStagesBlockMessageMatchesOrder(t *testing.T) {
 	if !strings.Contains(asc.Stages[0].BlockMessage, "优先级大于此") {
 		t.Fatalf("升序阻断文案不符: %s", asc.Stages[0].BlockMessage)
 	}
+	if !strings.Contains(asc.Stages[0].BlockMessage, "4103003") {
+		t.Fatalf("升序阻断文案应带错误码 4103003: %s", asc.Stages[0].BlockMessage)
+	}
 
 	desc := BuildStages([]TaskItem{
 		{TaskID: "a", Priority: 7, OpType: table.StopProcessOperate},
 	})
 	if !strings.Contains(desc.Stages[0].BlockMessage, "优先级小于此") {
 		t.Fatalf("降序阻断文案不符: %s", desc.Stages[0].BlockMessage)
+	}
+	if !strings.Contains(desc.Stages[0].BlockMessage, "4103003") {
+		t.Fatalf("降序阻断文案应带错误码 4103003: %s", desc.Stages[0].BlockMessage)
 	}
 }
 

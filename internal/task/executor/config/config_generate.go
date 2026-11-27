@@ -113,7 +113,7 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 	// 1. 获取 payload
 	generatePayload := &GenerateConfigPayload{}
 	if err := c.GetPayload(generatePayload); err != nil {
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	kt := kit.NewWithTenant(generatePayload.TenantID)
@@ -127,7 +127,7 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 	if err := c.GetCommonPayload(commonPayload); err != nil {
 		logs.Errorf("[GenerateConfig STEP]: get common payload failed: %d, error: %v",
 			generatePayload.TemplateRevision.Attachment.TemplateID, err)
-		return fmt.Errorf("[GenerateConfig STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	if commonPayload.ConfigPayload == nil {
@@ -238,7 +238,7 @@ func (e *GenerateConfigExecutor) GenerateConfig(c *istep.Context) error {
 		logs.Errorf("[GenerateConfig STEP]: set common payload failed: %d, error: %v",
 			generatePayload.TemplateRevision.Attachment.TemplateID, err)
 
-		return fmt.Errorf("[GenerateConfig STEP]: set common payload failed: %w", err)
+		return fmt.Errorf("set common payload failed: %w", err)
 	}
 
 	return nil

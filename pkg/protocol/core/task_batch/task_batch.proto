@@ -127,3 +127,74 @@ message TaskDetailFilterOptions {
   repeated Choice inst_id_choices = 6
       [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "实例ID查询选项" }];
 }
+
+// TaskStatisticsOverview 进程操作任务统计概览
+message TaskStatisticsOverview {
+  uint32 platform_bug_failed = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "平台问题导致失败的实例数（依赖结构化错误码，未接入前固定为 0）"
+  }];
+  uint32 failed = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行失败实例数" }];
+  uint32 total = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行实例总数" }];
+  uint32 success = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "成功实例数" }];
+  uint32 ignored = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "幂等忽略实例数" }];
+  uint32 not_started = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "未执行实例数" }];
+  uint32 running = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "运行中实例数" }];
+  float failure_rate = 8
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "失败率（failed/total）" }];
+}
+
+// ChartItem 图表项，错误码分布 / 人员分布 / 业务分布共用
+message ChartItem {
+  string key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "下钻标识：错误码 / created_by / biz_id"
+  }];
+  string name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "展示名" }];
+  uint32 value = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "数量" }];
+}
+
+// FailureTaskItem 失败明细项
+message FailureTaskItem {
+  string task_id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务ID" }];
+  string creator = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "操作人" }];
+  uint32 cc_process_id = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "CC进程ID（取自任务 common_payload）" }
+  ];
+  string status = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态" }];
+  google.protobuf.Timestamp start = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间" }];
+  google.protobuf.Timestamp end = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间" }];
+  int32 error_code = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "错误码，解析不到时为 0，前端展示 --" }
+  ];
+  string failed_reason = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "失败原因" }];
+  uint32 biz_id = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID" }];
+  string biz_name = 10
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务名称，CMDB 映射失败时为空" }];
+  uint32 batch_id = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "批次ID" }];
+}
+
+// TaskFailureFilterOptions 失败明细动态筛选选项。
+// 选项按基础筛选条件（时间范围 + 创建人）过滤后的数据生成，不随扩展筛选条件变化，
+// 避免用户选择某一维度后其他维度的可选项收缩。
+message TaskFailureFilterOptions {
+  repeated Choice task_ids = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "任务ID选项，最多返回最新的 500 个" }
+  ];
+  repeated Choice creators = 2
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "创建人选项" }];
+  repeated Choice statuses = 3
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "执行状态选项" }];
+  repeated Choice biz_names = 4
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务名称选项" }];
+  repeated Choice biz_ids = 5
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "业务ID选项" }];
+  repeated Choice start_times = 6
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "开始时间选项，按天返回" }];
+  repeated Choice end_times = 7
+      [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "结束时间选项，按天返回" }];
+  repeated Choice error_codes = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = { description: "错误码选项，id 为 -- 表示无错误码" }
+  ];
+}

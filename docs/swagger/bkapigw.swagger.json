@@ -6564,6 +6564,72 @@
         ]
       }
     },
+    "/api/v1/config/task_batch/statistics": {
+      "post": {
+        "summary": "进程操作任务统计（概览 + 三个图表）。\r\n跨业务统计，仅按时间范围与人员过滤，不判断用户业务权限。",
+        "operationId": "Config_TaskStatistics",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsTaskStatisticsResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsTaskStatisticsReq"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
+    "/api/v1/config/task_batch/statistics/failure_tasks": {
+      "post": {
+        "summary": "进程操作任务失败明细（与统计共用筛选条件）",
+        "operationId": "Config_TaskFailureTasks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbcsTaskFailureTasksResp"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbcsTaskFailureTasksReq"
+            }
+          }
+        ],
+        "tags": [
+          "Config"
+        ]
+      }
+    },
     "/api/v1/config/biz_id/{bizId}/sync/cmdb_gse_status": {
       "post": {
         "summary": "同步cc和gse状态",
@@ -11473,6 +11539,176 @@
         }
       }
     },
+    "pbcsTaskFailureSearch": {
+      "type": "object",
+      "properties": {
+        "taskIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "任务ID多选"
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "创建人（操作人）多选，需包含在基础 creators 范围内"
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "执行状态多选"
+        },
+        "bizNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "业务名称多选"
+        },
+        "bizIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "业务ID多选"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "开始时间，作为任务开始时间的下界（>=），需在 time_range 内"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "结束时间，作为任务结束时间的上界（<=），需在 time_range 内且不早于 start_time"
+        },
+        "errorCodes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "错误码多选，-- 表示无错误码"
+        },
+        "failureMessage": {
+          "type": "string",
+          "description": "失败信息模糊搜索"
+        }
+      },
+      "title": "TaskFailureSearch 失败明细扩展筛选条件。\r\n同一维度内多选为 OR 关系，不同维度之间为 AND 关系，未设置的维度不参与过滤。"
+    },
+    "pbcsTaskFailureTasksReq": {
+      "type": "object",
+      "properties": {
+        "timeRangeStart": {
+          "type": "string",
+          "description": "时间范围起点"
+        },
+        "timeRangeEnd": {
+          "type": "string",
+          "description": "时间范围终点"
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "人员多选"
+        },
+        "start": {
+          "type": "integer",
+          "format": "int64",
+          "description": "起始位置"
+        },
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "description": "限制数量"
+        },
+        "search": {
+          "$ref": "#/definitions/pbcsTaskFailureSearch",
+          "description": "扩展筛选条件",
+          "title": "扩展筛选条件：仅在 time_range_start、time_range_end 与 creators 过滤后的数据范围内生效"
+        }
+      }
+    },
+    "pbcsTaskFailureTasksResp": {
+      "type": "object",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "format": "int64",
+          "description": "总数"
+        },
+        "list": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbFailureTaskItem"
+          },
+          "description": "失败明细列表"
+        },
+        "filterOptions": {
+          "$ref": "#/definitions/pbtbTaskFailureFilterOptions",
+          "description": "动态筛选选项"
+        }
+      }
+    },
+    "pbcsTaskStatisticsReq": {
+      "type": "object",
+      "properties": {
+        "timeRangeStart": {
+          "type": "string",
+          "description": "时间范围起点"
+        },
+        "timeRangeEnd": {
+          "type": "string",
+          "description": "时间范围终点"
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "人员多选"
+        }
+      }
+    },
+    "pbcsTaskStatisticsResp": {
+      "type": "object",
+      "properties": {
+        "overview": {
+          "$ref": "#/definitions/pbtbTaskStatisticsOverview",
+          "description": "概览卡片"
+        },
+        "errorCodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChartItem"
+          },
+          "description": "错误码分布"
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChartItem"
+          },
+          "description": "人员失败分布"
+        },
+        "businesses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChartItem"
+          },
+          "description": "业务失败分布"
+        }
+      }
+    },
     "pbcsUpdateConfigHookResp": {
       "type": "object"
     },
@@ -12941,6 +13177,25 @@
       },
       "title": "ReleasedKv source resource reference: pkg/dal/table/released_kv.go"
     },
+    "pbtbChartItem": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "下钻标识：错误码 / created_by / biz_id"
+        },
+        "name": {
+          "type": "string",
+          "description": "展示名"
+        },
+        "value": {
+          "type": "integer",
+          "format": "int64",
+          "description": "数量"
+        }
+      },
+      "title": "ChartItem 图表项，错误码分布 / 人员分布 / 业务分布共用"
+    },
     "pbtbChoice": {
       "type": "object",
       "properties": {
@@ -12954,6 +13209,62 @@
         }
       },
       "title": "Choice 查询枚举值选项"
+    },
+    "pbtbFailureTaskItem": {
+      "type": "object",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "任务ID"
+        },
+        "creator": {
+          "type": "string",
+          "description": "操作人"
+        },
+        "ccProcessId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "CC进程ID（取自任务 common_payload）"
+        },
+        "status": {
+          "type": "string",
+          "description": "执行状态"
+        },
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "开始时间"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "description": "结束时间"
+        },
+        "errorCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "错误码，解析不到时为 0，前端展示 --"
+        },
+        "failedReason": {
+          "type": "string",
+          "description": "失败原因"
+        },
+        "bizId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "业务ID"
+        },
+        "bizName": {
+          "type": "string",
+          "description": "业务名称，CMDB 映射失败时为空"
+        },
+        "batchId": {
+          "type": "integer",
+          "format": "int64",
+          "description": "批次ID"
+        }
+      },
+      "title": "FailureTaskItem 失败明细项"
     },
     "pbtbOperateRange": {
       "type": "object",
@@ -13130,6 +13441,76 @@
       },
       "title": "TaskDetailFilterOptions 任务详情过滤选项"
     },
+    "pbtbTaskFailureFilterOptions": {
+      "type": "object",
+      "properties": {
+        "taskIds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "任务ID选项，最多返回最新的 500 个"
+        },
+        "creators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "创建人选项"
+        },
+        "statuses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "执行状态选项"
+        },
+        "bizNames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "业务名称选项"
+        },
+        "bizIds": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "业务ID选项"
+        },
+        "startTimes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "开始时间选项，按天返回"
+        },
+        "endTimes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "结束时间选项，按天返回"
+        },
+        "errorCodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/pbtbChoice"
+          },
+          "description": "错误码选项，id 为 -- 表示无错误码"
+        }
+      },
+      "title": "TaskFailureFilterOptions 失败明细动态筛选选项。\n选项按基础筛选条件（时间范围 + 创建人）过滤后的数据生成，不随扩展筛选条件变化，\n避免用户选择某一维度后其他维度的可选项收缩。"
+    },
     "pbtbTaskPayload": {
       "type": "object",
       "properties": {
@@ -13192,6 +13573,52 @@
         }
       },
       "title": "TaskPayload 任务的配置快照"
+    },
+    "pbtbTaskStatisticsOverview": {
+      "type": "object",
+      "properties": {
+        "platformBugFailed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "平台问题导致失败的实例数（依赖结构化错误码，未接入前固定为 0）"
+        },
+        "failed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "执行失败实例数"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int64",
+          "description": "执行实例总数"
+        },
+        "success": {
+          "type": "integer",
+          "format": "int64",
+          "description": "成功实例数"
+        },
+        "ignored": {
+          "type": "integer",
+          "format": "int64",
+          "description": "幂等忽略实例数"
+        },
+        "notStarted": {
+          "type": "integer",
+          "format": "int64",
+          "description": "未执行实例数"
+        },
+        "running": {
+          "type": "integer",
+          "format": "int64",
+          "description": "运行中实例数"
+        },
+        "failureRate": {
+          "type": "number",
+          "format": "float",
+          "description": "失败率（failed/total）"
+        }
+      },
+      "title": "TaskStatisticsOverview 进程操作任务统计概览"
     },
     "pbtbTaskStatusStatItem": {
       "type": "object",

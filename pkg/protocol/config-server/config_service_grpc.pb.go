@@ -219,6 +219,8 @@ const (
 	Config_ProcessFilterOptions_FullMethodName               = "/pbcs.Config/ProcessFilterOptions"
 	Config_ListTaskBatch_FullMethodName                      = "/pbcs.Config/ListTaskBatch"
 	Config_GetTaskBatchDetail_FullMethodName                 = "/pbcs.Config/GetTaskBatchDetail"
+	Config_TaskStatistics_FullMethodName                     = "/pbcs.Config/TaskStatistics"
+	Config_TaskFailureTasks_FullMethodName                   = "/pbcs.Config/TaskFailureTasks"
 	Config_SyncCmdbGseStatus_FullMethodName                  = "/pbcs.Config/SyncCmdbGseStatus"
 	Config_CmdbGseStatus_FullMethodName                      = "/pbcs.Config/CmdbGseStatus"
 	Config_RetryTasks_FullMethodName                         = "/pbcs.Config/RetryTasks"
@@ -647,6 +649,11 @@ type ConfigClient interface {
 	ListTaskBatch(ctx context.Context, in *ListTaskBatchReq, opts ...grpc.CallOption) (*ListTaskBatchResp, error)
 	// 任务批次详情
 	GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchDetailReq, opts ...grpc.CallOption) (*GetTaskBatchDetailResp, error)
+	// 进程操作任务统计（概览 + 三个图表）。
+	// 跨业务统计，仅按时间范围与人员过滤，不判断用户业务权限。
+	TaskStatistics(ctx context.Context, in *TaskStatisticsReq, opts ...grpc.CallOption) (*TaskStatisticsResp, error)
+	// 进程操作任务失败明细（与统计共用筛选条件）
+	TaskFailureTasks(ctx context.Context, in *TaskFailureTasksReq, opts ...grpc.CallOption) (*TaskFailureTasksResp, error)
 	// 同步cc和gse状态
 	SyncCmdbGseStatus(ctx context.Context, in *SyncCmdbGseStatusReq, opts ...grpc.CallOption) (*SyncCmdbGseStatusResp, error)
 	// 获取同步的状态
@@ -2473,6 +2480,24 @@ func (c *configClient) GetTaskBatchDetail(ctx context.Context, in *GetTaskBatchD
 	return out, nil
 }
 
+func (c *configClient) TaskStatistics(ctx context.Context, in *TaskStatisticsReq, opts ...grpc.CallOption) (*TaskStatisticsResp, error) {
+	out := new(TaskStatisticsResp)
+	err := c.cc.Invoke(ctx, Config_TaskStatistics_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configClient) TaskFailureTasks(ctx context.Context, in *TaskFailureTasksReq, opts ...grpc.CallOption) (*TaskFailureTasksResp, error) {
+	out := new(TaskFailureTasksResp)
+	err := c.cc.Invoke(ctx, Config_TaskFailureTasks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *configClient) SyncCmdbGseStatus(ctx context.Context, in *SyncCmdbGseStatusReq, opts ...grpc.CallOption) (*SyncCmdbGseStatusResp, error) {
 	out := new(SyncCmdbGseStatusResp)
 	err := c.cc.Invoke(ctx, Config_SyncCmdbGseStatus_FullMethodName, in, out, opts...)
@@ -3251,6 +3276,11 @@ type ConfigServer interface {
 	ListTaskBatch(context.Context, *ListTaskBatchReq) (*ListTaskBatchResp, error)
 	// 任务批次详情
 	GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error)
+	// 进程操作任务统计（概览 + 三个图表）。
+	// 跨业务统计，仅按时间范围与人员过滤，不判断用户业务权限。
+	TaskStatistics(context.Context, *TaskStatisticsReq) (*TaskStatisticsResp, error)
+	// 进程操作任务失败明细（与统计共用筛选条件）
+	TaskFailureTasks(context.Context, *TaskFailureTasksReq) (*TaskFailureTasksResp, error)
 	// 同步cc和gse状态
 	SyncCmdbGseStatus(context.Context, *SyncCmdbGseStatusReq) (*SyncCmdbGseStatusResp, error)
 	// 获取同步的状态
@@ -3920,6 +3950,12 @@ func (UnimplementedConfigServer) ListTaskBatch(context.Context, *ListTaskBatchRe
 }
 func (UnimplementedConfigServer) GetTaskBatchDetail(context.Context, *GetTaskBatchDetailReq) (*GetTaskBatchDetailResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaskBatchDetail not implemented")
+}
+func (UnimplementedConfigServer) TaskStatistics(context.Context, *TaskStatisticsReq) (*TaskStatisticsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TaskStatistics not implemented")
+}
+func (UnimplementedConfigServer) TaskFailureTasks(context.Context, *TaskFailureTasksReq) (*TaskFailureTasksResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TaskFailureTasks not implemented")
 }
 func (UnimplementedConfigServer) SyncCmdbGseStatus(context.Context, *SyncCmdbGseStatusReq) (*SyncCmdbGseStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SyncCmdbGseStatus not implemented")
@@ -7521,6 +7557,42 @@ func _Config_GetTaskBatchDetail_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Config_TaskStatistics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskStatisticsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).TaskStatistics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_TaskStatistics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).TaskStatistics(ctx, req.(*TaskStatisticsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Config_TaskFailureTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TaskFailureTasksReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServer).TaskFailureTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Config_TaskFailureTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServer).TaskFailureTasks(ctx, req.(*TaskFailureTasksReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Config_SyncCmdbGseStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SyncCmdbGseStatusReq)
 	if err := dec(in); err != nil {
@@ -9087,6 +9159,14 @@ var Config_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTaskBatchDetail",
 			Handler:    _Config_GetTaskBatchDetail_Handler,
+		},
+		{
+			MethodName: "TaskStatistics",
+			Handler:    _Config_TaskStatistics_Handler,
+		},
+		{
+			MethodName: "TaskFailureTasks",
+			Handler:    _Config_TaskFailureTasks_Handler,
 		},
 		{
 			MethodName: "SyncCmdbGseStatus",

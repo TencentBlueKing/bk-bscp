@@ -138,7 +138,7 @@ func TestRegisterProcessSuccessDelta(t *testing.T) {
 		{"启动步骤失败（注册已执行）-> 增量 1", fmt.Errorf("%w: gse operate failed", ErrStartProcessStepFailed), 1},
 		{"收尾步骤失败（注册已执行）-> 增量 1", fmt.Errorf("%w: db failed", ErrOperationCompletedStepFailed), 1},
 		{"收尾 GSE 状态查询失败（注册已执行）-> 增量 1",
-			fmt.Errorf("[OperationCompletedStep STEP]: %w: get gse process status failed: %v",
+			fmt.Errorf("%w: get gse process status failed: %v",
 				ErrOperationCompletedStepFailed, "gse timeout"), 1},
 	}
 

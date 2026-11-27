@@ -23,6 +23,7 @@ import (
 	taskTypes "github.com/Tencent/bk-bcs/bcs-common/common/task/types"
 
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
+	"github.com/TencentBlueKing/bk-bscp/pkg/taskerr"
 )
 
 // immediateStageName 不参与优先级编排的阶段名
@@ -41,6 +42,14 @@ type StagePlan struct {
 	Stages []*taskTypes.Stage
 	// StageSeqOf 任务与阶段的归属关系
 	StageSeqOf map[string]int
+}
+
+// blockMessage 把级联阻断文案包装成带错误码的结构化消息。
+// 该消息由任务框架原样写入被阻断任务的 message，读侧据此把这类「未执行」归因到
+// CodeProcessStageBlocked，与上游失败的前一个优先级阶段区分开。
+func blockMessage(prio int, order table.PriorityOrder) string {
+	return taskerr.New(taskerr.CodeProcessStageBlocked,
+		taskerr.WithMsg(table.CascadeBlockMessage(prio, order))).Error()
 }
 
 // StageSeq 返回任务所属的阶段序号，未纳入编排时返回 0
@@ -97,7 +106,7 @@ func BuildStages(items []TaskItem) *StagePlan {
 		plan.appendStage(&taskTypes.Stage{
 			Name:         fmt.Sprintf("priority-%d", prio),
 			OnFailure:    taskTypes.StageFailureBlock,
-			BlockMessage: table.CascadeBlockMessage(prio, order),
+			BlockMessage: blockMessage(prio, order),
 			// 首个优先级阶段与托管类阶段同时起跑，保持托管操作不被优先级串行拖慢
 			StartWithPrevious: i == 0 && len(immediate) > 0,
 		}, groups[prio])
