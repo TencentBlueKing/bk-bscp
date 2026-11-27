@@ -34,6 +34,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/taskerr"
 )
 
 const (
@@ -85,7 +86,7 @@ type CheckConfigPayload struct {
 func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 	payload := &CheckConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	kt := kit.NewWithTenant(payload.TenantID)
@@ -100,10 +101,10 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 		return fmt.Errorf("get common payload failed: %w", err)
 	}
 	if commonPayload.ConfigPayload == nil {
-		return fmt.Errorf("config payload is nil")
+		return errors.New("config payload is nil")
 	}
 	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("process payload is nil")
+		return errors.New("process payload is nil")
 	}
 
 	logs.Infof("[CheckConfigMD5 STEP]: file_mode=%s, config_key=%s, agent_id=%s",
@@ -121,7 +122,7 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 
 	script, err := builder.BuildFileMD5Script(fullPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("build md5 script failed: %w", err)
 	}
 
 	scriptName := BuildScriptNameByFileMode("check_md5", commonPayload, fileMode)
@@ -195,13 +196,7 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 			r.ErrorCode, r.ScriptExitCode,
 			r.ErrorMsg, r.Screen,
 		)
-		return fmt.Errorf(
-			"script execution failed, agent=%s, container=%s, "+
-				"errorCode=%d, scriptExitCode=%d, msg=%s, screen=%s",
-			r.BkAgentID, r.BkContainerID,
-			r.ErrorCode, r.ScriptExitCode,
-			r.ErrorMsg, r.Screen,
-		)
+		return taskerr.New(int32(r.ErrorCode), taskerr.WithMsg(r.ErrorMsg))
 	}
 
 	actualMD5 := normalizeMD5Screen(r.Screen)
@@ -217,7 +212,7 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 		},
 	)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
+		return fmt.Errorf("get config instance failed: %w", err)
 	}
 
 	// 3. 推导状态
@@ -251,7 +246,7 @@ func (e *CheckConfigExecutor) CheckConfigMD5(c *istep.Context) error {
 	commonPayload.ConfigPayload.ConfigContentSignature = actualMD5
 
 	if err := c.SetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[Finalize STEP]: set common payload failed: %w", err)
+		return fmt.Errorf("set common payload failed: %w", err)
 	}
 
 	return nil
@@ -263,7 +258,7 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 	payload := &CheckConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
 		logs.Errorf("[FetchConfigContent STEP]: get payload failed, err=%v", err)
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	logs.Infof("[FetchConfigContent STEP]: start, biz_id=%d, batch_id=%d",
@@ -271,11 +266,11 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[FetchConfigContent STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 	if commonPayload.ConfigPayload == nil {
 		logs.Errorf("[FetchConfigContent STEP]: config payload is nil")
-		return fmt.Errorf("config payload is nil")
+		return errors.New("config payload is nil")
 	}
 
 	logs.Infof("[FetchConfigContent STEP]: compare_status=%s, config_key=%s",
@@ -301,7 +296,7 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 
 	script, err := builder.BuildFileCatScript(fullPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("build cat script failed: %w", err)
 	}
 
 	scriptName := BuildScriptNameByFileMode("cat", commonPayload, fileMode)
@@ -377,13 +372,7 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 			r.ErrorCode, r.ScriptExitCode,
 			r.ErrorMsg,
 		)
-		return fmt.Errorf(
-			"cat script execution failed, agent=%s, container=%s, "+
-				"errorCode=%d, scriptExitCode=%d, msg=%s, screen=%s",
-			r.BkAgentID, r.BkContainerID,
-			r.ErrorCode, r.ScriptExitCode,
-			r.ErrorMsg, r.Screen,
-		)
+		return taskerr.New(int32(r.ErrorCode), taskerr.WithMsg(r.ErrorMsg))
 	}
 
 	content, err := catOutputToConfigContent(r.Screen, fileMode, commonPayload.ConfigPayload.Charset)
@@ -395,11 +384,11 @@ func (e *CheckConfigExecutor) FetchConfigContent(c *istep.Context) error {
 	commonPayload.ConfigPayload.ConfigContent = content
 
 	if err := c.SetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[FetchConfigContent STEP]: set common payload failed: %w", err)
+		return fmt.Errorf("set common payload failed: %w", err)
 	}
 
 	// 这是 配置内容不一致 的业务错误
-	return fmt.Errorf("config content inconsistent")
+	return errors.New("config content inconsistent")
 }
 
 // normalizeMD5Screen 把 MD5 脚本上报的 screen 转成与下发记录一致的连续小写十六进制。

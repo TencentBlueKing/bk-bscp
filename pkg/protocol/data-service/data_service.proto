@@ -334,6 +334,10 @@ service Data {
   rpc ListTaskBatch(ListTaskBatchReq) returns (ListTaskBatchResp) {}
   // 任务批次详情
   rpc GetTaskBatchDetail(GetTaskBatchDetailReq) returns (GetTaskBatchDetailResp) {}
+  // 进程操作任务统计（概览 + 三个图表）
+  rpc TaskStatistics(TaskStatisticsReq) returns (TaskStatisticsResp) {}
+  // 进程操作任务失败明细（与统计共用筛选条件）
+  rpc TaskFailureTasks(TaskFailureTasksReq) returns (TaskFailureTasksResp) {}
   // 重试失败的任务
   rpc RetryTasks(RetryTasksReq) returns (RetryTasksResp) {}
   // 获取同步的状态
@@ -2754,6 +2758,51 @@ message GetTaskBatchDetailResp {
   repeated pbtb.TaskStatusStatItem statistics = 3;  // 状态统计列表
   pbtb.TaskDetailFilterOptions filter_options = 4;  // 任务详情过滤选项
   pbtb.TaskBatch task_batch = 5;                    // 任务批次信息
+}
+
+// TaskStatisticsReq 进程操作任务统计请求（概览与明细共用同一组筛选条件）
+// 统计范围是当前租户的全部业务，仅按时间范围与人员过滤。
+message TaskStatisticsReq {
+  string time_range_start = 1;   // 时间范围起点
+  string time_range_end = 2;     // 时间范围终点
+  repeated string creators = 3;  // 人员多选，为空表示全部
+}
+
+message TaskStatisticsResp {
+  pbtb.TaskStatisticsOverview overview = 1;  // 概览卡片
+  repeated pbtb.ChartItem error_codes = 2;   // 错误码分布
+  repeated pbtb.ChartItem creators = 3;      // 人员失败分布
+  repeated pbtb.ChartItem businesses = 4;    // 业务失败分布（平台级视图）
+}
+
+message TaskFailureTasksReq {
+  string time_range_start = 1;
+  string time_range_end = 2;
+  repeated string creators = 3;
+  uint32 start = 4;
+  uint32 limit = 5;
+  // 扩展筛选条件：仅在 time_range_start、time_range_end 与 creators 过滤后的数据范围内生效
+  TaskFailureSearch search = 6;
+}
+
+// TaskFailureSearch 失败明细扩展筛选条件。
+// 同一维度内多选为 OR 关系，不同维度之间为 AND 关系，未设置的维度不参与过滤。
+message TaskFailureSearch {
+  repeated string task_ids = 1;   // 任务ID多选
+  repeated string creators = 2;   // 创建人（操作人）多选，需包含在基础 creators 范围内
+  repeated string statuses = 3;   // 执行状态多选
+  repeated string biz_names = 4;  // 业务名称多选
+  repeated string biz_ids = 5;    // 业务ID多选
+  string start_time = 6;          // 开始时间，任务开始时间的下界（>=），需在 time_range 内
+  string end_time = 7;  // 结束时间，任务结束时间的上界（<=），需在 time_range 内且不早于 start_time
+  repeated string error_codes = 8;  // 错误码多选，-- 表示无错误码
+  string failure_message = 9;       // 失败信息模糊搜索
+}
+
+message TaskFailureTasksResp {
+  uint32 count = 1;
+  repeated pbtb.FailureTaskItem list = 2;
+  pbtb.TaskFailureFilterOptions filter_options = 3;  // 动态筛选选项
 }
 
 message CmdbGseStatusReq {

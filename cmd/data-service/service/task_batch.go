@@ -32,6 +32,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbtb "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/task_batch"
 	pbds "github.com/TencentBlueKing/bk-bscp/pkg/protocol/data-service"
+	"github.com/TencentBlueKing/bk-bscp/pkg/taskerr"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
 )
 
@@ -376,7 +377,7 @@ func convertTaskToDetail(kt *kit.Kit, task *taskTypes.Task) (*pbtb.TaskDetail, e
 	detail := &pbtb.TaskDetail{
 		TaskId:        task.TaskID,
 		Status:        convertTaskStatus(task.Status),
-		Message:       task.Message,
+		Message:       taskerr.Readable(task.Message),
 		Creator:       task.Creator,
 		ExecutionTime: float32(task.ExecutionTime) / 1000.0,
 	}

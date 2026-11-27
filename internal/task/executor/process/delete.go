@@ -31,6 +31,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/taskerr"
 )
 
 const (
@@ -90,21 +91,21 @@ func (d *DeleteExecutor) CompareWithCMDBDeleteStep(c *istep.Context) error {
 	logs.Infof("[DeleteCompareWithCMDBStep STEP]: starting compare with cmdb")
 	payload := &DeletePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[DeleteCompareWithCMDBStep STEP]: get payload failed: %w", err)
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[DeleteCompareWithCMDBStep STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("[DeleteCompareWithCMDBStep STEP]: common process payload is nil")
+		return fmt.Errorf("common process payload is nil")
 	}
 
 	var dbInfo table.ProcessInfo
 	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &dbInfo); err != nil {
-		return fmt.Errorf("[DeleteCompareWithCMDBStep STEP]: failed to unmarshal db process info: %w", err)
+		return fmt.Errorf("failed to unmarshal db process info: %w", err)
 	}
 
 	// 清除专属：快照缺失放行（进程已在 CMDB 删除或下发时刷新降级），用 DB 配置执行清除
@@ -117,7 +118,7 @@ func (d *DeleteExecutor) CompareWithCMDBDeleteStep(c *istep.Context) error {
 
 	var latestInfo table.ProcessInfo
 	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.LatestConfigData), &latestInfo); err != nil {
-		return fmt.Errorf("[DeleteCompareWithCMDBStep STEP]: failed to unmarshal cmdb process info: %w", err)
+		return fmt.Errorf("failed to unmarshal cmdb process info: %w", err)
 	}
 
 	// 清除专属：配置不一致也放行（清除不依赖最新配置），仅记录日志
@@ -137,21 +138,21 @@ func (d *DeleteExecutor) ValidateOperateDeleteStep(c *istep.Context) error {
 	logs.Infof("[DeleteValidateOperateStep STEP]: starting validate delete operate")
 	payload := &DeletePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[DeleteValidateOperateStep STEP]: get payload failed: %w", err)
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[DeleteValidateOperateStep STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("[DeleteValidateOperateStep STEP]: common process payload is nil")
+		return fmt.Errorf("common process payload is nil")
 	}
 
 	var dbInfo table.ProcessInfo
 	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &dbInfo); err != nil {
-		return fmt.Errorf("[DeleteValidateOperateStep STEP]: failed to unmarshal db process info: %w", err)
+		return fmt.Errorf("failed to unmarshal db process info: %w", err)
 	}
 
 	// 验证清除操作（属性矩阵 + 状态类校验，针对 DB 配置；状态取下发时刻 payload 快照）
@@ -178,17 +179,17 @@ func (d *DeleteExecutor) OperateDeleteStep(c *istep.Context) error {
 
 	payload := &DeletePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[DeleteOperateStep STEP]: get payload failed: %w", err)
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[DeleteOperateStep STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	var dbInfo table.ProcessInfo
 	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &dbInfo); err != nil {
-		return fmt.Errorf("[DeleteOperateStep STEP]: failed to unmarshal db process info: %w", err)
+		return fmt.Errorf("failed to unmarshal db process info: %w", err)
 	}
 
 	kt := kit.NewWithTenant(payload.TenantID)
@@ -205,7 +206,7 @@ func (d *DeleteExecutor) OperateDeleteStep(c *istep.Context) error {
 			return nil
 		}
 		if err = d.executeGSEOperate(kt.Ctx, payload, commonPayload, table.StopProcessOperate, dbInfo); err != nil {
-			return fmt.Errorf("[DeleteOperateStep STEP]: execute process operate %s failed: %w",
+			return fmt.Errorf("execute process operate %s failed: %w",
 				table.StopProcessOperate, err)
 		}
 
@@ -220,12 +221,12 @@ func (d *DeleteExecutor) OperateDeleteStep(c *istep.Context) error {
 			return nil
 		}
 		if err = d.executeGSEOperate(kt.Ctx, payload, commonPayload, table.UnregisterProcessOperate, dbInfo); err != nil {
-			return fmt.Errorf("[DeleteOperateStep STEP]: execute process operate %s failed: %w",
+			return fmt.Errorf("execute process operate %s failed: %w",
 				table.UnregisterProcessOperate, err)
 		}
 
 	default:
-		return fmt.Errorf("[DeleteOperateStep STEP]: unsupported operate type for delete: %s", payload.OperateType)
+		return fmt.Errorf("unsupported operate type for delete: %s", payload.OperateType)
 	}
 
 	return nil
@@ -236,13 +237,13 @@ func (d *DeleteExecutor) FinalizeOperateDeleteStep(c *istep.Context) error {
 	logs.Infof("[DeleteFinalizeOperateStep STEP]: starting finalize delete operate")
 	payload := &DeletePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[DeleteFinalizeOperateStep STEP]: get payload failed: %w", err)
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	// 获取gse侧进程状态
 	processStatus, managedStatus, err := d.getGSEProcessStatus(c, payload.BizID)
 	if err != nil {
-		return fmt.Errorf("[DeleteFinalizeOperateStep STEP]: failed to get gse process status: %w", err)
+		return fmt.Errorf("failed to get gse process status: %w", err)
 	}
 
 	// 更新进程实例状态字段
@@ -253,7 +254,7 @@ func (d *DeleteExecutor) FinalizeOperateDeleteStep(c *istep.Context) error {
 			"managed_status":    managedStatus,
 			"status_updated_at": time.Now(),
 		}, m.ID.Eq(payload.ProcessInstanceID)); err != nil {
-		return fmt.Errorf("[DeleteFinalizeOperateStep STEP]: failed to update process instance: %w", err)
+		return fmt.Errorf("failed to update process instance: %w", err)
 	}
 
 	return nil
@@ -395,23 +396,23 @@ func (d *DeleteExecutor) getGSEProcessStatus(
 ) (table.ProcessStatus, table.ProcessManagedStatus, error) {
 	payload := &DeletePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: get payload failed: %w", err)
+		return "", "", fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: get common payload failed: %w", err)
+		return "", "", fmt.Errorf("get common payload failed: %w", err)
 	}
 	// 查询进程信息
 	process, err := d.Dao.Process().GetByID(kit.NewWithTenant(payload.TenantID), bizID, payload.ProcessID)
 	if err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to get process: %w", err)
+		return "", "", fmt.Errorf("failed to get process: %w", err)
 	}
 	// 获取进程配置信息
 	var processInfo table.ProcessInfo
 	err = json.Unmarshal([]byte(process.Spec.SourceData), &processInfo)
 	if err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to marshal process info: %w", err)
+		return "", "", fmt.Errorf("failed to marshal process info: %w", err)
 	}
 	params := gesprocessor.BuildProcessOperateParams{
 		BizID:         bizID,
@@ -427,7 +428,7 @@ func (d *DeleteExecutor) getGSEProcessStatus(
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to build process operate: %w", err)
+		return "", "", fmt.Errorf("failed to build process operate: %w", err)
 	}
 	req := &gse.MultiProcOperateReq{
 		ProcOperateReq: []gse.ProcessOperate{*processOperate},
@@ -436,7 +437,7 @@ func (d *DeleteExecutor) getGSEProcessStatus(
 	resp, err := d.GseService.OperateProcMulti(ktCtx, req)
 	if err != nil {
 		return "", "",
-			fmt.Errorf("[getGSEProcessStatus STEP]: failed to query process status via gseService.OperateProcMulti: %w", err)
+			fmt.Errorf("failed to query process status via gseService.OperateProcMulti: %w", err)
 	}
 	result, err := d.WaitProcOperateTaskFinish(
 		ktCtx,
@@ -447,7 +448,7 @@ func (d *DeleteExecutor) getGSEProcessStatus(
 		commonPayload.ProcessPayload.AgentID,
 	)
 	if err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to wait for query task finish: %w", err)
+		return "", "", fmt.Errorf("failed to wait for query task finish: %w", err)
 	}
 	key := gse.BuildResultKey(
 		commonPayload.ProcessPayload.AgentID,
@@ -457,18 +458,18 @@ func (d *DeleteExecutor) getGSEProcessStatus(
 	)
 	procResult, ok := result[key]
 	if !ok {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: process result not found for key: %s", key)
+		return "", "", fmt.Errorf("process result not found for key: %s", key)
 	}
 	if !gse.IsSuccess(procResult.ErrorCode) {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to query process status, errorCode=%d, errorMsg=%s",
+		return "", "", fmt.Errorf("failed to query process status, errorCode=%d, errorMsg=%s",
 			procResult.ErrorCode, procResult.ErrorMsg)
 	}
 	var statusContent gse.ProcessStatusContent
 	if err = json.Unmarshal([]byte(procResult.Content), &statusContent); err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to unmarshal process status content: %w", err)
+		return "", "", fmt.Errorf("failed to unmarshal process status content: %w", err)
 	}
 	if len(statusContent.Process) == 0 || len(statusContent.Process[0].Instance) == 0 {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: process not found in gse")
+		return "", "", fmt.Errorf("process not found in gse")
 	}
 	instance := statusContent.Process[0].Instance[0]
 	processStatus := table.ProcessStatusStopped
@@ -501,14 +502,14 @@ func (d *DeleteExecutor) queryGSEProcessStatus(ctx context.Context, payload *Del
 
 	operate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build process operate: %w", err)
 	}
 
 	resp, err := d.GseService.OperateProcMulti(ctx, &gse.MultiProcOperateReq{
 		ProcOperateReq: []gse.ProcessOperate{*operate},
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("OperateProcMulti failed: %w", err)
 	}
 
 	result, err := d.WaitProcOperateTaskFinish(
@@ -520,7 +521,7 @@ func (d *DeleteExecutor) queryGSEProcessStatus(ctx context.Context, payload *Del
 		commonPayload.ProcessPayload.AgentID,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("wait query task finish failed: %w", err)
 	}
 
 	key := gse.BuildResultKey(
@@ -536,13 +537,12 @@ func (d *DeleteExecutor) queryGSEProcessStatus(ctx context.Context, payload *Del
 	}
 
 	if !gse.IsSuccess(procResult.ErrorCode) {
-		return nil, fmt.Errorf("query gse failed, code=%d, msg=%s",
-			procResult.ErrorCode, procResult.ErrorMsg)
+		return nil, taskerr.New(int32(procResult.ErrorCode), taskerr.WithMsg(procResult.ErrorMsg))
 	}
 
 	var status gse.ProcessStatusContent
 	if err := json.Unmarshal([]byte(procResult.Content), &status); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal process status failed: %w", err)
 	}
 
 	return &status, nil
@@ -554,7 +554,7 @@ func (d *DeleteExecutor) executeGSEOperate(ctx context.Context, payload *DeleteP
 
 	gseOpType, err := gse.ConvertProcessOperateTypeToOpType(op)
 	if err != nil {
-		return err
+		return fmt.Errorf("convert operate type failed: %w", err)
 	}
 
 	params := gesprocessor.BuildProcessOperateParams{
@@ -572,14 +572,14 @@ func (d *DeleteExecutor) executeGSEOperate(ctx context.Context, payload *DeleteP
 
 	operate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build process operate: %w", err)
 	}
 
 	resp, err := d.GseService.OperateProcMulti(ctx, &gse.MultiProcOperateReq{
 		ProcOperateReq: []gse.ProcessOperate{*operate},
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("OperateProcMulti failed: %w", err)
 	}
 
 	result, err := d.WaitProcOperateTaskFinish(
@@ -591,7 +591,7 @@ func (d *DeleteExecutor) executeGSEOperate(ctx context.Context, payload *DeleteP
 		commonPayload.ProcessPayload.AgentID,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("wait task finish failed: %w", err)
 	}
 
 	key := gse.BuildResultKey(
@@ -607,7 +607,7 @@ func (d *DeleteExecutor) executeGSEOperate(ctx context.Context, payload *DeleteP
 	}
 
 	if !gse.IsSuccess(procResult.ErrorCode) {
-		return fmt.Errorf("gse operate failed, code=%d, msg=%s", procResult.ErrorCode, procResult.ErrorMsg)
+		return taskerr.New(int32(procResult.ErrorCode), taskerr.WithMsg(procResult.ErrorMsg))
 	}
 
 	return nil

@@ -82,6 +82,8 @@ type Set interface {
 	Process() Process
 	ProcessInstance() ProcessInstance
 	TaskBatch() TaskBatch
+	// TaskRecord returns the TaskRecord scope's DAO
+	TaskRecord() TaskRecord
 	BizHost() BizHost
 	ConfigTemplate() ConfigTemplate
 	ConfigInstance() ConfigInstance
@@ -582,6 +584,13 @@ func (s *set) TaskBatch() TaskBatch {
 		idGen:    s.idGen,
 		auditDao: s.auditDao,
 		genQ:     s.genQ,
+	}
+}
+
+// TaskRecord implements Set.
+func (s *set) TaskRecord() TaskRecord {
+	return &taskRecordDao{
+		genQ: s.genQ,
 	}
 }
 

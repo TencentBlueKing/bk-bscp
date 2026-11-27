@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/TencentBlueKing/bk-bscp/internal/dal/gen"
+	"github.com/TencentBlueKing/bk-bscp/pkg/criteria/constant"
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/types"
@@ -40,6 +41,10 @@ type TaskBatch interface {
 	Create(kit *kit.Kit, taskBatch *table.TaskBatch) (uint32, error)
 	GetByID(kit *kit.Kit, bizID, batchID uint32) (*table.TaskBatch, error)
 	List(kit *kit.Kit, bizID uint32, filter *TaskBatchListFilter, opt *types.BasePage) ([]*table.TaskBatch, int64, error)
+	// ListRefs 查询统计所需的批次引用（ID / 业务ID / 创建时间）。
+	// 与 List 的区别：不按单个 biz_id 强约束，用于平台级跨业务统计；不分页，limit <= 0 表示不限。
+	ListRefs(kit *kit.Kit, filter *TaskBatchListFilter, bizIDs []uint32,
+		limit int) ([]*table.TaskBatch, error)
 	UpdateStatus(kit *kit.Kit, batchID uint32, status table.TaskBatchStatus) error
 	ListExecutors(kit *kit.Kit, bizID uint32) ([]string, error)
 	// IncrementCompletedCount 增加完成任务计数，当所有任务完成时自动更新批次状态
@@ -147,6 +152,57 @@ func (dao *taskBatchDao) List(kit *kit.Kit, bizID uint32, filter *TaskBatchListF
 	}
 
 	return result, count, nil
+}
+
+// ListRefs 查询统计所需的批次引用。
+// 时间过滤使用批次创建时间：批次的 start_at / end_at 只在任务真正开始执行后才写入，
+// 用它们过滤会把"已创建但未开始"的批次整体排除，导致统计总数偏小。
+func (dao *taskBatchDao) ListRefs(kit *kit.Kit, filter *TaskBatchListFilter, bizIDs []uint32,
+	limit int) ([]*table.TaskBatch, error) {
+	m := dao.genQ.TaskBatch
+	q := dao.genQ.TaskBatch.WithContext(kit.Ctx)
+
+	var conds []rawgen.Condition
+	// 不按 biz_id 收窄后，必须用 tenant_id 兜住租户边界，否则平台级统计会跨租户取数，
+	// 同时命中 idx_tenantID_bizID_ccProcessID 的最左前缀。
+	// 默认租户存在空串与 "default" 两种历史写法，必须同时匹配。
+	switch kit.TenantID {
+	case "", constant.DefaultTenantID:
+		conds = append(conds, m.TenantID.In("", constant.DefaultTenantID))
+	default:
+		conds = append(conds, m.TenantID.Eq(kit.TenantID))
+	}
+	if filter != nil {
+		if len(filter.TaskObjects) > 0 {
+			conds = append(conds, m.TaskObject.In(filter.TaskObjects...))
+		}
+		if len(filter.TaskActions) > 0 {
+			conds = append(conds, m.TaskAction.In(filter.TaskActions...))
+		}
+		if filter.TimeRangeStart != nil {
+			conds = append(conds, m.CreatedAt.Gte(*filter.TimeRangeStart))
+		}
+		if filter.TimeRangeEnd != nil {
+			conds = append(conds, m.CreatedAt.Lte(*filter.TimeRangeEnd))
+		}
+		if len(filter.Statuses) > 0 {
+			conds = append(conds, m.Status.In(filter.Statuses...))
+		}
+		if len(filter.Executors) > 0 {
+			conds = append(conds, m.Creator.In(filter.Executors...))
+		}
+	}
+	if len(bizIDs) > 0 {
+		conds = append(conds, m.BizID.In(bizIDs...))
+	}
+
+	query := q.Where(conds...).
+		Select(m.ID, m.BizID, m.CreatedAt).
+		Order(m.ID.Desc())
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	return query.Find()
 }
 
 // UpdateStatus 更新任务批次状态

@@ -15,6 +15,7 @@ package config
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -38,6 +39,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/dal/table"
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
+	"github.com/TencentBlueKing/bk-bscp/pkg/taskerr"
 	"github.com/TencentBlueKing/bk-bscp/pkg/tools"
 	"github.com/TencentBlueKing/bk-bscp/render"
 )
@@ -94,7 +96,7 @@ type PushConfigPayload struct {
 func (e *PushConfigExecutor) ValidatePushConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	return nil
@@ -105,7 +107,7 @@ func (e *PushConfigExecutor) ValidatePushConfig(c *istep.Context) error {
 func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	kt := kit.NewWithTenant(payload.TenantID)
@@ -116,7 +118,7 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 	}
 
 	if commonPayload.ConfigPayload == nil {
-		return fmt.Errorf("config payload not found")
+		return errors.New("config payload not found")
 	}
 
 	kt.BizID = payload.BizID
@@ -147,7 +149,7 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 	)
 	if err != nil {
 		logs.Errorf("[ReleaseConfig STEP]: build config script failed: %v", err)
-		return err
+		return fmt.Errorf("build config script failed: %w", err)
 	}
 
 	storeDir := ScriptStoreDirByFileMode(
@@ -209,13 +211,7 @@ func (e *PushConfigExecutor) ReleaseConfig(c *istep.Context) error {
 			r.ErrorCode, r.ScriptExitCode,
 			r.ErrorMsg, r.Screen,
 		)
-		return fmt.Errorf(
-			"script execution failed, agent=%s, container=%s, "+
-				"errorCode=%d, scriptExitCode=%d, msg=%s, screen=%s",
-			r.BkAgentID, r.BkContainerID,
-			r.ErrorCode, r.ScriptExitCode,
-			r.ErrorMsg, r.Screen,
-		)
+		return taskerr.New(int32(r.ErrorCode), taskerr.WithMsg(r.ErrorMsg))
 	}
 
 	logs.Infof("[ReleaseConfig STEP]: script execution success, batch_id: %d, task_id: %s", payload.BatchID,
@@ -366,7 +362,7 @@ func getServerInfo() (agentID string, containerID string, err error) {
 func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
@@ -375,7 +371,7 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 	}
 
 	if commonPayload.ConfigPayload == nil {
-		return fmt.Errorf("config payload not found")
+		return errors.New("config payload not found")
 	}
 
 	cfg := commonPayload.ConfigPayload
@@ -459,8 +455,7 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 		if r.ErrorCode != 0 {
 			logs.Errorf("[PushConfig STEP]: transfer failed, agent: %s, code: %d, msg: %s",
 				r.Content.DestAgentID, r.ErrorCode, r.ErrorMsg)
-			return fmt.Errorf("transfer failed, agent: %s, code: %d, msg: %s",
-				r.Content.DestAgentID, r.ErrorCode, r.ErrorMsg)
+			return taskerr.New(int32(r.ErrorCode), taskerr.WithMsg(r.ErrorMsg))
 		}
 	}
 
@@ -473,7 +468,7 @@ func (e *PushConfigExecutor) PushConfig(c *istep.Context) error {
 func (e *PushConfigExecutor) DownloadConfig(c *istep.Context) error {
 	payload := &PushConfigPayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return err
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
@@ -482,7 +477,7 @@ func (e *PushConfigExecutor) DownloadConfig(c *istep.Context) error {
 	}
 
 	if commonPayload.ConfigPayload == nil {
-		return fmt.Errorf("config payload not found")
+		return errors.New("config payload not found")
 	}
 
 	cfg := commonPayload.ConfigPayload

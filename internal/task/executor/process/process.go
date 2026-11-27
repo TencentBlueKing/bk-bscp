@@ -14,6 +14,7 @@ package process
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/TencentBlueKing/bk-bscp/pkg/kit"
 	"github.com/TencentBlueKing/bk-bscp/pkg/logs"
 	pbproc "github.com/TencentBlueKing/bk-bscp/pkg/protocol/core/process"
+	"github.com/TencentBlueKing/bk-bscp/pkg/taskerr"
 )
 
 const (
@@ -104,27 +106,27 @@ func (e *ProcessExecutor) CompareWithCMDBProcessInfo(c *istep.Context) error {
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return err
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: common process payload is nil")
+		return errors.New("common process payload is nil")
 	}
 	proc := commonPayload.ProcessPayload
 
 	var dbInfo, latestInfo table.ProcessInfo
 	if err := json.Unmarshal([]byte(proc.ConfigData), &dbInfo); err != nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: failed to unmarshal db process info: %w", err)
+		return fmt.Errorf("failed to unmarshal db process info: %w", err)
 	}
 	hasLatest := proc.LatestConfigData != ""
 	if hasLatest {
 		if err := json.Unmarshal([]byte(proc.LatestConfigData), &latestInfo); err != nil {
-			return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: failed to unmarshal cmdb process info: %w", err)
+			return fmt.Errorf("failed to unmarshal cmdb process info: %w", err)
 		}
 	}
 
 	if err := compareExecConfig(payload.OperateType, dbInfo, latestInfo, hasLatest); err != nil {
-		return fmt.Errorf("[CompareWithCMDBProcessInfo STEP]: %w", err)
+		return taskerr.New(taskerr.CodeProcessMismatch, taskerr.WithMsg(fmt.Sprintf("compare process config failed: %v", err)))
 	}
 	return nil
 }
@@ -142,28 +144,34 @@ func (e *ProcessExecutor) ValidateOperate(c *istep.Context) error {
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return err
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	if commonPayload.ProcessPayload == nil {
-		return fmt.Errorf("[ValidateOperate STEP]: common process payload is nil")
+		return errors.New("common process payload is nil")
 	}
 
 	// 解析执行配置（Compare 步骤放行后的 DB 配置）
 	var processInfo table.ProcessInfo
 	if err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo); err != nil {
-		return fmt.Errorf("[ValidateOperate STEP]: failed to unmarshal process info: %w", err)
+		return fmt.Errorf("failed to unmarshal process info: %w", err)
 	}
 
 	// 校验操作是否合法（属性矩阵 + 状态类校验；状态取下发时刻 payload 快照，
 	// 重复操作 / 状态漂移由 Operate 阶段 GSE 幂等兜底）
-	if canOperate, message, _ := pbproc.CanProcessOperateByAttrs(
+	canOperate, message, reason := pbproc.CanProcessOperateByAttrs(
 		payload.OperateType, processInfo,
 		payload.OriginalProcStatus.String(),
 		payload.OriginalProcManagedStatus.String(),
 		payload.CCSyncStatus.String(),
-	); !canOperate {
-		return fmt.Errorf("process cannot operate, reason: %s", message)
+	)
+
+	if !canOperate {
+		// 操作命令未配置属于进程配置不完整，单独记码便于和状态类拦截区分
+		if reason == pbproc.DisableReasonCmdNotConfigured {
+			return taskerr.New(taskerr.CodeProcessCmdNotConfigured, taskerr.WithMsg(message))
+		}
+		return errors.New(message)
 	}
 
 	return nil
@@ -193,12 +201,12 @@ func compareExecConfig(operateType table.ProcessOperateType, dbInfo, latestInfo 
 func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	payload := &OperatePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[Operate STEP]: get payload failed: %w", err)
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[Operate STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	proc := commonPayload.ProcessPayload
@@ -211,13 +219,13 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	var processInfo table.ProcessInfo
 	err := json.Unmarshal([]byte(proc.ConfigData), &processInfo)
 	if err != nil {
-		return fmt.Errorf("[Operate STEP]: unmarshal process info failed: %w", err)
+		return fmt.Errorf("unmarshal process info failed: %w", err)
 	}
 
 	// 转换操作类型
 	gseOpType, err := gse.ConvertProcessOperateTypeToOpType(payload.OperateType)
 	if err != nil {
-		return fmt.Errorf("[Operate STEP]: failed to convert operate type: %w", err)
+		return fmt.Errorf("failed to convert operate type: %w", err)
 	}
 
 	// 构建进程操作接口请求参数
@@ -235,7 +243,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	}
 	processOperate, err := gesprocessor.BuildProcessOperate(params)
 	if err != nil {
-		return fmt.Errorf("[Operate STEP]: failed to build process operate: %w", err)
+		return fmt.Errorf("failed to build process operate: %w", err)
 	}
 
 	req := &gse.MultiProcOperateReq{
@@ -245,7 +253,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	kt := kit.NewWithTenant(payload.TenantID)
 	resp, err := e.GseService.OperateProcMulti(kt.Ctx, req)
 	if err != nil {
-		return fmt.Errorf("[Operate STEP]: OperateProcMulti failed: %w", err)
+		return fmt.Errorf("OperateProcMulti failed: %w", err)
 	}
 
 	logs.Infof("[Operate STEP]: gse task created, task_id=%s", resp.TaskID)
@@ -253,14 +261,14 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 	result, err := e.WaitProcOperateTaskFinish(kt.Ctx, resp.TaskID,
 		payload.BizID, proc.HostInstSeq, proc.Alias, proc.AgentID)
 	if err != nil {
-		return fmt.Errorf("[Operate STEP]: wait task finish failed, task_id=%s: %w", resp.TaskID, err)
+		return fmt.Errorf("wait task finish failed, task_id=%s: %w", resp.TaskID, err)
 	}
 
 	// 构建 GSE 返回结果的 key
 	key := gse.BuildResultKey(proc.AgentID, payload.BizID, proc.Alias, proc.HostInstSeq)
 	procResult, ok := result[key]
 	if !ok {
-		return fmt.Errorf("[Operate STEP]: result not found for key: %s", key)
+		return fmt.Errorf("result not found for key: %s", key)
 	}
 
 	if !gse.IsSuccess(procResult.ErrorCode) {
@@ -274,7 +282,7 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 			if err = c.SetCommonPayload(commonPayload); err != nil {
 				logs.Errorf("[Operate STEP]: failed to set common payload, task_id=%s: %v",
 					resp.TaskID, err)
-				return fmt.Errorf("[Operate STEP]: failed to set common payload, task_id=%s: %w",
+				return fmt.Errorf("failed to set common payload, task_id=%s: %w",
 					resp.TaskID, err)
 			}
 			// 忽略原因直接采用 GSE 返回的 errorMsg, 由框架透传为任务终态 message 入库,
@@ -294,8 +302,9 @@ func (e *ProcessExecutor) Operate(c *istep.Context) error {
 		if err = c.SetCommonPayload(commonPayload); err != nil {
 			logs.Errorf("[Operate STEP]: failed to set common payload, task_id=%s: %v", resp.TaskID, err)
 		}
-		return fmt.Errorf("[Operate STEP]: process operate failed, task_id=%s, errorCode=%d, errorMsg=%s",
+		logs.Errorf("[Operate STEP]: process operate failed, task_id=%s, errorCode=%d, errorMsg=%s",
 			resp.TaskID, procResult.ErrorCode, procResult.ErrorMsg)
+		return taskerr.New(int32(procResult.ErrorCode), taskerr.WithMsg(procResult.ErrorMsg))
 	}
 
 	logs.Infof("[Operate STEP]: success, task_id=%s", resp.TaskID)
@@ -307,25 +316,25 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 	logs.Infof("Finalize: starting finalize")
 	payload := &OperatePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return fmt.Errorf("[Finalize STEP]: get payload failed: %w", err)
+		return fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
 	if err := c.GetCommonPayload(commonPayload); err != nil {
-		return fmt.Errorf("[Finalize STEP]: get common payload failed: %w", err)
+		return fmt.Errorf("get common payload failed: %w", err)
 	}
 
 	// 解析进程配置信息
 	var processInfo table.ProcessInfo
 	err := json.Unmarshal([]byte(commonPayload.ProcessPayload.ConfigData), &processInfo)
 	if err != nil {
-		return fmt.Errorf("[Finalize STEP]: unmarshal process info failed: %w", err)
+		return fmt.Errorf("unmarshal process info failed: %w", err)
 	}
 
 	// 获取gse侧进程状态
 	processStatus, managedStatus, err := e.getGSEProcessStatus(c, payload.BizID)
 	if err != nil {
-		return fmt.Errorf("[Finalize STEP]: failed to get gse process status: %w", err)
+		return fmt.Errorf("failed to get gse process status: %w", err)
 	}
 
 	// 更新进程实例状态字段
@@ -335,7 +344,7 @@ func (e *ProcessExecutor) Finalize(c *istep.Context) error {
 		"managed_status":    managedStatus,
 		"status_updated_at": time.Now(),
 	}, m.ID.Eq(payload.ProcessInstanceID)); err != nil {
-		return fmt.Errorf("[Finalize STEP]: failed to update process instance: %w", err)
+		return fmt.Errorf("failed to update process instance: %w", err)
 	}
 
 	return nil
@@ -451,18 +460,18 @@ func (e *ProcessExecutor) Callback(c *istep.Context, cbErr error) error {
 		if payload.OperateType == table.UnregisterProcessOperate || payload.OperateType == table.StopProcessOperate {
 			process, errP := e.Dao.Process().GetByID(kt, payload.BizID, payload.ProcessID)
 			if errP != nil {
-				return fmt.Errorf("[Finalize STEP]: failed to get process: %w", errP)
+				return fmt.Errorf("failed to get process: %w", errP)
 			}
 
 			allInsts, errI := e.Dao.ProcessInstance().GetByProcessIDs(kt, payload.BizID, []uint32{payload.ProcessID})
 			if errI != nil {
-				return fmt.Errorf("[Finalize STEP]: failed to get process instance: %w", errI)
+				return fmt.Errorf("failed to get process instance: %w", errI)
 			}
 
 			// 若进程数量被缩容，则删除对应的实例
 			if process.Spec.ProcNum < uint(len(allInsts)) {
 				if errD := e.Dao.ProcessInstance().Delete(kt, payload.BizID, payload.ProcessInstanceID); errD != nil {
-					return fmt.Errorf("[Finalize STEP]: failed to delete process instance: %w", errD)
+					return fmt.Errorf("failed to delete process instance: %w", errD)
 				}
 			}
 		}
@@ -518,7 +527,7 @@ func (e *ProcessExecutor) getGSEProcessStatus(
 ) (table.ProcessStatus, table.ProcessManagedStatus, error) {
 	payload := &OperatePayload{}
 	if err := c.GetPayload(payload); err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: get payload failed: %w", err)
+		return "", "", fmt.Errorf("get payload failed: %w", err)
 	}
 
 	commonPayload := &common.TaskPayload{}
@@ -528,13 +537,13 @@ func (e *ProcessExecutor) getGSEProcessStatus(
 	// 查询进程信息
 	process, err := e.Dao.Process().GetByID(kit.NewWithTenant(payload.TenantID), bizID, payload.ProcessID)
 	if err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to get process: %w", err)
+		return "", "", fmt.Errorf("failed to get process: %w", err)
 	}
 	// 获取进程配置信息
 	var processInfo table.ProcessInfo
 	err = json.Unmarshal([]byte(process.Spec.SourceData), &processInfo)
 	if err != nil {
-		return "", "", fmt.Errorf("[getGSEProcessStatus STEP]: failed to marshal process info: %w", err)
+		return "", "", fmt.Errorf("failed to marshal process info: %w", err)
 	}
 	params := gesprocessor.BuildProcessOperateParams{
 		BizID:         bizID,

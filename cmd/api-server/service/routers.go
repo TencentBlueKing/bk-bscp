@@ -104,6 +104,15 @@ func (p *proxy) routers() http.Handler {
 		r.Mount("/", p.cfgSvrMux)
 	})
 
+	// 任务统计是平台级跨业务视图，URL 不带 biz_id，也不需要业务资源鉴权，
+	// 因此单独挂载，避免被 /api/v1/config/ 下的 BizVerified 拦截。
+	r.Route("/api/v1/config/task_batch", func(r chi.Router) {
+		r.Use(p.authorizer.UnifiedAuthentication)
+		r.Use(p.HttpServerHandledTotal("", ""))
+		r.Use(view.Generic(p.authorizer))
+		r.Mount("/", p.cfgSvrMux)
+	})
+
 	r.Route("/api/v1/config/", func(r chi.Router) {
 		r.Use(p.authorizer.UnifiedAuthentication)
 		r.Use(p.authorizer.BizVerified)
